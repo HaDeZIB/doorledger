@@ -8,8 +8,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { api, FORCE_MOCK, subscribeStream } from "./api";
 import { evvCsvFromState } from "./derive";
 import { DemoClock, defaultStart, mockStateAt, mockTimelineAt, resetTime, scenarioRange } from "./mock/engine";
+import { mockAsk, mockSummary } from "./mock/assistant";
 import { mockHousehold } from "./mock/script";
-import type { Finding, Household, LedgerRecord, Observation, Scenario, State } from "./types";
+import type { AskResponse, Finding, Household, LedgerRecord, Observation, Scenario, State, SummaryResponse } from "./types";
 import { dateIn } from "./time";
 
 export type Mode = "live" | "mock";
@@ -245,6 +246,30 @@ export function useDoorLedger(initial: InitialData) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [mode, state, household]);
 
+  // ----- CareAgent (Bedrock in live mode; canned answers from the fixture in mock) ------
+  // Never called automatically: each call costs money. Errors propagate (ApiError.status 503 = no model).
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+  const ask = useCallback(
+    async (question: string): Promise<AskResponse> => {
+      if (mode === "mock") {
+        await new Promise((r) => setTimeout(r, 700));
+        return mockAsk(question, stateRef.current, household);
+      }
+      return api.ask(question);
+    },
+    [mode, household],
+  );
+  const summarize = useCallback(async (): Promise<SummaryResponse> => {
+    if (mode === "mock") {
+      await new Promise((r) => setTimeout(r, 900));
+      return mockSummary(stateRef.current, household);
+    }
+    return api.summary();
+  }, [mode, household]);
+
   const [scenarioName, speedNow] = clockSnap.split("|");
   return {
     mode,
@@ -269,6 +294,8 @@ export function useDoorLedger(initial: InitialData) {
     switchToMock,
     evidenceUrl,
     exportEvv,
+    ask,
+    summarize,
   };
 }
 

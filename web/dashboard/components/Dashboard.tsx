@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { featuredDelivery, featuredVisit, FINDING_LABEL } from "@/lib/derive";
+import { featuredDelivery, featuredVisit, findingLabel } from "@/lib/derive";
 import { UnitsProvider } from "@/lib/units";
 import { useDoorLedger, type InitialData } from "@/lib/useDoorLedger";
 import { AgencyView } from "./AgencyView";
+import { AskCard, SummaryCard } from "./AskPanel";
 import { DayTimeline } from "./DayTimeline";
 import { DemoStrip } from "./DemoStrip";
 import { ActionsFeed, FindingsFeed } from "./Feeds";
@@ -93,6 +94,10 @@ function DashboardInner({ initial }: { initial: InitialData }) {
         {tab === "today" && (
           <>
             <StatusBanner state={dl.state} household={dl.household} />
+            <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+              <AskCard key={`ask-${dl.mode}`} household={dl.household} mode={dl.mode} ask={dl.ask} />
+              <SummaryCard key={`sum-${dl.mode}`} mode={dl.mode} summarize={dl.summarize} />
+            </div>
             <DayTimeline household={dl.household} state={dl.state} timeline={dl.timeline} observations={dl.observations} evidenceUrl={dl.evidenceUrl} />
             <div className="grid gap-6 lg:grid-cols-2">
               <MedicationCard delivery={featuredDelivery(dl.state)} household={dl.household} state={dl.state} evidenceUrl={dl.evidenceUrl} />
@@ -127,7 +132,7 @@ function DashboardInner({ initial }: { initial: InitialData }) {
                 <Icon size={17} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="font-semibold">{FINDING_LABEL[t.finding.kind]}</p>
+                <p className="font-semibold">{findingLabel(t.finding)}</p>
                 <p className="text-sm text-ink-2">{t.finding.summary}</p>
               </div>
               <button type="button" onClick={() => dl.dismissToast(t.id)} aria-label="Dismiss" className="rounded-lg p-1 text-ink-3 hover:bg-canvas">

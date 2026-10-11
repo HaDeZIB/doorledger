@@ -85,6 +85,7 @@ class MedicationProfile:
     # Insulin tolerates room temperature (up to ~30 °C / 86 °F) for weeks; heat above that
     # degrades it. Stricter biologics also cap total minutes above store_max_c.
     excursion_max_c: float = 30.0
+    freeze_c: float = 0.0  # insulin that has frozen must be discarded
     max_minutes_above_store: int | None = None
 
 

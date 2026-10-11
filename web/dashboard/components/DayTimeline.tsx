@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { DeliveryState, Finding, Household, LedgerRecord, Observation, State, VisitState } from "@/lib/types";
-import { FINDING_LABEL, OBS_LABEL, firstName, visitStatus } from "@/lib/derive";
+import { findingLabel, OBS_LABEL, firstName, latestFindings, visionNote, visitStatus } from "@/lib/derive";
 import { fmtDateLong, fmtDuration, fmtHourShort, fmtTime, minuteOfDay, ms, zonedISO, dateIn } from "@/lib/time";
 import { useUnits } from "@/lib/units";
 import { EvidenceFrame } from "./EvidenceFrame";
@@ -216,7 +216,7 @@ export function DayTimeline({
 
 function visitLane(v: VisitState, nowIso: string, tz: string, findings: Finding[]): Lane {
   const e = v.expectation;
-  const st = visitStatus(v, nowIso);
+  const st = visitStatus(v, nowIso, findings);
   const who = (v.check_in?.detail.caregiver as string | undefined) ?? e.caregiver ?? "Caregiver";
   return {
     key: e.id,
@@ -271,7 +271,7 @@ function visitLane(v: VisitState, nowIso: string, tz: string, findings: Finding[
             <Marker left={outL!} className={cx("border-surface text-white", color)} label={`Checked out ${fmtTime(v.check_out.at, tz)}`} active={selected?.type === "obs" && selected.id === v.check_out.id} onClick={() => select({ type: "obs", id: v.check_out!.id })} />
           )}
           {v.check_in && !v.check_out && <Pulse left={outL!} className="text-brand" />}
-          {findings
+          {latestFindings(findings)
             .filter((f) => f.severity !== "info")
             .map((f) => (
               <Flag key={f.id} left={pct(f.at)} finding={f} onClick={() => select({ type: "finding", id: f.id })} active={selected?.type === "finding" && selected.id === f.id} />
@@ -329,7 +329,7 @@ function deliveryLane(d: DeliveryState, nowIso: string, tz: string, findings: Fi
             <Marker left={rL!} className="border-surface bg-ok-bar text-white" label={`Taken inside ${fmtTime(d.removed.at, tz)}`} active={selected?.type === "obs" && selected.id === d.removed.id} onClick={() => select({ type: "obs", id: d.removed!.id })} />
           )}
           {d.dropped && !d.removed && <Pulse left={rL!} className={est?.status === "safe" ? "text-ok-bar" : est?.status === "at_risk" ? "text-warn-bar" : "text-crit-bar"} />}
-          {findings
+          {latestFindings(findings)
             .filter((f) => f.severity !== "info")
             .map((f) => (
               <Flag key={f.id} left={pct(f.at)} finding={f} onClick={() => select({ type: "finding", id: f.id })} active={selected?.type === "finding" && selected.id === f.id} />
@@ -410,8 +410,8 @@ function Flag({ left, finding, onClick, active }: { left: number; finding: Findi
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${FINDING_LABEL[finding.kind]}: ${finding.summary}`}
-      title={`${FINDING_LABEL[finding.kind]}: ${finding.summary}`}
+      aria-label={`${findingLabel(finding)}: ${finding.summary}`}
+      title={`${findingLabel(finding)}: ${finding.summary}`}
       className={cx("absolute top-0 z-10 hidden -translate-x-1/2 animate-enter transition-transform hover:scale-125 sm:block", active && "scale-125")}
       style={{ left: `${left}%` }}
     >
@@ -464,7 +464,7 @@ function SelectionDetail({
       <div className="flex flex-col gap-3 border-t border-line bg-canvas/50 px-5 py-4 sm:flex-row sm:items-center sm:px-6" aria-live="polite">
         <div className="flex items-center gap-2">
           <SeverityChip severity={f.severity} />
-          <span className="font-semibold">{FINDING_LABEL[f.kind]}</span>
+          <span className="font-semibold">{findingLabel(f)}</span>
           <span className="text-ink-3 tabular">{fmtTime(f.at, tz)}</span>
         </div>
         <p className="flex-1 text-ink-2">{f.summary}</p>
@@ -478,7 +478,14 @@ function SelectionDetail({
   }
   const o = observations.get(selected.id);
   if (!o) return null;
-  const desc = (o.detail.description as string | undefined) ?? (o.detail.caregiver ? `${o.detail.caregiver}${o.detail.backup ? " (backup aide)" : ""} · rotating code verified` : "");
+  const note = visionNote(o);
+  const desc =
+    (o.detail.description as string | undefined) ??
+    (o.detail.caregiver
+      ? `${o.detail.caregiver}${o.detail.backup ? " (backup aide)" : ""} · rotating code verified`
+      : o.detail.method === "signed_code" || o.detail.method === "compact_qr"
+        ? "Rotating signed code verified at the door"
+        : "");
   return (
     <div className="flex flex-col gap-4 border-t border-line bg-canvas/50 px-5 py-4 sm:flex-row sm:items-center sm:px-6" aria-live="polite">
       <EvidenceFrame obs={o} url={evidenceUrl(o)} tz={tz} compact className="w-full shrink-0 sm:w-56" />
@@ -488,6 +495,11 @@ function SelectionDetail({
           {OBS_LABEL[o.kind]} <span className="font-normal text-ink-3 tabular">at {fmtTime(o.at, tz)}</span>
         </p>
         {desc && <p className="text-ink-2">{desc}</p>}
+        {note && (
+          <p className="text-ink-2">
+            <span className="font-semibold text-ink-3">Vision:</span> {note}
+          </p>
+        )}
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-2">
           <SourceBadge source={o.source} />
           <span className="tabular">{Math.round(o.confidence * 100)}% confidence</span>

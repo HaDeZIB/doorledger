@@ -37,9 +37,10 @@ export function VisitCard({
     );
   }
   const e = visit.expectation;
-  const st = visitStatus(visit, state.now);
+  const st = visitStatus(visit, state.now, state.findings);
   const planned = e.planned_minutes ?? minutesBetween(e.window_start, e.window_end);
-  const onSite = visit.minutes_on_site ?? 0;
+  const onSite =
+    visit.minutes_on_site ?? (visit.check_in ? Math.max(0, Math.round(minutesBetween(visit.check_in.at, state.now))) : 0);
   const who = (visit.check_in?.detail.caregiver as string | undefined) ?? e.caregiver ?? "Caregiver";
   const backup = Boolean(visit.check_in?.detail.backup);
   const late = visit.check_in ? Math.round(minutesBetween(e.window_start, visit.check_in.at)) : null;
@@ -147,7 +148,12 @@ export function VisitCard({
         {evidence ? (
           <div>
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">Proof</p>
-            <EvidenceFrame obs={evidence} url={evidenceUrl(evidence)} tz={tz} />
+            <EvidenceFrame
+              obs={evidence}
+              url={evidenceUrl(evidence)}
+              alternates={visit.check_out && visit.check_in ? [{ obs: visit.check_in, url: evidenceUrl(visit.check_in) }] : []}
+              tz={tz}
+            />
           </div>
         ) : (
           <div className="flex items-center justify-center rounded-2xl border border-dashed border-line-strong p-6 text-center text-ink-3">
@@ -159,7 +165,7 @@ export function VisitCard({
           <ul className="divide-y divide-line rounded-2xl border border-line">
             {others.length === 0 && <li className="px-3 py-3 text-ink-3">None</li>}
             {others.map((v) => {
-              const s = visitStatus(v, state.now);
+              const s = visitStatus(v, state.now, state.findings);
               return (
                 <li key={v.expectation.id} className="flex items-center justify-between gap-2 px-3 py-2.5">
                   <div className="min-w-0">

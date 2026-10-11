@@ -87,11 +87,31 @@ These are not required, but the UI renders them when present:
 - `Action.data.channel`: `"sms" | "voice" | "push" | "email" | "agency_portal"` → verb ("Texted", "Called", …).
 - `Action.data.status`: `"no_answer" | "answered"`; `Action.data.reply`: string (e.g. `"On my way"`).
 
-## Visit status (derived in the UI, `lib/derive.ts#visitStatus`)
+## Visit status (`lib/derive.ts#visitStatus`)
 
-checked in + out → `short` if on site < 75% of planned, else `completed`; checked in only → `in_progress`;
-before window → `scheduled`; > 30 min past start or past window end → `missed`; > 15 min → `late`;
-otherwise `awaiting`.
+Backend findings for the visit win when present: `short_visit` → short, `visit_completed` → completed,
+`missed_visit` → missed, `late_arrival` (warning) → late. Otherwise derived with the same thresholds as
+`core/src/doorledger/reconcile.py`: checked in + out → `short` if on site < 75% of planned, else `completed`;
+checked in only → `in_progress`; before window → `scheduled`; > 45 min past start → `missed`;
+> 15 min → `late`; otherwise `awaiting`.
+
+Findings are recorded once per (expectation, kind, severity), so a late aide produces a `late_arrival`
+warning ("not here yet") and later a `late_arrival` info ("checked in 22 min late"). The UI shows only the
+latest finding per (expectation, kind) (`latestFindings`).
+
+## CareAgent (Bedrock, read-only tools)
+
+| Method | Path | Response |
+|---|---|---|
+| POST | `/api/ask` body `{ "question": string }` | `{ answer, tool_calls: {name, input}[], model, latency_ms, usage }`; 503 if no model |
+| GET | `/api/summary` | `{ summary, tool_calls, model, latency_ms, usage }`; 503 if no model |
+
+Both cost money, so the UI only calls them on an explicit click. Mock mode answers from the fixture
+day with canned, state-aware text and fake `tool_calls`.
+
+Evidence: `Observation.evidence_path` is e.g. `evidence/captured/20261011T140702_f_x.jpg`; the UI loads
+`${API}/api/evidence/${evidence_path}` (the route strips one leading `evidence/`). `detail.note` is the
+vision model's description and is shown as "Vision: …".
 
 ## EVV CSV columns (mock export; backend should match)
 

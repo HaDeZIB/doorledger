@@ -8,6 +8,8 @@ import { EvidenceFrame } from "./EvidenceFrame";
 import { IconCheck, IconClock, IconPackage, IconThermo } from "./icons";
 import { Card, CardHeader, Pill, cx } from "./ui";
 
+const CHANNEL_VERB: Record<string, string> = { sms: "Texted", voice: "Called", app: "App alert", push: "App alert", email: "Emailed" };
+
 const STATUS = {
   safe: { label: "Safe for now", chip: "bg-ok-soft text-ok", text: "text-ok", ring: "border-ok-bar" },
   at_risk: { label: "At risk", chip: "bg-warn-soft text-warn", text: "text-warn", ring: "border-warn-bar" },
@@ -124,7 +126,12 @@ export function MedicationCard({
           <div className="grid gap-5 px-5 pb-6 pt-5 sm:grid-cols-[1fr_1.15fr] sm:px-6">
             <div>
               <p className="mb-2 text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">Proof</p>
-              <EvidenceFrame obs={delivery.removed ?? delivery.dropped} url={evidenceUrl(delivery.removed ?? delivery.dropped)} tz={tz} />
+              <EvidenceFrame
+                obs={delivery.removed ?? delivery.dropped}
+                url={evidenceUrl(delivery.removed ?? delivery.dropped)}
+                alternates={delivery.removed ? [{ obs: delivery.dropped, url: evidenceUrl(delivery.dropped) }] : []}
+                tz={tz}
+              />
             </div>
             <Escalation household={household} actions={actions} tz={tz} done={inside} />
           </div>
@@ -235,7 +242,7 @@ function Escalation({ household, actions, tz, done }: { household: Household; ac
                       const dl = actionDeliveryLabel(a);
                       return (
                         <li key={a.id} className="animate-enter text-sm text-ink-2">
-                          <span className="tabular text-ink-3">{fmtTime(a.at, tz)}</span> {actionHeadline(a, household).split(" ")[0]} ·{" "}
+                          <span className="tabular text-ink-3">{fmtTime(a.at, tz)}</span> {CHANNEL_VERB[String(a.data.channel ?? "")] ?? actionHeadline(a, household).split(" ")[0]} ·{" "}
                           <span className={cx("font-semibold", dl.tone === "ok" ? "text-ok" : dl.tone === "warn" ? "text-warn" : "text-ink-3")}>{dl.text}</span>
                         </li>
                       );

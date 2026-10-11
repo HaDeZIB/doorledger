@@ -76,17 +76,20 @@ class Step:
 
 SCENARIOS: dict[str, dict] = {
     "late_short_visit": {
-        "start": (8, 50), "end": (10, 20), "ambient_c": 27.0,
+        "start": (8, 50), "end": (10, 20), "ambient_c": -6.0,
         "plan": {ExpectationKind.CAREGIVER_VISIT},
         "steps": [
-            Step(9, 22, ObservationKind.PRESENCE_CHECK_IN, Source.OWN_FOOTAGE, VISIT_ID,
-                 "evidence/checkin.jpg", {"method": "compact_qr"}),
-            Step(10, 5, ObservationKind.PRESENCE_CHECK_OUT, Source.OWN_FOOTAGE, VISIT_ID,
-                 "evidence/checkout.jpg", {"method": "compact_qr"}),
+            # Until our own footage is recorded these two are simulated (and labelled so).
+            Step(9, 22, ObservationKind.PRESENCE_CHECK_IN, Source.SIMULATED, VISIT_ID,
+                 None, {"method": "compact_qr"}),
+            Step(10, 5, ObservationKind.PRESENCE_CHECK_OUT, Source.SIMULATED, VISIT_ID,
+                 None, {"method": "compact_qr"}),
         ],
     },
-    "porch_heat": {
-        "start": (13, 55), "end": (15, 40), "ambient_c": 34.0,
+    # Winter: the Ring Playground "Package" clip is a snowy doorstep, so the porch story is
+    # insulin left out in the freezing cold (frozen insulin must be discarded).
+    "porch_cold": {
+        "start": (13, 55), "end": (14, 55), "ambient_c": -9.0,
         "plan": {ExpectationKind.MEDICATION_DELIVERY},
         "steps": [
             Step(14, 5, ObservationKind.VEHICLE_ARRIVED, Source.RING_LIVE, None,
@@ -94,14 +97,15 @@ SCENARIOS: dict[str, dict] = {
                  frames="vehicle", limit=5),
             Step(14, 7, ObservationKind.PACKAGE_DROPPED, Source.RING_LIVE, None,
                  "evidence/package.jpg", {"note": "parcel on the doorstep"}, frames="package"),
-            Step(15, 26, ObservationKind.PACKAGE_REMOVED, Source.RING_LIVE, None,
-                 "evidence/package_gone.jpg", {"note": "neighbor picked it up"}),
+            Step(14, 40, ObservationKind.PACKAGE_REMOVED, Source.SIMULATED, None,
+                 None, {"note": "neighbor picked it up"}),
         ],
     },
 }
+SCENARIOS["porch_heat"] = SCENARIOS["porch_cold"]  # legacy name used by older dashboard builds
 SCENARIOS["full_day"] = {
-    "start": (8, 50), "end": (15, 40), "ambient_c": 34.0,
-    "steps": SCENARIOS["late_short_visit"]["steps"] + SCENARIOS["porch_heat"]["steps"],
+    "start": (8, 50), "end": (14, 55), "ambient_c": -9.0,
+    "steps": SCENARIOS["late_short_visit"]["steps"] + SCENARIOS["porch_cold"]["steps"],
 }
 
 

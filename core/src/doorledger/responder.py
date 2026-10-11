@@ -30,6 +30,7 @@ log = logging.getLogger("doorledger.responder")
 LADDER_GAP = timedelta(minutes=10)
 MAX_MESSAGES_PER_INCIDENT = 5
 HOT_PORCH_C = 25.0
+COLD_PORCH_C = 5.0
 
 
 @dataclass
@@ -54,14 +55,20 @@ class TemplateWriter:
               purpose: str) -> str:
         patient = household.patient.name.split()[0]
         d = finding.data
+        cold = d.get("direction") == "cold"
+        weather = "freezing" if cold else "warm"
         if purpose == "porch_patient":
-            return (f"Hi {patient}, your medication was left at the front door and it's warm "
-                    f"outside ({d.get('ambient_c', '?'):.0f}°C). Please bring it inside and put it in "
+            return (f"Hi {patient}, your medication was left at the front door and it's {weather} "
+                    f"outside ({d.get('ambient_c', 0):.0f}°C). Please bring it inside and put it in "
                     f"the fridge.")
         if purpose == "porch_helper":
             return (f"{patient}'s refrigerated medication has been on her porch for "
-                    f"{int(d.get('minutes_on_porch', 0))} min in the heat and she hasn't picked it up. "
-                    f"Could you bring it inside for her?")
+                    f"{int(d.get('minutes_on_porch', 0))} min in the {'cold' if cold else 'heat'} and "
+                    f"she hasn't picked it up. Could you bring it inside for her?")
+        if purpose == "porch_family":
+            return (f"{patient}'s refrigerated medication has been outside {int(d.get('minutes_on_porch', 0))} "
+                    f"min in the {'cold' if cold else 'heat'} and nobody nearby has brought it in yet. "
+                    f"Could you call {patient} or someone close by?")
         if purpose == "porch_compromised":
             return (f"Heads up: {patient}'s medication sat outside ~{int(d.get('minutes_on_porch', 0))} "
                     f"min (est. {d.get('estimated_internal_c', '?')}°C in the box). It may not be safe "
@@ -172,7 +179,8 @@ class Responder:
 
         if k == FindingKind.PACKAGE_EXPOSED:
             # Medication just landed on a warm porch: a gentle nudge to the patient first.
-            if finding.data.get("ambient_c", 0) >= HOT_PORCH_C and ladder:
+            amb = finding.data.get("ambient_c", 20)
+            if (amb >= HOT_PORCH_C or amb <= COLD_PORCH_C) and ladder:
                 inc = self.incidents.setdefault(exp, Incident(exp, "porch", now))
                 inc.finding_ids.append(finding.id)
                 if inc.rung == 0:
@@ -188,7 +196,8 @@ class Responder:
             elif inc.rung < len(ladder):
                 person = ladder[inc.rung]
                 inc.rung += 1
-                out.append(self._send("notify", person, finding, "porch_helper", inc, now))
+                purpose = "porch_family" if person.role == "family" else "porch_helper"
+                out.append(self._send("notify", person, finding, purpose, inc, now))
         elif k == FindingKind.PACKAGE_COMPROMISED:
             inc = self.incidents.setdefault(exp, Incident(exp, "porch", now))
             for person in [*family, ladder[0]] if ladder else family:
@@ -229,7 +238,8 @@ class Responder:
                 continue
             person = ladder[inc.rung]
             inc.rung += 1
-            action = self._send("notify", person, finding, "porch_helper", inc, now)
+            purpose = "porch_family" if person.role == "family" else "porch_helper"
+            action = self._send("notify", person, finding, purpose, inc, now)
             if action:
                 out.append(action)
         return out

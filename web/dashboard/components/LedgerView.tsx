@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Action, Expectation, Finding, Household, LedgerKind, LedgerRecord, Observation } from "@/lib/types";
-import { FINDING_LABEL, OBS_LABEL, actionHeadline } from "@/lib/derive";
+import { findingLabel, OBS_LABEL, actionHeadline, visionNote } from "@/lib/derive";
 import { fmtTime, fmtTimeSec, ms } from "@/lib/time";
 import { Card, CardHeader, Empty, SeverityChip, SourceBadge, cx } from "./ui";
 
@@ -90,6 +90,7 @@ function RecordBody({ r, household, tz }: { r: LedgerRecord; household: Househol
         <SourceBadge source={o.source} />
         <span className="text-sm text-ink-3 tabular">{Math.round((o.confidence ?? 0) * 100)}%</span>
         {typeof o.detail?.description === "string" && <p className="w-full text-sm text-ink-2">{o.detail.description}</p>}
+        {visionNote(o) && <p className="w-full text-sm text-ink-2">Vision: {visionNote(o)}</p>}
       </div>
     );
   }
@@ -98,7 +99,7 @@ function RecordBody({ r, household, tz }: { r: LedgerRecord; household: Househol
     return (
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-semibold">{FINDING_LABEL[f.kind] ?? r.subtype}</p>
+          <p className="font-semibold">{(f.kind ? findingLabel(f) : r.subtype)}</p>
           <SeverityChip severity={f.severity} />
         </div>
         <p className="text-sm text-ink-2">{f.summary}</p>

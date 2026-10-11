@@ -3,58 +3,89 @@
 import { useState } from "react";
 import type { Observation } from "@/lib/types";
 import { fmtTimeSec } from "@/lib/time";
+import { visionNote } from "@/lib/derive";
 import { SourceBadge, cx } from "./ui";
 
+export interface FrameCandidate {
+  obs: Observation;
+  url: string | null;
+}
+
 /**
- * Proof frame for an observation. Live mode loads the JPEG from /api/evidence/{path};
- * mock mode (or a failed load) draws an illustrated doorbell-camera frame instead so the
- * product story is intact without real footage. Illustrations are labelled as such.
+ * Proof frame for an observation. Live mode loads the JPEG from /api/evidence/{path}
+ * (real Ring frames analysed by the vision model). Pass `alternates` to fall back to another
+ * observation's real frame (e.g. the drop frame when the pickup frame is missing); the label,
+ * time, source and caption always describe the frame actually shown. Only when no candidate
+ * has a loadable image do we draw an illustration, and it is labelled as such.
  */
 export function EvidenceFrame({
   obs,
   url,
+  alternates = [],
   tz,
   className,
   compact = false,
 }: {
   obs: Observation;
   url: string | null;
+  alternates?: FrameCandidate[];
   tz: string;
   className?: string;
   compact?: boolean;
 }) {
-  const [failed, setFailed] = useState(false);
-  const showImg = url && !failed;
+  const [failed, setFailed] = useState<Set<string>>(() => new Set());
+  const candidates = [{ obs, url }, ...alternates];
+  const shown = candidates.find((c) => c.url && !failed.has(c.url));
+  const o = shown?.obs ?? obs;
+  const note = visionNote(o);
   return (
     <figure className={cx("overflow-hidden rounded-2xl border border-line bg-[#0f1720]", className)}>
       <div className="relative aspect-[16/10] w-full">
-        {showImg ? (
+        {shown?.url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={url}
-            alt={`Doorbell camera frame: ${obs.kind.replaceAll("_", " ")}`}
+            key={shown.url}
+            src={shown.url}
+            alt={`Ring doorbell frame: ${note ?? o.kind.replaceAll("_", " ")}`}
             className="absolute inset-0 h-full w-full object-cover"
-            onError={() => setFailed(true)}
+            onError={() => setFailed((s) => new Set(s).add(shown.url!))}
           />
         ) : (
           <Scene kind={obs.kind} detail={obs.detail} />
         )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6">
           <span className="font-mono text-[0.72rem] font-semibold tracking-wide text-white/95">
-            FRONT DOOR · {fmtTimeSec(obs.at, tz)}
+            FRONT DOOR · {fmtTimeSec(o.at, tz)}
           </span>
-          {!showImg && <span className="text-[0.68rem] font-medium text-white/80">illustration</span>}
+          {shown?.url ? (
+            o !== obs && <span className="text-[0.68rem] font-medium text-white/80">{OBS_SHORT[o.kind] ?? "earlier frame"}</span>
+          ) : (
+            <span className="text-[0.68rem] font-medium text-white/80">illustration</span>
+          )}
         </div>
       </div>
       {!compact && (
-        <figcaption className="flex flex-wrap items-center gap-2 bg-surface px-3 py-2 text-sm text-ink-2">
-          <SourceBadge source={obs.source} />
-          <span className="tabular">{Math.round(obs.confidence * 100)}% confidence</span>
+        <figcaption className="bg-surface px-3 py-2 text-sm text-ink-2">
+          <span className="flex flex-wrap items-center gap-2">
+            <SourceBadge source={o.source} />
+            <span className="tabular">{Math.round(o.confidence * 100)}% confidence</span>
+          </span>
+          {note && (
+            <span className="mt-1 block text-ink-2">
+              <span className="font-semibold text-ink-3">Vision:</span> {note}
+            </span>
+          )}
         </figcaption>
       )}
     </figure>
   );
 }
+
+const OBS_SHORT: Partial<Record<Observation["kind"], string>> = {
+  package_dropped: "drop-off frame",
+  vehicle_arrived: "arrival frame",
+  presence_check_in: "check-in frame",
+};
 
 function Scene({ kind, detail }: { kind: Observation["kind"]; detail: Record<string, unknown> }) {
   const showBox = kind === "package_dropped";

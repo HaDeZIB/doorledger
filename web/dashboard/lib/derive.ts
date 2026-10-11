@@ -36,7 +36,7 @@ export function evvCsvFromState(st: State, patient: string, address: string, tz:
   const rows = st.visits.map((v) => {
     const e = v.expectation;
     const provider = (v.check_in?.detail.caregiver as string | undefined) ?? e.caregiver ?? "";
-    const status = visitStatus(v, st.now).label;
+    const status = visitStatus(v, st.now, st.findings).label;
     return [
       e.visit_id ?? e.id,
       "Personal care (T1019)",
@@ -55,26 +55,87 @@ export function evvCsvFromState(st: State, patient: string, address: string, tz:
   return [header, ...rows].map((r) => r.map(esc).join(",")).join("\n") + "\n";
 }
 
+// Thresholds mirror core/src/doorledger/reconcile.py so derived and backend status agree.
+export const LATE_GRACE_MIN = 15;
+export const MISSED_AFTER_MIN = 45;
+export const SHORT_VISIT_RATIO = 0.75;
+
 // Shared by UI + CSV so status is consistent everywhere.
 export type VisitStatusKey = "scheduled" | "awaiting" | "late" | "in_progress" | "completed" | "short" | "missed";
-export function visitStatus(v: VisitState, nowIso: string): { key: VisitStatusKey; label: string } {
+const VISIT_LABEL: Record<VisitStatusKey, string> = {
+  scheduled: "Scheduled",
+  awaiting: "Awaiting check-in",
+  late: "Late",
+  in_progress: "In progress",
+  completed: "Completed",
+  short: "Short visit",
+  missed: "Missed",
+};
+const vs = (key: VisitStatusKey) => ({ key, label: VISIT_LABEL[key] });
+
+/**
+ * Visit status. When the backend's findings for this visit are passed in, they win (the
+ * reconciler is the source of truth); otherwise we derive with the same thresholds.
+ */
+export function visitStatus(v: VisitState, nowIso: string, findings?: Finding[]): { key: VisitStatusKey; label: string } {
   const now = ms(nowIso);
   const e = v.expectation;
   const start = ms(e.window_start);
   const end = ms(e.window_end);
   const planned = e.planned_minutes ?? (end - start) / 60000;
+  const mine = findings?.filter((f) => f.expectation_id === e.id) ?? [];
+  const has = (kind: Finding["kind"], severity?: Finding["severity"]) =>
+    mine.some((f) => f.kind === kind && (!severity || f.severity === severity));
   if (v.check_in && v.check_out) {
+    if (has("short_visit")) return vs("short");
+    if (has("visit_completed")) return vs("completed");
     const mins = v.minutes_on_site ?? 0;
-    if (mins < planned * 0.75) return { key: "short", label: "Short visit" };
-    return { key: "completed", label: "Completed" };
+    return vs(planned && mins < planned * SHORT_VISIT_RATIO ? "short" : "completed");
   }
-  if (v.check_in) return { key: "in_progress", label: "In progress" };
-  if (now < start) return { key: "scheduled", label: "Scheduled" };
-  if (now - start > 30 * 60000 || now > end) return { key: "missed", label: "Missed" };
-  if (now - start > 15 * 60000) return { key: "late", label: "Late" };
-  return { key: "awaiting", label: "Awaiting check-in" };
+  if (v.check_in) return vs("in_progress");
+  if (has("missed_visit")) return vs("missed");
+  if (has("late_arrival", "warning")) return vs("late");
+  if (now < start) return vs("scheduled");
+  if (now - start > MISSED_AFTER_MIN * 60000) return vs("missed");
+  if (now - start > LATE_GRACE_MIN * 60000) return vs("late");
+  return vs("awaiting");
 }
 
+/**
+ * The backend records one finding per (expectation, kind, severity), so a late aide yields a
+ * "late, not here yet" warning and later an "arrived 22 min late" info. For display we keep
+ * only the latest finding per (expectation, kind). Findings without an expectation are kept.
+ */
+export function latestFindings(findings: Finding[]): Finding[] {
+  const latest = new Map<string, Finding>();
+  const loose: Finding[] = [];
+  for (const f of findings) {
+    if (!f.expectation_id) {
+      loose.push(f);
+      continue;
+    }
+    const k = `${f.expectation_id}|${f.kind}`;
+    const prev = latest.get(k);
+    if (!prev || ms(f.at) >= ms(prev.at)) latest.set(k, f);
+  }
+  return [...latest.values(), ...loose];
+}
+
+/** "us.anthropic.claude-haiku-4-5-20251001-v1:0" → "Claude Haiku 4.5"; unknown ids pass through. */
+export function modelLabel(id: string | null | undefined): string {
+  if (!id) return "";
+  const s = id.toLowerCase();
+  if (s.startsWith("mock")) return "demo answers (no model)";
+  const claude = s.match(/claude-(?:\d-\d-)?(haiku|sonnet|opus)(?:-(\d)(?!\d))?(?:-(\d)(?!\d))?/);
+  if (claude) {
+    const fam = claude[1][0].toUpperCase() + claude[1].slice(1);
+    const ver = claude[2] ? ` ${claude[2]}${claude[3] ? `.${claude[3]}` : ""}` : "";
+    return `Claude ${fam}${ver}`;
+  }
+  const nova = s.match(/nova-(micro|lite|pro|premier)/);
+  if (nova) return `Amazon Nova ${nova[1][0].toUpperCase()}${nova[1].slice(1)}`;
+  return id;
+}
 
 export const SOURCE_LABEL: Record<ObservationSource, string> = {
   ring_live_view: "Ring live view",
@@ -107,6 +168,18 @@ export const FINDING_LABEL: Record<Finding["kind"], string> = {
   unexpected_activity: "Unscheduled activity",
 };
 
+/** Label that reads right for both the "still late" warning and the "arrived late" info. */
+export function findingLabel(f: Pick<Finding, "kind" | "severity">): string {
+  if (f.kind === "late_arrival") return f.severity === "info" ? "Arrived late" : "Running late";
+  return FINDING_LABEL[f.kind] ?? String(f.kind).replaceAll("_", " ");
+}
+
+/** The vision model's one-line description of a frame (Observation.detail.note), if any. */
+export function visionNote(o: { detail?: Record<string, unknown> } | null | undefined): string | null {
+  const n = o?.detail?.note;
+  return typeof n === "string" && n.trim() ? n.trim() : null;
+}
+
 export function firstName(name: string): string {
   return name.split(" ")[0];
 }
@@ -136,6 +209,7 @@ export function actionHeadline(a: Action, h: Household | null): string {
       if (channel === "voice") return `Called ${who}`;
       if (channel === "agency_portal") return `Alerted ${who}`;
       if (channel === "email") return `Emailed ${who}`;
+      if (channel === "app" || channel === "push") return `Sent an app alert to ${who}`;
       return `Notified ${who}`;
   }
 }
@@ -182,7 +256,7 @@ export function featuredVisit(st: State): VisitState | null {
   const inProg = sorted.find((v) => v.check_in && !v.check_out);
   if (inProg) return inProg;
   const pending = sorted.find((v) => {
-    const k = visitStatus(v, st.now).key;
+    const k = visitStatus(v, st.now, st.findings).key;
     return (k === "late" || k === "awaiting" || k === "missed") && now <= ms(v.expectation.window_end) + 30 * 60000;
   });
   if (pending) return pending;

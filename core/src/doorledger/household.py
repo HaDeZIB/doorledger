@@ -25,9 +25,9 @@ class Household:
     people: list[Person]
     device_id: str | None = None
     device_name: str = "Front Door"
-    lat: float = 27.9506
-    lon: float = -82.4572
-    porch_in_sun: bool = True
+    lat: float = 41.8781
+    lon: float = -87.6298
+    porch_in_sun: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
 
     def by_role(self, role: str) -> list[Person]:
@@ -64,7 +64,7 @@ def demo_household() -> Household:
     """Fictional household used for the demo (no real personal data)."""
     return Household(
         id="hh_rosa",
-        patient=Patient("Rosa Martínez", 81, "Tampa, FL", "America/New_York"),
+        patient=Patient("Rosa Martínez", 81, "Chicago, IL", "America/Chicago"),
         people=[
             Person("Rosa Martínez", "patient", escalation_order=1),
             Person("Luis (neighbor)", "neighbor", escalation_order=2),

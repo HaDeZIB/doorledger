@@ -170,6 +170,9 @@ def _delivery(
     ids = [st.dropped.id] + ([st.removed.id] if st.removed else [])
 
     if st.removed:
+        if st.estimate.status == "at_risk":
+            st.estimate.status = "safe"  # it made it inside before crossing the limit
+        est = st.estimate.as_dict()
         sev = Severity.CRITICAL if st.estimate.status == "compromised" else Severity.INFO
         out.append(Finding(FindingKind.PACKAGE_RETRIEVED, sev, st.removed.at,
                            f"{label} brought inside after {int(st.estimate.minutes_on_porch)} min "
@@ -180,7 +183,9 @@ def _delivery(
     if st.estimate.status == "compromised":
         out.append(Finding(FindingKind.PACKAGE_COMPROMISED, Severity.CRITICAL, now,
                            f"{label} has been on the porch {int(st.estimate.minutes_on_porch)} min at "
-                           f"{amb:.0f} °C; it may no longer be safe to use.", exp.id, ids, est))
+                           f"{amb:.0f} °C; it may no longer be safe to use"
+                           f"{' (it may have frozen)' if st.estimate.direction == 'cold' else ''}.",
+                           exp.id, ids, est))
     elif st.estimate.status == "at_risk":
         out.append(Finding(FindingKind.PACKAGE_AT_RISK, Severity.WARNING, now,
                            f"{label} on the porch {int(st.estimate.minutes_on_porch)} min at {amb:.0f} °C; "

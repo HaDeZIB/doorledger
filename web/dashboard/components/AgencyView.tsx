@@ -24,7 +24,7 @@ function evvFields(v: VisitState): boolean[] {
 export function AgencyView({ state, household, onExport }: { state: State; household: Household; onExport: () => void }) {
   const tz = household.patient.timezone;
   const visits = [...state.visits].sort((a, b) => ms(a.expectation.window_start) - ms(b.expectation.window_start));
-  const statuses = visits.map((v) => visitStatus(v, state.now));
+  const statuses = visits.map((v) => visitStatus(v, state.now, state.findings));
   const verified = visits.filter((v) => v.check_in && v.check_out).length;
   const exceptions = statuses.filter((s) => s.key === "short" || s.key === "missed" || s.key === "late").length;
   const backups = visits.filter((v) => v.check_in?.detail.backup).length;

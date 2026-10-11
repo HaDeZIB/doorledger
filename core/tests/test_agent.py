@@ -30,7 +30,7 @@ from doorledger.responder import MAX_MESSAGES_PER_INCIDENT, Responder, TemplateW
 from doorledger.scenarios import day_plan
 from doorledger.weather import AmbientTemperature
 
-TZ = ZoneInfo("America/New_York")
+TZ = ZoneInfo("America/Chicago")
 DAY = datetime(2026, 10, 11, tzinfo=TZ)
 
 
@@ -49,7 +49,7 @@ def at(hh, mm):
     return datetime.combine(DAY.date(), time(hh, mm), tzinfo=TZ)
 
 
-def make_engine(ambient=34.0):
+def make_engine(ambient=-9.0):
     hh = demo_household()
     notifier = Recorder()
     eng = Engine(hh, Ledger(household=hh.id), Responder(hh, notifier, TemplateWriter()),
@@ -84,15 +84,15 @@ def full_day():
 def test_today_status_is_grounded(full_day):
     _eng, tools, _ = full_day
     s = json.loads(tools.get_today_status())
-    assert s["now"] == "15:40" and s["date"] == "2026-10-11"
+    assert s["now"] == "14:55" and s["date"] == "2026-10-11"
     (v,) = s["visits"]
     assert v["caregiver"] == "Maria" and v["status"] == "completed"
     assert v["check_in"]["time"] == "09:22" and v["check_out"]["time"] == "10:05"
     assert v["minutes_on_site"] == 43 and v["planned_minutes"] == 120
     assert v["minutes_after_window_start"] == 22
-    assert "presence code" in v["check_in"]["source"]
+    assert v["check_in"]["source"] == "simulated event"  # until own footage replaces it
     (d,) = s["deliveries"]
-    assert d["dropped"]["time"] == "14:07" and d["brought_inside"]["time"] == "15:26"
+    assert d["dropped"]["time"] == "14:07" and d["brought_inside"]["time"] == "14:40"
     assert d["dropped"]["source"].startswith("Ring doorbell")
     assert d["exposure_estimate"]["minutes_on_porch"] == 79.0
     assert "estimate" in d["exposure_estimate"]["note"]
@@ -195,12 +195,12 @@ def test_pharmacy_draft_only_when_compromised():
     eng.ingest(Observation(ObservationKind.PACKAGE_DROPPED, at(14, 7), Source.RING_LIVE,
                            evidence_path="evidence/package.jpg"))
     tools = CareTools(eng)
-    set_now(eng, at(14, 30), evaluate=False)
+    set_now(eng, at(14, 15), evaluate=False)
     r = json.loads(tools.draft_pharmacy_replacement(e.id))
     assert r["drafted"] is False and "'safe'" in r["refused"]
     r = json.loads(tools.draft_pharmacy_replacement("exp_nope"))
     assert r["drafted"] is False
-    set_now(eng, at(15, 50), evaluate=False)  # ~100 min in the sun at 34 °C -> compromised
+    set_now(eng, at(15, 0), evaluate=False)  # ~53 min at -9 °C -> estimated below freezing
     r = json.loads(tools.draft_pharmacy_replacement(e.id))
     assert r["drafted"] is True and r["sent"] is False and "evidence/package.jpg" in r["draft"]
     again = json.loads(tools.draft_pharmacy_replacement(e.id))

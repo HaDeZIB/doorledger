@@ -22,9 +22,9 @@ export function StatusBanner({ state, household }: { state: State; household: Ho
   let sub = "";
 
   const porch = state.deliveries.find((d) => d.dropped && !d.removed);
-  const missed = state.visits.find((v) => visitStatus(v, state.now).key === "missed" && now <= ms(v.expectation.window_end) + 90 * 60000);
-  const late = state.visits.find((v) => visitStatus(v, state.now).key === "late");
-  const inProg = state.visits.find((v) => visitStatus(v, state.now).key === "in_progress");
+  const missed = state.visits.find((v) => visitStatus(v, state.now, state.findings).key === "missed" && now <= ms(v.expectation.window_end) + 90 * 60000);
+  const late = state.visits.find((v) => visitStatus(v, state.now, state.findings).key === "late");
+  const inProg = state.visits.find((v) => visitStatus(v, state.now, state.findings).key === "in_progress");
 
   if (porch?.estimate) {
     const e = porch.estimate;
@@ -55,7 +55,8 @@ export function StatusBanner({ state, household }: { state: State; household: Ho
     icon = IconUser;
     const who = (inProg.check_in?.detail.caregiver as string | undefined) ?? inProg.expectation.caregiver ?? "The aide";
     head = `${firstName(who)} is with ${name} now`;
-    sub = `Checked in at ${fmtTime(inProg.check_in!.at, tz)} · ${inProg.minutes_on_site} of ${inProg.expectation.planned_minutes} min so far.`;
+    const so = inProg.minutes_on_site ?? Math.max(0, Math.round((now - ms(inProg.check_in!.at)) / 60000));
+    sub = `Checked in at ${fmtTime(inProg.check_in!.at, tz)} · ${so} of ${inProg.expectation.planned_minutes} min so far.`;
   } else {
     const upcoming = [...state.visits.map((v) => v.expectation), ...state.deliveries.filter((d) => !d.dropped).map((d) => d.expectation)]
       .filter((e) => ms(e.window_start) > now)

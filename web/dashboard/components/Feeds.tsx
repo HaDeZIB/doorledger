@@ -1,13 +1,14 @@
 "use client";
 
 import type { Action, Household, Observation, State } from "@/lib/types";
-import { FINDING_LABEL, actionDeliveryLabel, actionHeadline } from "@/lib/derive";
+import { findingLabel, actionDeliveryLabel, actionHeadline, latestFindings } from "@/lib/derive";
 import { fmtTime, ms } from "@/lib/time";
 import { IconBell, IconBuilding, IconLedger, IconMail, IconMessage, IconPhone, IconUser } from "./icons";
 import { Card, CardHeader, Empty, SEVERITY_STYLE, SourceBadge, cx } from "./ui";
 
 export function FindingsFeed({ state, observations, tz }: { state: State; observations: Map<string, Observation>; tz: string }) {
-  const items = [...state.findings].sort((a, b) => ms(b.at) - ms(a.at));
+  // one row per (visit/delivery, kind): e.g. "late, not here yet" is replaced by "arrived 22 min late"
+  const items = latestFindings(state.findings).sort((a, b) => ms(b.at) - ms(a.at));
   return (
     <Card aria-labelledby="findings-title">
       <CardHeader id="findings-title" eyebrow="What DoorLedger noticed" title="Findings" right={<Count n={items.length} />} />
@@ -27,7 +28,7 @@ export function FindingsFeed({ state, observations, tz }: { state: State; observ
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                     <p className="font-semibold">
-                      {FINDING_LABEL[f.kind]}
+                      {findingLabel(f)}
                       <span className="sr-only"> ({s.label})</span>
                     </p>
                     <time className="text-sm text-ink-3 tabular">{fmtTime(f.at, tz)}</time>
@@ -58,6 +59,7 @@ const CHANNEL_ICON: Record<string, React.ComponentType<{ size?: number }>> = {
   sms: IconMessage,
   voice: IconPhone,
   push: IconBell,
+  app: IconBell,
   agency_portal: IconBuilding,
   email: IconMail,
 };
