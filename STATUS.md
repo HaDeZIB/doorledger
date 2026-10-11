@@ -1,6 +1,14 @@
 # STATUS — bitácora de decisiones
 
-## Fase 0 — Cimientos y spikes (en curso)
+## Gate G1 — ✅ VERDE (11-oct)
+S1, S2, S3, S5 pasaron; S4 ajustado (30–50 cm + código compacto + respaldo 6 dígitos); S6 pendiente de bot de Telegram (no bloquea: el dashboard muestra las acciones). Arquitectura congelada: Ring WHEP → Watcher (Nova 2 Lite + lector de códigos) → PorchTracker → Engine (reconcile determinista) → Responder (guardrails + Writer Bedrock) → Ledger → API/SSE → Dashboard; CareAgent (Strands) para Q&A y resumen.
+
+## Fase 1 — Medicina en el porche: casi completa
+- ✅ Flujo completo corre sobre footage REAL del Ring Playground analizado por Bedrock (vehículo 14:05, paquete 14:07 → Rosa; 15:16 → Luis; 15:26 recogido → Ana).
+- ✅ Webhooks firmados de Ring → sesión de vigilancia (en vivo con token o con footage grabado según `sub_type`).
+- ⏳ Falta: escena de "paquete recogido" con footage propio (lista de tomas en docs/SHOT_LIST.md); dashboard con evidencia real + Q&A (agente trabajando).
+
+## Fase 0 — Cimientos y spikes (cerrada)
 
 ### Hecho
 - Entorno: uv, Python 3.12, AWS CLI (v1 vía uv tool) instalados.
