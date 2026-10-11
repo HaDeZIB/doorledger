@@ -1,165 +1,75 @@
-from typing import Any
-from collections import OrderedDict
-from strands import Agent, tool
-import asyncio
-from strands.agent.conversation_manager.null_conversation_manager import NullConversationManager
+"""DoorLedger CareAgent on Amazon Bedrock AgentCore Runtime.
+
+Contract (POST /invocations, JSON):
+
+    {"mode": "ask", "question": "Did Maria come today?", "snapshot": {...}}
+    {"mode": "summary", "snapshot": {...}}
+
+``snapshot`` is produced by ``doorledger.aws.snapshot.export_snapshot`` in the DoorLedger API.
+The runtime rebuilds a sealed, in-memory engine from it and runs the same Strands
+``CareAgent`` the API runs locally, with READ-ONLY tools (get_today_status, get_timeline,
+export_evv). This runtime cannot message anyone:
+
+* ``ask``/``daily_summary`` only receive read-only tools (``handle`` is never exposed here);
+* the rebuilt engine's notifier raises on every send (``ReadOnlyNotifier``);
+* contact details are stripped from the snapshot before it leaves the API;
+* no notification credentials are configured in this runtime.
+
+Guardrailed actions (notify, backup aide, pharmacy draft) stay in the DoorLedger API.
+
+The ``doorledger`` package next to this file is a vendored copy made by
+``deploy/agentcore/sync_core.py``; run it before ``agentcore dev`` / ``agentcore deploy``.
+"""
+
+from __future__ import annotations
+
+import time
+
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
-from model.load import load_model
-from mcp_client.client import get_streamable_http_mcp_client
+from doorledger.agent import CareAgent
+from doorledger.aws.snapshot import engine_from_snapshot
 
 app = BedrockAgentCoreApp()
 log = app.logger
 
-# Define a Streamable HTTP MCP Client
-mcp_clients = [get_streamable_http_mcp_client()]
-
-DEFAULT_SYSTEM_PROMPT = """
-You are a helpful assistant. Use tools when appropriate.
-
-"""
+MAX_QUESTION = 500
 
 
-# Define a collection of tools used by the model
-tools = []
-
-_INLINE_FUNCTION_NAMES = set()
-
-# Define a simple function tool
-@tool
-def add_numbers(a: int, b: int) -> int:
-    """Return the sum of two numbers"""
-    return a+b
-tools.append(add_numbers)
-
-
-
-# Add MCP client to tools if available
-for mcp_client in mcp_clients:
-    if mcp_client:
-        tools.append(mcp_client)
-
-
-def _make_conversation_manager():
-    return NullConversationManager()
-
-# Reuses one Agent per session_id so each session keeps its own in-process
-# conversation history (best-effort; resets on cold start). The cache is bounded
-# to 128 sessions with LRU eviction (least-recently-used is dropped and its
-# history reset) so a single process serving many sessions cannot leak history
-# between them or grow without limit. For durable history, attach a session manager.
-def agent_factory():
-    cache = OrderedDict()
-    def get_or_create_agent(session_id):
-        if session_id in cache:
-            cache.move_to_end(session_id)
-            return cache[session_id]
-        if len(cache) >= 128:
-            cache.popitem(last=False)
-        cache[session_id] = Agent(
-            model=load_model(),
-            system_prompt=DEFAULT_SYSTEM_PROMPT,
-            tools=tools,
-            conversation_manager=_make_conversation_manager(),
-            hooks=[
-            ],
-        )
-        return cache[session_id]
-    return get_or_create_agent
-get_or_create_agent = agent_factory()
-
-
-def strip_trailing_tool_use(messages: Any) -> list[dict]:
-    """Strip toolUse blocks from the tail until the last message has none."""
-    if not isinstance(messages, list):
-        raise ValueError("messages must be a list")
-
-    messages = list(messages)
-    while messages:
-        last = messages[-1]
-        if not isinstance(last, dict):
-            raise ValueError("each message must be an object")
-        original_content = last.get("content", [])
-        if not isinstance(original_content, list) or not all(isinstance(block, dict) for block in original_content):
-            raise ValueError("each message content value must be a list of content blocks")
-
-        content = [block for block in original_content if "toolUse" not in block]
-        if len(content) == len(original_content):
-            break
-        if content:
-            messages[-1] = {**last, "content": content}
-            break
-        messages.pop()
-
-    return messages
-
-
-def _extract_prompt(payload: dict):
-    """Accept validated harness messages, tool results, or a plain prompt string."""
-    if not isinstance(payload, dict):
-        raise ValueError("payload must be a JSON object")
-    if "messages" in payload:
-        return strip_trailing_tool_use(payload["messages"])
-    if "tool_results" in payload:
-        tool_results = payload["tool_results"]
-        if not isinstance(tool_results, list) or not all(
-            isinstance(tool_result, dict) and isinstance(tool_result.get("toolUseId"), str)
-            for tool_result in tool_results
-        ):
-            raise ValueError("tool_results must contain objects with a toolUseId string")
-        return [{"role": "user", "content": [{"toolResult": {
-            "toolUseId": tr["toolUseId"],
-            "status": tr.get("status", "success"),
-            "content": tr.get("content", []),
-        }} for tr in tool_results]}]
-    prompt = payload.get("prompt", "")
-    if not isinstance(prompt, str):
-        raise ValueError("prompt must be a string")
-    return prompt
-
-
-def _has_inline_function_call(messages) -> bool:
-    """Return True if messages contains an assistant toolUse for an inline function tool."""
-    if not _INLINE_FUNCTION_NAMES or not isinstance(messages, list):
-        return False
-    for msg in messages:
-        if msg.get("role") == "assistant":
-            for block in msg.get("content", []):
-                if isinstance(block, dict) and block.get("toolUse", {}).get("name") in _INLINE_FUNCTION_NAMES:
-                    return True
-    return False
-
-
-def _is_inline_function_call(event: dict) -> bool:
-    """Check if a contentBlockStart event is for an inline function tool."""
-    if not _INLINE_FUNCTION_NAMES:
-        return False
-    cbs = event.get("contentBlockStart", {})
-    start = cbs.get("start", {})
-    tool_use = start.get("toolUse") if isinstance(start, dict) else None
-    return tool_use is not None and tool_use.get("name") in _INLINE_FUNCTION_NAMES
-
+def _error(message: str) -> dict:
+    return {"error": message, "runtime": "agentcore"}
 
 
 @app.entrypoint
-async def invoke(payload, context):
-    log.info("Invoking Agent.....")
+def invoke(payload, context=None):
+    if not isinstance(payload, dict):
+        return _error("payload must be a JSON object")
+    mode = payload.get("mode", "ask")
+    if mode not in ("ask", "summary"):
+        return _error("mode must be 'ask' or 'summary' (this runtime cannot act)")
+    question = payload.get("question", payload.get("prompt", ""))
+    if mode == "ask" and (not isinstance(question, str) or not question.strip()):
+        return _error("question must be a non-empty string")
+    try:
+        engine = engine_from_snapshot(payload.get("snapshot"))
+    except (KeyError, TypeError, ValueError) as exc:
+        return _error(f"invalid snapshot: {str(exc)[:200]}")
 
-
-    session_id = getattr(context, 'session_id', 'default-session')
-    agent = get_or_create_agent(session_id)
-
-    prompt = _extract_prompt(payload)
-
-
-    async for event in agent.stream_async(
-        prompt,
-    ):
-        if not isinstance(event, dict) or "event" not in event:
-            continue
-        cbs = event["event"].get("contentBlockStart")
-        if cbs is not None and not cbs.get("start"):
-            continue
-        yield event
+    t0 = time.perf_counter()
+    agent = CareAgent(engine)
+    if mode == "ask":
+        reply, key = agent.ask(question[:MAX_QUESTION]), "answer"
+    else:
+        reply, key = agent.daily_summary(), "summary"
+    out = reply.to_api(key)
+    out.update({
+        "runtime": "agentcore",
+        "session_id": getattr(context, "session_id", None),
+        "handler_ms": int((time.perf_counter() - t0) * 1000),
+        "snapshot_now": engine.clock.now().isoformat(),
+    })
+    log.info("doorledger %s model=%s tools=%s latency_ms=%s", mode, reply.model,
+             [c["name"] for c in reply.tool_calls], reply.latency_ms)
+    return out
 
 
 if __name__ == "__main__":

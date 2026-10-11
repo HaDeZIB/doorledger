@@ -45,7 +45,7 @@ class ReadOnlyNotifier:
 
     channel = "read-only"
 
-    def send(self, person: Person, message: str) -> bool:  # noqa: ARG002
+    def send(self, person: Person, message: str) -> bool:
         raise PermissionError("this DoorLedger engine is a read-only snapshot; it cannot send "
                               "messages (guardrailed actions run only in the DoorLedger API)")
 

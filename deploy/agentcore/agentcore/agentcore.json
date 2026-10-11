@@ -5,7 +5,8 @@
   "managedBy": "CDK",
   "tags": {
     "agentcore:created-by": "agentcore-cli",
-    "agentcore:project-name": "DoorLedgerAgent"
+    "agentcore:project-name": "DoorLedgerAgent",
+    "Project": "doorledger"
   },
   "runtimes": [
     {
@@ -13,12 +14,26 @@
       "build": "CodeZip",
       "entrypoint": "main.py",
       "codeLocation": "app/CareAgent/",
-      "runtimeVersion": "PYTHON_3_14",
+      "runtimeVersion": "PYTHON_3_12",
       "networkMode": "PUBLIC",
       "protocol": "HTTP",
       "lifecycleConfiguration": {
         "idleRuntimeSessionTimeout": 300,
         "maxLifetime": 900
+      },
+      "envVars": [
+        {
+          "name": "DOORLEDGER_AGENT_MODEL",
+          "value": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        },
+        {
+          "name": "LOG_LEVEL",
+          "value": "INFO"
+        }
+      ],
+      "tags": {
+        "Project": "doorledger",
+        "Component": "care-agent"
       }
     }
   ],

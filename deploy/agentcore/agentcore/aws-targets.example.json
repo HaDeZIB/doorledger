@@ -1,0 +1,8 @@
+[
+  {
+    "name": "dev",
+    "description": "DoorLedger hackathon account",
+    "account": "<account-id>",
+    "region": "us-east-1"
+  }
+]

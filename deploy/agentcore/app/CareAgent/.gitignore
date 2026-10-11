@@ -39,3 +39,5 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+# vendored by deploy/agentcore/sync_core.py
+doorledger/

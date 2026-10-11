@@ -11,5 +11,13 @@ cdk/node_modules/
 # Ephemeral Staging
 .cache/*
 
-# Exception: Commit the State
-!.cli/deployed-state.json
+
+# Packaged artifacts
+*.zip
+
+# Account-specific: never commit (repo is public). Templates: *.example.json
+aws-targets.json
+.cli/deployed-state.json
+
+# Packaging staging dir (agentcore package)
+*/staging/
