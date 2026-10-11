@@ -1,5 +1,8 @@
 # STATUS — bitácora de decisiones
 
+## AgentCore ✅ DESPLEGADO (11-oct 5:25 pm)
+Stack `AgentCore-DoorLedgerAgent-dev`, runtime `DoorLedgerAgent_CareAgent-*` (us-east-1). `/api/ask` → AgentCore (Claude Haiku 4.5), ~7.6 s, 5/5 pruebas vivas. ARN en `.env` (no en git). Pipeline AWS: Bedrock (Nova 2 Lite visión + Claude Haiku mensajes) + Strands + AgentCore Runtime + DynamoDB + SNS (pendiente número).
+
 ## Sesión 2 (11-oct tarde) — después de la revisión externa #1 (6.9/10)
 - ✅ Claude Haiku 4.5 / Sonnet 4.6 activos en Bedrock (Haiku 5.5 "not available for this account").
 - ✅ Mensajes bilingües (Rosa en español), caras pixeladas ANTES de Bedrock, solo se guarda el cuadro del evento, retención 30 días.
