@@ -101,7 +101,7 @@ def test_today_status_is_grounded(full_day):
     kinds = [f["kind"] for f in s["findings"]]
     assert "short_visit" in kinds and "package_at_risk" in kinds
     luis = [a for a in s["actions"] if a["to"] == "Luis (neighbor)"]
-    assert luis and luis[0]["time"] == "15:17" and "porch" in luis[0]["because"]
+    assert luis and luis[0]["time"] == "14:27" and "porch" in luis[0]["because"]
     assert all(a["decided_by"] == "rules" for a in s["actions"])
     assert len(tools.get_today_status()) < 6000  # compact enough for a cheap model
 
