@@ -92,10 +92,8 @@ SCENARIOS: dict[str, dict] = {
         "start": (13, 55), "end": (14, 55), "ambient_c": -9.0,
         "plan": {ExpectationKind.MEDICATION_DELIVERY},
         "steps": [
-            # Fallback sources are SIMULATED: the real observation only comes from footage.
-            Step(14, 5, ObservationKind.VEHICLE_ARRIVED, Source.SIMULATED, None,
-                 None, {"note": "vehicle in front of the house"},
-                 frames="vehicle", limit=5),
+            # (The Playground Vehicle clip is a green spring parking lot, so it is not used in
+            #  this winter story.) Fallback source is SIMULATED; the real one comes from footage.
             Step(14, 7, ObservationKind.PACKAGE_DROPPED, Source.SIMULATED, None,
                  None, {"note": "parcel on the doorstep"}, frames="package"),
             Step(14, 40, ObservationKind.PACKAGE_REMOVED, Source.SIMULATED, None,

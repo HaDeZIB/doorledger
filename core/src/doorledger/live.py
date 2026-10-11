@@ -40,6 +40,9 @@ class LiveController:
         self.watcher = watcher
         self.replay_root = replay_root
         self.seen_requests: set[str] = set()
+        self.seen_events: set[str] = set()
+        self.ring_events: list[dict] = []
+        self.last_snapshot: bytes | None = None
         self.busy = asyncio.Lock()
         self.watch_task: asyncio.Task | None = None
         self.sessions = 0
@@ -53,8 +56,12 @@ class LiveController:
 
         return AsyncRingClient(self.token)
 
-    async def watch_once(self, reason: str, scene: str = "default") -> int:
-        """One watch session: live WHEP if a token is configured, else recorded footage."""
+    async def watch_once(self, reason: str, scene: str = "default", *, burst: bool = False) -> int:
+        """One watch session: live WHEP if a token is configured, else recorded footage.
+
+        ``burst`` (after a doorbell press): 4 fps for ~12 s and the presence-code reader runs on
+        every frame, so an aide holding her pass for 2–3 s gets ~10 read attempts.
+        """
         if self.watcher is None:
             return 0
         async with self.busy:
@@ -66,14 +73,17 @@ class LiveController:
                     self.engine.device.update({"id": device_id, "online": True,
                                                "source": "ring_playground"})
                     src = RingLiveSource(ring, device_id, self.engine.clock.now,
-                                         max_seconds=SESSION_SECONDS)
-                    found = await self.watcher.process(src.frames())
+                                         fps=4.0 if burst else 1.0,
+                                         max_seconds=12.0 if burst else SESSION_SECONDS)
+                    found = await self.watcher.process(src.frames(),
+                                                       presence_every=1 if burst else None)
                 finally:
                     await ring.aclose()
             else:
                 frames = self.replay_root / scene / "frames"
                 src = ReplaySource(frames, self.engine.clock.now(), capture_fps=1.0, limit=6)
-                found = await self.watcher.process(src.frames())
+                found = await self.watcher.process(src.frames(),
+                                                   presence_every=1 if burst else None)
             log.info("watch session (%s) produced %d observations", reason, len(found))
             return len(found)
 
@@ -83,9 +93,11 @@ class LiveController:
         self.seen_requests.add(event.dedupe_key)
         if event.type in ("motion_detected", "button_press"):
             scene = SCENE_FOR_SUBTYPE.get(event.sub_type or "", "default")
-            if event.type == "button_press":
+            burst = event.type == "button_press"  # "ring the bell, then show your pass"
+            if burst:
                 scene = "package"
-            asyncio.create_task(self.watch_once(f"webhook:{event.type}:{event.sub_type}", scene))
+            asyncio.create_task(self.watch_once(f"webhook:{event.type}:{event.sub_type}", scene,
+                                                burst=burst))
             return "watching"
         if event.type in ("device_online", "device_offline"):
             self.engine.device["online"] = event.type == "device_online"
@@ -105,10 +117,48 @@ class LiveController:
                 log.warning("watch session failed: %s", exc)
             await asyncio.sleep(SESSION_GAP_SECONDS)
 
+    async def _poll_history_loop(self, interval: float = 15.0) -> None:
+        """Battery-friendly default: poll Ring event history and open live view only when Ring
+        itself recorded something new (motion, ding, or a Playground live-view event).
+
+        Every new event also fetches a Ring snapshot at the event's start time
+        (``POST /media/image/download`` with ``at_timestamp`` — the range form returns 403).
+        """
+        from datetime import datetime, timezone
+
+        started = datetime.now(timezone.utc)
+        ring = await self._ring()
+        try:
+            device_id = self.engine.device.get("id") or (await ring.devices())[0].id
+            self.engine.device.update({"id": device_id, "online": True, "source": "ring_playground"})
+            while self.windows_open():
+                try:
+                    page = await ring.history(device_id)
+                    new = [e for e in page.events
+                           if e.id not in self.seen_events and e.start and e.start >= started]
+                    for e in sorted(new, key=lambda e: e.start):
+                        self.seen_events.add(e.id)
+                        self.ring_events.append({"id": e.id, "type": e.event_type,
+                                                 "at": e.start.isoformat()})
+                        try:
+                            snap = await ring.snapshot(device_id, at=e.start)
+                            self.last_snapshot = snap.content
+                        except Exception as exc:  # noqa: BLE001 — snapshots are best-effort
+                            log.info("snapshot unavailable for %s: %s", e.id, exc)
+                        await self.watch_once(f"ring_history:{e.event_type}",
+                                              burst=e.event_type == "ding")
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("history poll failed: %s", exc)
+                await asyncio.sleep(interval)
+        finally:
+            await ring.aclose()
+
     def start_watching(self) -> bool:
+        """With a live token: poll Ring history (event-driven). Without: periodic replay sessions."""
         if self.watch_task and not self.watch_task.done():
             return False
-        self.watch_task = asyncio.create_task(self._watch_loop())
+        loop = self._poll_history_loop() if self.token else self._watch_loop()
+        self.watch_task = asyncio.create_task(loop)
         return True
 
     def stop_watching(self) -> None:

@@ -88,6 +88,13 @@ engine.ledger.subscribe(_broadcast)
 async def _startup() -> None:
     global _loop
     _loop = asyncio.get_running_loop()
+    # Retention: stored evidence frames expire (privacy by default).
+    from .watcher import purge_evidence
+
+    days = float(os.environ.get("DOORLEDGER_RETENTION_DAYS", "30"))
+    removed = purge_evidence(EVIDENCE_DIR / "captured", days) if (EVIDENCE_DIR / "captured").is_dir() else 0
+    if removed:
+        log.info("retention: removed %d evidence frames older than %s days", removed, days)
 
 
 @app.get("/api/health")
@@ -254,9 +261,88 @@ def live_stop() -> dict[str, Any]:
 
 @app.get("/api/visits/{visit_id}/pass")
 def visit_pass(visit_id: str, role: str = "in", request: Request = None) -> dict[str, Any]:  # type: ignore[assignment]
+    # Issuing a pass hands out the visit secret, so it is an agency-only operation.
+    admin = os.environ.get("DOORLEDGER_ADMIN_TOKEN")
+    supplied = request.headers.get("x-admin-token") if request else None
+    if not admin or supplied != admin:
+        raise HTTPException(401, "agency admin token required (X-Admin-Token)")
     secret = engine.visit_secrets.get(visit_id)
     if secret is None:
         raise HTTPException(404, "unknown visit (start a scenario first)")
     base = str(request.base_url).rstrip("/") if request else "http://localhost:8787"
     url = f"{base}/pass/index.html#v={visit_id}&k={_presence.secret_to_b64url(secret)}&role={role}"
     return {"visit_id": visit_id, "role": role, "url": url}
+
+
+# --- AWS integrations (optional, env-gated; see docs/aws_architecture.md) -------------------
+# DOORLEDGER_DYNAMO=1            mirror every ledger record to DynamoDB (doorledger-ledger)
+# DOORLEDGER_AGENTCORE_ARN=arn   answer /api/ask and /api/summary with the CareAgent deployed on
+#                                Bedrock AgentCore Runtime (read-only snapshot); falls back to the
+#                                in-process Strands agent on any error.
+
+from fastapi.routing import APIRoute
+
+dynamo_mirror = None
+if os.environ.get("DOORLEDGER_DYNAMO") == "1":
+    try:
+        from .aws.dynamo import attach_mirror
+
+        dynamo_mirror = attach_mirror(engine.ledger)
+    except Exception as exc:  # noqa: BLE001 — the demo must run without AWS
+        log.warning("DynamoDB mirror disabled: %s", str(exc)[:200])
+
+    @app.on_event("shutdown")
+    def _flush_dynamo() -> None:
+        if dynamo_mirror is not None:
+            dynamo_mirror.close(timeout=5)
+
+
+_agentcore_agent = None
+if os.environ.get("DOORLEDGER_AGENTCORE_ARN"):
+    from .aws.agentcore import AgentCoreCareAgent
+
+    _agentcore_agent = AgentCoreCareAgent(engine)
+
+    def _replace_route(path: str, method: str) -> None:
+        app.router.routes[:] = [r for r in app.router.routes
+                                if not (isinstance(r, APIRoute) and r.path == path
+                                        and method in r.methods)]
+
+    def _local_fallback(fn, *args: Any) -> dict[str, Any]:
+        out = fn(*args)
+        out["runtime"] = "local"
+        return out
+
+    _replace_route("/api/ask", "POST")
+    _replace_route("/api/summary", "GET")
+
+    @app.post("/api/ask")
+    def ask_agentcore(body: AskBody) -> dict[str, Any]:
+        if not body.question.strip():
+            raise HTTPException(400, "question is empty")
+        try:
+            return _agentcore_agent.ask(body.question)
+        except Exception as exc:  # noqa: BLE001 — fall back to the in-process agent
+            log.warning("AgentCore ask failed, using local agent: %s", str(exc)[:200])
+            out = _local_fallback(ask, body)
+            out["agentcore_error"] = str(exc)[:200]
+            return out
+
+    @app.get("/api/summary")
+    def summary_agentcore() -> dict[str, Any]:
+        try:
+            return _agentcore_agent.daily_summary()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("AgentCore summary failed, using local agent: %s", str(exc)[:200])
+            out = _local_fallback(summary)
+            out["agentcore_error"] = str(exc)[:200]
+            return out
+
+
+@app.get("/api/aws/status")
+def aws_status() -> dict[str, Any]:
+    return {
+        "dynamo": dynamo_mirror.stats() if dynamo_mirror is not None else None,
+        "agentcore": {"configured": True, "runtime_arn": _agentcore_agent.runtime_arn.rsplit(
+            "/", 1)[-1]} if _agentcore_agent is not None else None,
+    }

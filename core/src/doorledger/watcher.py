@@ -114,6 +114,7 @@ class Watcher:
         self._reused = 0
         self.vision_calls = 0
         self.vision_skipped = 0
+        self.frames_persisted = 0
 
     def tracker(self, source: Source) -> PorchTracker:
         key = str(source)
@@ -125,14 +126,18 @@ class Watcher:
         ok, buf = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, self.jpeg_quality])
         return buf.tobytes() if ok else b""
 
-    def _save(self, frame: Frame) -> tuple[str, bytes]:
-        """Write the evidence frame (faces pixelated) and return the original JPEG for vision."""
-        original = self._encode(frame.image)
-        redacted, n = self.redactor.redact(frame.image) if self.redactor else (frame.image, 0)
+    def _redacted(self, frame: Frame) -> bytes:
+        """JPEG of the frame with faces pixelated. This is what Bedrock sees and what is stored."""
+        image, n = self.redactor.redact(frame.image) if self.redactor else (frame.image, 0)
         self.faces_redacted += n
+        return self._encode(image)
+
+    def _persist(self, frame: Frame, jpeg: bytes) -> str:
+        """Store an evidence frame — only called when an observation was confirmed."""
         name = f"{frame.at.strftime('%Y%m%dT%H%M%S')}_{new_id('f')}.jpg"
-        (self.evidence_dir / name).write_bytes(self._encode(redacted) if n else original)
-        return f"evidence/{self.subdir}/{name}", original
+        (self.evidence_dir / name).write_bytes(jpeg)
+        self.frames_persisted += 1
+        return f"evidence/{self.subdir}/{name}"
 
     def _changed(self, image: np.ndarray) -> bool:
         """Cheap motion gate: mean absolute difference on a tiny grayscale thumbnail."""
@@ -142,7 +147,7 @@ class Watcher:
             return True
         return float(np.abs(thumb - prev).mean()) >= self.motion_threshold
 
-    def _presence(self, frame: Frame, evidence: str) -> list[Observation]:
+    def _presence(self, frame: Frame, evidence: str | None) -> list[Observation]:
         secrets = self.engine.visit_secrets
         if not secrets:
             return []
@@ -161,34 +166,65 @@ class Watcher:
                     out.append(Observation(kind, frame.at, frame.source, 1.0,
                                            device_id=self.engine.device.get("id"),
                                            visit_id=res.visit_id, evidence_path=evidence,
-                                           detail={"method": "signed_code", "skew": res.skew}))
+                                           detail={"method": "signed_code", "skew": res.skew,
+                                                   "proves": "a device showing this visit's "
+                                                             "current signed code was at the door"}))
                     break
         return out
 
-    async def process(self, frames: AsyncIterator[Frame]) -> list[Observation]:
+    async def process(self, frames: AsyncIterator[Frame], *,
+                      presence_every: int | None = None) -> list[Observation]:
+        """Run perception over frames. Privacy rules:
+        * faces are pixelated BEFORE the frame is sent to Bedrock;
+        * nothing is written to disk unless an observation is confirmed (then only that frame);
+        * the raw frame is used in memory only by the on-device presence-code reader.
+        ``presence_every=1`` is the burst mode used right after a doorbell press.
+        """
         emitted: list[Observation] = []
         loop = asyncio.get_running_loop()
+        every = presence_every or self.presence_every
+        for_sub = 0
         async for frame in frames:
             self.frames_seen += 1
-            evidence, jpeg = self._save(frame)
+            for_sub += 1
+            jpeg: bytes | None = None
             obs: list[Observation] = []
-            if self.frames_seen % self.presence_every == 0:
-                obs += await loop.run_in_executor(None, self._presence, frame, evidence)
+            if for_sub % every == 0:
+                obs += await loop.run_in_executor(None, self._presence, frame, None)
             if (self.last_label is not None and not self._changed(frame.image)
                     and self._reused < self.max_reuse):
                 self._reused += 1
                 self.vision_skipped += 1
-                label = replace(self.last_label, at=frame.at, evidence_path=evidence)
+                label = replace(self.last_label, at=frame.at, evidence_path=None)
             else:
                 if self.last_label is None:
                     self._changed(frame.image)  # prime the motion gate
                 self._reused = 0
                 self.vision_calls += 1
-                label = await loop.run_in_executor(None, self.vision.classify, jpeg, frame.at,
-                                                   evidence)
+                jpeg = await loop.run_in_executor(None, self._redacted, frame)
+                label = await loop.run_in_executor(None, self.vision.classify, jpeg, frame.at, None)
             self.last_label = label
             obs += self.tracker(frame.source).push(label)
+            if obs:
+                if jpeg is None:
+                    jpeg = await loop.run_in_executor(None, self._redacted, frame)
+                path = self._persist(frame, jpeg)
+                for o in obs:
+                    o.evidence_path = o.evidence_path or path
             for o in obs:
                 self.engine.ingest(o)
                 emitted.append(o)
         return emitted
+
+
+def purge_evidence(evidence_dir: str | Path, older_than_days: float) -> int:
+    """Delete stored evidence frames older than the retention window. Returns files removed."""
+    import time
+
+    cutoff = time.time() - older_than_days * 86400
+    removed = 0
+    for f in Path(evidence_dir).glob("*.jpg"):
+        if f.stat().st_mtime < cutoff:
+            f.unlink()
+            removed += 1
+    return removed
