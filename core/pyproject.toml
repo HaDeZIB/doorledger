@@ -15,6 +15,7 @@ dependencies = [
     "uvicorn>=0.30",
     "ringpartner[whep]",
     "strands-agents>=1.59.0",
+    "reportlab>=5.0.1",
 ]
 
 [tool.uv.sources]
