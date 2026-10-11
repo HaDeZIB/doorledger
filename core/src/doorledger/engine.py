@@ -39,6 +39,7 @@ class Engine:
                                  "online": None, "source": "replay"}
         self.expectations: dict[str, Expectation] = {}
         self.observations: list[Observation] = []
+        self.visit_secrets: dict[str, bytes] = {}  # visit_id -> presence-code secret
         self._seen: set[tuple[str | None, str]] = set()
         self._lock = threading.RLock()
         self.last: Reconciliation | None = None

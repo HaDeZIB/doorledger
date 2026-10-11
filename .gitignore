@@ -24,3 +24,6 @@ fixtures/raw/
 *.sqlite3
 
 .DS_Store
+
+# frames saved by the watcher at runtime
+fixtures/evidence/captured/

@@ -49,7 +49,19 @@ def build_engine() -> Engine:
 
 
 engine = build_engine()
-runner = ScenarioRunner(engine)
+
+
+def build_watcher(eng: Engine):
+    if os.environ.get("DOORLEDGER_PERCEPTION", "bedrock") == "off":
+        return None
+    from .vision import BedrockVision
+    from .watcher import Watcher
+
+    return Watcher(eng, BedrockVision(), EVIDENCE_DIR)
+
+
+watcher = build_watcher(engine)
+runner = ScenarioRunner(engine, watcher, ROOT / "fixtures" / "ring_playground")
 app = FastAPI(title="DoorLedger API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,

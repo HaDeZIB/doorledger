@@ -53,6 +53,8 @@ class Step:
     visit_id: str | None = None
     evidence: str | None = None
     detail: dict = field(default_factory=dict)
+    frames: str | None = None  # run real Ring footage from fixtures/raw/<frames>/frames instead
+    limit: int = 8
 
 
 SCENARIOS: dict[str, dict] = {
@@ -71,11 +73,10 @@ SCENARIOS: dict[str, dict] = {
         "plan": {ExpectationKind.MEDICATION_DELIVERY},
         "steps": [
             Step(14, 5, ObservationKind.VEHICLE_ARRIVED, Source.RING_LIVE, None,
-                 "evidence/vehicle.jpg", {"note": "delivery van at the curb"}),
-            Step(14, 6, ObservationKind.PERSON_AT_DOOR, Source.RING_LIVE, None,
-                 "evidence/courier.jpg", {"carrying_package": True}),
+                 "evidence/vehicle.jpg", {"note": "vehicle in front of the house"},
+                 frames="vehicle", limit=5),
             Step(14, 7, ObservationKind.PACKAGE_DROPPED, Source.RING_LIVE, None,
-                 "evidence/package.jpg", {"note": "insulated mailer on the doormat"}),
+                 "evidence/package.jpg", {"note": "parcel on the doorstep"}, frames="package"),
             Step(15, 26, ObservationKind.PACKAGE_REMOVED, Source.RING_LIVE, None,
                  "evidence/package_gone.jpg", {"note": "neighbor picked it up"}),
         ],
@@ -88,8 +89,10 @@ SCENARIOS["full_day"] = {
 
 
 class ScenarioRunner:
-    def __init__(self, engine: Engine) -> None:
+    def __init__(self, engine: Engine, watcher=None, frames_root=None) -> None:
         self.engine = engine
+        self.watcher = watcher  # when set, steps with `frames` go through real perception
+        self.frames_root = frames_root
         self.task: asyncio.Task | None = None
         self.name: str | None = None
 
@@ -128,6 +131,26 @@ class ScenarioRunner:
                 now = self.engine.clock.now()
                 while pending and _at(day, pending[0].hh, pending[0].mm, tz) <= now:
                     s = pending.pop(0)
+                    if s.frames and self.watcher is not None and self.frames_root is not None:
+                        from .watcher import ReplaySource
+
+                        src = ReplaySource(self.frames_root / s.frames / "frames",
+                                           _at(day, s.hh, s.mm, tz), limit=s.limit,
+                                           capture_fps=1.0)
+                        # Freeze simulated time while the vision model works so the demo
+                        # timeline matches the footage, then resume where the frames ended.
+                        clock = self.engine.clock
+                        if hasattr(clock, "pause"):
+                            clock.pause()
+                        try:
+                            found = await self.watcher.process(src.frames())
+                        finally:
+                            if hasattr(clock, "set"):
+                                clock.set(max(clock.now(), _at(day, s.hh, s.mm, tz)
+                                              + timedelta(seconds=len(src.files))))
+                        if found:
+                            continue
+                        log.warning("perception found nothing in %s; using scripted step", s.frames)
                     self.engine.ingest(Observation(
                         kind=s.kind, at=_at(day, s.hh, s.mm, tz), source=s.source,
                         visit_id=s.visit_id, evidence_path=s.evidence, detail=dict(s.detail),
