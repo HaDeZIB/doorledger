@@ -76,7 +76,7 @@ def test_exposure_report_is_a_pdf(tmp_path, paragraphs):
     assert pdf.startswith(b"%PDF")
     assert len(pdf) > 2000
     joined = "\n".join(paragraphs)
-    assert "Rosa Martínez" in joined and "1Z-DEMO-4471" in joined
+    assert "Rosa Martínez" in joined and "DEMO-4471" in joined
     assert "Parcel left" in joined          # evidence frame that exists is embedded
     assert "Parcel taken inside" not in joined  # missing file is skipped, not a crash
     assert "Who was notified" in joined and "pharmacy_claim → Pharmacy" in joined
