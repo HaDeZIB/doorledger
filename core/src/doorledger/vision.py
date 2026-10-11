@@ -20,16 +20,18 @@ from .porch import FrameLabel
 PROMPT = """You are the perception module of a home-care verification system watching a front-door camera.
 Describe ONLY what is visible in the image. Answer with a single JSON object and nothing else:
 {
-  "package_visible": bool,          // a parcel/box/bag resting on the porch floor or doorstep (not being carried)
-  "person_present": bool,           // any person visible near the door
-  "person_carrying_package": bool,  // a person is holding a parcel
+  "package_visible": bool,          // a parcel/box/bag/envelope/cooler RESTING on the floor, mat or step. false if every parcel is in someone's hands
+  "person_present": bool,           // any person visible near the door, including partly visible or seen from behind
+  "person_carrying_package": bool,  // a person is holding a parcel/box/delivery bag in their hands or arms (not a purse or backpack)
   "vehicle_present": bool,          // a car/van/truck visible in the driveway or street close to the house
-  "phone_screen_shown": bool,       // a person is holding a phone screen toward the camera
+  "phone_screen_shown": bool,       // the lit DISPLAY of a phone faces the camera (you can see the screen content). false if you only see the back/camera side of a phone
   "confidence": number,             // 0..1, your overall confidence
   "note": string                    // <= 12 words, plain description
-}"""
+}
+Doorbell cameras are wide-angle: objects near the edges look stretched. Small devices, pucks or doormats are not parcels."""
 
-DEFAULT_MODEL = os.environ.get("DOORLEDGER_VISION_MODEL", "us.amazon.nova-lite-v1:0")
+# Chosen in eval/vision/RESULTS.md: 54/54 correct on all fields, ~$0.37 per 1k frames.
+DEFAULT_MODEL = os.environ.get("DOORLEDGER_VISION_MODEL", "us.amazon.nova-2-lite-v1:0")
 
 
 class VisionClassifier(Protocol):

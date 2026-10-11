@@ -13,7 +13,7 @@
 |---|---|---|
 | S1 Playground | ✅ | Dispositivo "Playground Device" online, no cifrado. Fixtures grabados (devices, status, capabilities, configurations, location, history, users/me redactado). Snapshot funciona con `at=` = inicio de un evento del historial (rango "latest_in_range" da 403). |
 | S2 WHEP servidor | ✅ | aiortc → H264 1280x720, ~4 fps efectivos. Escena se elige en la UI del Playground (Package/Vehicle/Motion) y aplica también a sesiones del servidor. 500 si se abre otra sesión antes de que cierre la anterior → reintento con espera de 20 s. MediaRecorder MP4 no finaliza (moov) → usamos frames + cv2.VideoWriter. Clip de paquete: "Thief stealing our package" (YouTube, CC BY 4.0) → ATRIBUIR en video y README. |
-| S3 Bedrock | ⏳ AWS conectado (IAM `doorledger-dev`, us-east-1); Bedrock responde *AccessDenied: account being verified* (<2 h) | Modelos visibles: Nova Lite/Pro/2-Lite, Claude Haiku 4.5/5.5, Sonnet 4.6/5.5, Opus 5.5. Comparar Nova Lite vs Haiku 4.5 en frames |
+| S3 Bedrock | ✅ | Nova 2 Lite + prompt v2: 54/54 en set sintético (eval/vision) y **10/10 en cuadros reales del Ring Playground** (paquete, vehículo, pájaros). ~$0.37/1k frames, p50 1.5 s. Claude bloqueado hasta enviar formulario de Anthropic. Gasto del spike: ~$2.2. |
 | S4 Código de presencia | 🟡 AJUSTADO | Sintético: 100% a 30–50 cm, 0% a 1 m (QR del teléfono <2 px/módulo). Decisión: instrucción a la cuidadora "30–50 cm, 2–3 s quieta", código compacto de 25 dígitos (QR mínimo, EC M), leer cada 2–3 frames, mantener código de 6 dígitos como respaldo leído por visión. Falta validar con footage real (IR nocturno, watermark). |
 | S5 Strands | pendiente | |
 | S6 Notificaciones | pendiente | |

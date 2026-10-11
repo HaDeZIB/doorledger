@@ -797,6 +797,182 @@
     }
    },
    {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 2550.9,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Empty front porch with no packages or people\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Empty front porch with no packages or people"
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1145.9,
+    "input_tokens": 2798,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Packages on the porch\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Packages on the porch"
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1602.8,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1843.5,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1484.5,
+    "input_tokens": 2798,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two packages on the porch\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two packages on the porch"
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1920,
+     1080
+    ],
+    "latency_ms": 1543.7,
+    "input_tokens": 2302,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Empty porch with no people or packages\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Empty porch with no people or packages"
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1475.0,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1297.4,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"A brown door with a doorbell and camera\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "A brown door with a doorbell and camera"
+    }
+   },
+   {
     "id": "phone_01_screen",
     "model_id": "us.amazon.nova-lite-v1:0",
     "size": [
@@ -1813,6 +1989,182 @@
      "phone_screen_shown": false,
      "confidence": 1.0,
      "note": "Golden retriever sitting on doormat."
+    }
+   },
+   {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 2570.6,
+    "input_tokens": 456,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front door with locks and mat\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front door with locks and mat"
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1733.3,
+    "input_tokens": 456,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"packages stacked on doormat\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "packages stacked on doormat"
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1882.1,
+    "input_tokens": 456,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on doorstep, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on doorstep, no people."
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1824.6,
+    "input_tokens": 456,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"door, mat, pot, device on porch\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "door, mat, pot, device on porch"
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1325.9,
+    "input_tokens": 456,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two boxes on porch, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two boxes on porch, no people."
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1920,
+     1080
+    ],
+    "latency_ms": 1187.7,
+    "input_tokens": 456,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front porch with door, chairs, plants\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front porch with door, chairs, plants"
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1276.1,
+    "input_tokens": 456,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on doormat, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on doormat, no people."
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1327.2,
+    "input_tokens": 456,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front door with camera and doormat\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front door with camera and doormat"
     }
    },
    {
@@ -2835,6 +3187,182 @@
     }
    },
    {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 2259.2,
+    "input_tokens": 2798,
+    "output_tokens": 67,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"No person or package visible.\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "No person or package visible."
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1527.5,
+    "input_tokens": 2798,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Multiple packages on the porch.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Multiple packages on the porch."
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1495.9,
+    "input_tokens": 2798,
+    "output_tokens": 67,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Yellow package on porch.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Yellow package on porch."
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1572.7,
+    "input_tokens": 2798,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no person visible.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no person visible."
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1479.3,
+    "input_tokens": 2798,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two packages on the porch.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two packages on the porch."
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1920,
+     1080
+    ],
+    "latency_ms": 1634.8,
+    "input_tokens": 2302,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"Empty porch with two doors and decorative elements.\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "Empty porch with two doors and decorative elements."
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1395.6,
+    "input_tokens": 2798,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"Package on porch, no person visible.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "Package on porch, no person visible."
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1496.6,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"Brown door with camera, no person or package.\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "Brown door with camera, no person or package."
+    }
+   },
+   {
     "id": "phone_01_screen",
     "model_id": "us.amazon.nova-pro-v1:0",
     "size": [
@@ -3851,6 +4379,182 @@
      "phone_screen_shown": false,
      "confidence": 0.95,
      "note": "A dog is sitting on a mat in front of the door"
+    }
+   },
+   {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1974.9,
+    "input_tokens": 1502,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Empty front porch with a door and a plant\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Empty front porch with a door and a plant"
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 963.9,
+    "input_tokens": 1502,
+    "output_tokens": 73,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Packages on the porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Packages on the porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1233.7,
+    "input_tokens": 1502,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1102.6,
+    "input_tokens": 1502,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1113.8,
+    "input_tokens": 1502,
+    "output_tokens": 73,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two packages on the porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two packages on the porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     432
+    ],
+    "latency_ms": 1100.2,
+    "input_tokens": 910,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Empty porch with no packages or people\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Empty porch with no packages or people"
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1122.9,
+    "input_tokens": 1502,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1266.1,
+    "input_tokens": 1502,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"A brown door with a doorbell and a camera\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "A brown door with a doorbell and a camera"
     }
    },
    {
@@ -4873,6 +5577,182 @@
     }
    },
    {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 2255.3,
+    "input_tokens": 2884,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"No person or package near the door.\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "No person or package near the door."
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1940.3,
+    "input_tokens": 2884,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Six packages on mat in front of door.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Six packages on mat in front of door."
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1529.8,
+    "input_tokens": 2884,
+    "output_tokens": 66,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"Yellow envelope on mat.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "Yellow envelope on mat."
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 2015.2,
+    "input_tokens": 2884,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"White package on mat in front of door.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "White package on mat in front of door."
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 2312.9,
+    "input_tokens": 2884,
+    "output_tokens": 67,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"Two packages on the mat.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "Two packages on the mat."
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1920,
+     1080
+    ],
+    "latency_ms": 1892.0,
+    "input_tokens": 2388,
+    "output_tokens": 67,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"No packages or people visible.\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "No packages or people visible."
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1600.7,
+    "input_tokens": 2884,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"Cooler on mat in front of door.\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "Cooler on mat in front of door."
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-pro-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1428.8,
+    "input_tokens": 2884,
+    "output_tokens": 67,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.9,\n  \"note\": \"No person or package visible.\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.9,
+     "note": "No person or package visible."
+    }
+   },
+   {
     "id": "phone_01_screen",
     "model_id": "us.amazon.nova-pro-v1:0",
     "size": [
@@ -5889,6 +6769,182 @@
      "phone_screen_shown": false,
      "confidence": 0.95,
      "note": "A dog sits on a mat in front of a door"
+    }
+   },
+   {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 2132.7,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Empty front porch with no packages or people\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Empty front porch with no packages or people"
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1287.8,
+    "input_tokens": 2798,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Packages on the porch\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Packages on the porch"
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1205.8,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1301.9,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1278.3,
+    "input_tokens": 2798,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two packages on the porch\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two packages on the porch"
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1920,
+     1080
+    ],
+    "latency_ms": 1536.7,
+    "input_tokens": 2302,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Empty porch with no people or packages\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Empty porch with no people or packages"
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1382.4,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1069.2,
+    "input_tokens": 2798,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"A brown door with a doorbell and camera\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "A brown door with a doorbell and camera"
     }
    },
    {
@@ -6911,6 +7967,182 @@
     }
    },
    {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 2610.7,
+    "input_tokens": 537,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front door with locks and mat\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front door with locks and mat"
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1706.7,
+    "input_tokens": 537,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"stack of boxes at front door\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "stack of boxes at front door"
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1766.4,
+    "input_tokens": 537,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"yellow envelope with device on doorstep\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "yellow envelope with device on doorstep"
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1907.7,
+    "input_tokens": 537,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front door with doormat and potted plants\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front door with doormat and potted plants"
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1153.9,
+    "input_tokens": 537,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two boxes on doorstep, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two boxes on doorstep, no people."
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1920,
+     1080
+    ],
+    "latency_ms": 1817.0,
+    "input_tokens": 537,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front porch with door, chair, plants\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front porch with door, chair, plants"
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1296.8,
+    "input_tokens": 537,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Cooler on doormat, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Cooler on doormat, no people."
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1308.2,
+    "input_tokens": 537,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front door with camera and doormat\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front door with camera and doormat"
+    }
+   },
+   {
     "id": "phone_01_screen",
     "model_id": "us.amazon.nova-2-lite-v1:0",
     "size": [
@@ -7927,6 +9159,182 @@
      "phone_screen_shown": false,
      "confidence": 1.0,
      "note": "Golden retriever sitting on doormat."
+    }
+   },
+   {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1443.9,
+    "input_tokens": 456,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front door with mat and plant\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front door with mat and plant"
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1075.1,
+    "input_tokens": 456,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"boxes stacked on welcome mat\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "boxes stacked on welcome mat"
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1731.0,
+    "input_tokens": 456,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"envelope with device on porch\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "envelope with device on porch"
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 2318.9,
+    "input_tokens": 456,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch, no people."
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 966.9,
+    "input_tokens": 456,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two boxes on porch, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two boxes on porch, no people."
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     432
+    ],
+    "latency_ms": 892.3,
+    "input_tokens": 456,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front porch with door, chairs, plants\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front porch with door, chairs, plants"
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 890.8,
+    "input_tokens": 456,
+    "output_tokens": 73,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"package on doormat, no people or vehicles.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "package on doormat, no people or vehicles."
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 2092.4,
+    "input_tokens": 456,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 1.0,\n  \"note\": \"Front door with camera and doormat visible.\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 1.0,
+     "note": "Front door with camera and doormat visible."
     }
    },
    {
@@ -8949,6 +10357,182 @@
     }
    },
    {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 2575.5,
+    "input_tokens": 456,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front door with locks and mat\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front door with locks and mat"
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1698.0,
+    "input_tokens": 456,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"packages stacked on welcome mat\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "packages stacked on welcome mat"
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1900.7,
+    "input_tokens": 456,
+    "output_tokens": 69,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on porch with camera attached.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on porch with camera attached."
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1825.2,
+    "input_tokens": 456,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front door with doormat and potted plants\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front door with doormat and potted plants"
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1338.2,
+    "input_tokens": 456,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two boxes on porch, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two boxes on porch, no people."
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1920,
+     1080
+    ],
+    "latency_ms": 2183.9,
+    "input_tokens": 456,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front porch with door, chair, plants\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front porch with door, chair, plants"
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1352.3,
+    "input_tokens": 456,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on doormat, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on doormat, no people."
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     1536,
+     1536
+    ],
+    "latency_ms": 1322.1,
+    "input_tokens": 456,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front door with camera and doormat\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front door with camera and doormat"
+    }
+   },
+   {
     "id": "phone_01_screen",
     "model_id": "us.amazon.nova-2-lite-v1:0",
     "size": [
@@ -9968,6 +11552,182 @@
     }
    },
    {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 2509.1,
+    "input_tokens": 537,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 1.0,\n  \"note\": \"front door with mat, no people or packages\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 1.0,
+     "note": "front door with mat, no people or packages"
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 2132.7,
+    "input_tokens": 537,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"stack of boxes on doormat\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "stack of boxes on doormat"
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1417.4,
+    "input_tokens": 537,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"envelope with device on doorstep\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "envelope with device on doorstep"
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 812.7,
+    "input_tokens": 537,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 1.0,\n  \"note\": \"front door with doormat and potted plant\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 1.0,
+     "note": "front door with doormat and potted plant"
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 991.2,
+    "input_tokens": 537,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two boxes on porch, no people.\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two boxes on porch, no people."
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     432
+    ],
+    "latency_ms": 694.9,
+    "input_tokens": 537,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"front porch with door, chairs, plants\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "front porch with door, chairs, plants"
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 743.0,
+    "input_tokens": 537,
+    "output_tokens": 73,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"cooler on doormat, plants on sides\"\n}\n```",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "cooler on doormat, plants on sides"
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-2-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1699.8,
+    "input_tokens": 537,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "```json\n{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 1.0,\n  \"note\": \"Front door with camera and mat visible.\"\n}\n```",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 1.0,
+     "note": "Front door with camera and mat visible."
+    }
+   },
+   {
     "id": "phone_01_screen",
     "model_id": "us.amazon.nova-2-lite-v1:0",
     "size": [
@@ -10984,6 +12744,182 @@
      "phone_screen_shown": false,
      "confidence": 0.95,
      "note": "A dog sits on a mat in front of a door."
+    }
+   },
+   {
+    "id": "pkg_05",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1503.4,
+    "input_tokens": 1588,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Empty front porch with no people or packages\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Empty front porch with no people or packages"
+    }
+   },
+   {
+    "id": "pkg_06",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1207.7,
+    "input_tokens": 1588,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Parcels on mat, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Parcels on mat, no people or vehicles"
+    }
+   },
+   {
+    "id": "pkg_07",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1025.6,
+    "input_tokens": 1588,
+    "output_tokens": 70,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Package on mat in front of door\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Package on mat in front of door"
+    }
+   },
+   {
+    "id": "pkg_08",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 954.6,
+    "input_tokens": 1588,
+    "output_tokens": 74,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Front door with a mat and a scale on the porch\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Front door with a mat and a scale on the porch"
+    }
+   },
+   {
+    "id": "pkg_09",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 812.8,
+    "input_tokens": 1588,
+    "output_tokens": 68,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Two packages on the porch\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Two packages on the porch"
+    }
+   },
+   {
+    "id": "pkg_10",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     432
+    ],
+    "latency_ms": 973.1,
+    "input_tokens": 996,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Empty front porch with no packages or people\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Empty front porch with no packages or people"
+    }
+   },
+   {
+    "id": "pkg_11",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1224.7,
+    "input_tokens": 1588,
+    "output_tokens": 72,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": true,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Cooler bag on mat in front of door\"\n}",
+    "pred": {
+     "package_visible": true,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Cooler bag on mat in front of door"
+    }
+   },
+   {
+    "id": "pkg_12",
+    "model_id": "us.amazon.nova-lite-v1:0",
+    "size": [
+     768,
+     768
+    ],
+    "latency_ms": 1089.8,
+    "input_tokens": 1588,
+    "output_tokens": 71,
+    "stop": "end_turn",
+    "text": "{\n  \"package_visible\": false,\n  \"person_present\": false,\n  \"person_carrying_package\": false,\n  \"vehicle_present\": false,\n  \"phone_screen_shown\": false,\n  \"confidence\": 0.95,\n  \"note\": \"Empty front porch, no people or vehicles\"\n}",
+    "pred": {
+     "package_visible": false,
+     "person_present": false,
+     "person_carrying_package": false,
+     "vehicle_present": false,
+     "phone_screen_shown": false,
+     "confidence": 0.95,
+     "note": "Empty front porch, no people or vehicles"
     }
    },
    {

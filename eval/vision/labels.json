@@ -571,6 +571,136 @@
     }
   },
   {
+    "id": "pkg_05",
+    "file": "pkg_05.jpg",
+    "class": "empty_porch",
+    "lighting": "day",
+    "prompt": "daylight, a brown cardboard box sitting on the porch floor right in front of the door, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "no box was generated; empty dark doormat"
+    ]
+  },
+  {
+    "id": "pkg_06",
+    "file": "pkg_06.jpg",
+    "class": "box_on_mat",
+    "lighting": "day",
+    "prompt": "daylight, two cardboard boxes stacked on the doorstep, nobody there",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "pkg_07",
+    "file": "pkg_07.jpg",
+    "class": "pharmacy_bag",
+    "lighting": "day",
+    "prompt": "daylight, a yellow padded envelope mailer lying flat on the doormat, nobody there",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "pkg_08",
+    "file": "pkg_08.jpg",
+    "class": "pharmacy_bag",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, a white plastic poly mailer bag lying on the doorstep, nobody there",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "ambiguous": [
+      "package_visible"
+    ],
+    "fix_notes": [
+      "ambiguous: white rectangular object on the step: poly mailer/box or a device"
+    ]
+  },
+  {
+    "id": "pkg_09",
+    "file": "pkg_09.jpg",
+    "class": "box_and_person",
+    "lighting": "day",
+    "prompt": "daylight, a cardboard box left on the doormat in the foreground, and a delivery driver in the background walking away down the front path",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "no person generated; two stacked boxes only"
+    ]
+  },
+  {
+    "id": "pkg_10",
+    "file": "pkg_10.jpg",
+    "class": "empty_porch",
+    "lighting": "day",
+    "prompt": "daylight, a cardboard box on the porch steps, wide view of the front yard and sidewalk, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "no box was generated; empty porch steps"
+    ]
+  },
+  {
+    "id": "pkg_11",
+    "file": "pkg_11.jpg",
+    "class": "pharmacy_bag",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, a silver insulated cooler bag on the porch floor beside a potted plant, nobody there",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "pkg_12",
+    "file": "pkg_12.jpg",
+    "class": "hard_negative",
+    "lighting": "day",
+    "prompt": "daylight, a large cardboard box leaning against the closed front door, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "no box was generated; a doorbell-like device on the door"
+    ]
+  },
+  {
     "id": "phone_01_screen",
     "file": "phone_01_screen.jpg",
     "class": "caregiver_phone_screen",

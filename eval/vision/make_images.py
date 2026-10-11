@@ -141,11 +141,16 @@ LABEL_FIXES: dict[str, tuple[dict, str, str | None]] = {
     "phone_02": ({"phone_screen_shown": False}, "two phones, both with their BACK toward the camera", "caregiver_phone_back"),
     "phone_03": ({"phone_screen_shown": False}, "phone held with its BACK toward the camera", "caregiver_phone_back"),
     "phone_04": ({"phone_screen_shown": False}, "phone held landscape with its BACK toward the camera", "caregiver_phone_back"),
+    "pkg_05": ({"package_visible": False}, "no box was generated; empty dark doormat", "empty_porch"),
+    "pkg_09": ({"person_present": False}, "no person generated; two stacked boxes only", None),
+    "pkg_10": ({"package_visible": False}, "no box was generated; empty porch steps", "empty_porch"),
+    "pkg_12": ({"package_visible": False}, "no box was generated; a doorbell-like device on the door", "hard_negative"),
     "away_01": ({}, "actually walking TOWARD the door (back to camera), empty-handed", "person_at_door"),
     "away_03": ({}, "actually walking TOWARD the door at dusk (back to camera)", "person_at_door"),
 }
 # Fields a careful human could reasonably label either way: not scored for that item.
 AMBIGUOUS: dict[str, tuple[list[str], str]] = {
+    "pkg_08": (["package_visible"], "white rectangular object on the step: poly mailer/box or a device"),
     "rx_03": (["package_visible"], "white cube on porch: insulated cooler box or a small appliance/bin"),
     "away_02": (["person_carrying_package", "vehicle_present"],
                 "person carries a dark handbag/duffel (not clearly a parcel); cars parked in a driveway "
