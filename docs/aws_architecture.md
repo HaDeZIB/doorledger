@@ -53,11 +53,11 @@ Ring doorbell (WHEP live view / snapshots / signed webhooks)
 | Resource | Status | Notes |
 |---|---|---|
 | DynamoDB table `doorledger-ledger` (`arn:aws:dynamodb:us-east-1:<account-id>:table/doorledger-ledger`) | **Live** | Created by `deploy/create_dynamo.py`, which is idempotent. PAY_PER_REQUEST, TTL on `expires_at`, tagged `Project=doorledger`. Live test: a full-day replay mirrored 20 records (2 expectations, 5 observations, 6 findings, 7 actions) with 0 failures. Flush took 1.7 s in the background, and a single put took about 240 ms from Mexico. Those 20 demo rows are kept with a 3-day TTL. |
-| AgentCore Runtime `DoorLedgerAgent_CareAgent` + CDK-created execution role | **Built, packaged and synthesized; deploy blocked by IAM** | `deploy/agentcore/` (AgentCore CLI 0.31.1). The entrypoint runs under the AgentCore SDK locally (`/ping`, `/invocations`). `agentcore package` produces a 41.5 MB arm64 zip, and `deploy --dry-run` synthesizes `AWS::IAM::Role` + `AWS::BedrockAgentCore::Runtime`. `deploy --yes` fails at CDK bootstrap: `cloudformation:CreateChangeSet` is denied on `stack/CDKToolkit/*`. Owner steps are in `deploy/agentcore/README.md`. |
+| AgentCore Runtime `DoorLedgerAgent_CareAgent-<id>` + CDK-created execution role (stack `AgentCore-DoorLedgerAgent-dev`) | **Live** (deployed 11 Oct, after the IAM grants and CDK bootstrap) | `deploy/agentcore/` (AgentCore CLI 0.31.1, CodeZip, arm64, Python 3.12). Live tests: 5/5 in `core/tests/test_aws_agentcore.py` with `DOORLEDGER_LIVE=1`. With `DOORLEDGER_AGENTCORE_ARN` set, `/api/ask` returns `"runtime": "agentcore"` (Claude Haiku 4.5), about 7.6 s round trip on a cold-ish session, and falls back to the in-process Strands agent on any error. The first deploy attempt was blocked by IAM ([friction log A2](../FRICTION_LOG.md#a2--agentcore-cli-deploy-hits-an-iam-wall-cdk-bootstrap--bedrock-agentcore-not-in-amazonbedrockfullaccess)); owner steps are in `deploy/agentcore/README.md`. |
 | Bedrock models (Nova 2 Lite, Claude Haiku 4.5, Nova Pro / Lite) | In use | On demand, via the Converse API. |
 | Lambda webhook receiver | Design only (below) | Not deployed. |
 
-### Permissions the owner must grant (verified with real calls from `doorledger-dev`)
+### Permissions that had to be granted before the deploy (verified with real calls from `doorledger-dev`)
 
 `AmazonBedrockFullAccess` (v11) covers `bedrock:*` and `bedrock-mantle:*`, but **not**
 `bedrock-agentcore:*`, which is a separate IAM prefix. The following calls were denied:
@@ -66,7 +66,7 @@ Ring doorbell (WHEP live view / snapshots / signed webhooks)
 `s3:ListAllMyBuckets`, `ecr:DescribeRepositories`, `ssm:GetParameter` (`/cdk-bootstrap/*`),
 `codebuild:ListProjects`, and `xray:GetTraceSegmentDestination`.
 
-Minimum to unblock:
+Minimum that unblocked the deploy:
 
 1. An admin runs CDK bootstrap once:
    `npx aws-cdk@2.1126.0 bootstrap aws://<account-id>/us-east-1 --tags Project=doorledger`.
@@ -141,8 +141,10 @@ Measured with the AgentCore SDK server locally on the same Bedrock models (Claud
 | `ask` "Did Maria come today, and how long did she stay?" (1 tool call) | 2.7 s | 3,873 / 126 | ≈ $0.0045 |
 | `summary` (2 tool calls) | 4.3 s | 4,868 / 292 | ≈ $0.0063 |
 
-In the cloud, expect the same model time plus the InvokeAgentRuntime round trip, and a
-microVM cold start on the first call of a session. Not measured: the deploy is blocked.
+In the cloud (deployed runtime, measured 11 Oct): `/api/ask` routed through
+`InvokeAgentRuntime` took about **7.6 s** round trip on a cold-ish session (Claude Haiku 4.5).
+That is the same model time plus the InvokeAgentRuntime round trip and microVM start-up. Warm
+calls in the same session should be faster, but we have not measured them yet.
 
 ## Design only: Ring webhooks on Lambda
 
@@ -164,8 +166,8 @@ Ring partner webhook ─▶ Lambda function URL (auth NONE; HMAC is the auth)
   authentication, and there is no extra hourly or request cost.
 - **Permissions:** the execution role needs `dynamodb:PutItem` on the table and
   `ssm:GetParameter` / `secretsmanager:GetSecretValue` on the key. The deploying user also needs
-  `iam:CreateRole` + `iam:PassRole` for the execution role. `doorledger-dev` lacks both today,
-  for the same reason AgentCore is blocked.
+  `iam:CreateRole` + `iam:PassRole` for the execution role, or a CDK deploy through the
+  bootstrap roles, as AgentCore now uses.
 - **Cost:** free tier covers about 1M requests per month, so roughly $0 at demo scale.
 
 ## Costs
@@ -174,7 +176,7 @@ Ring partner webhook ─▶ Lambda function URL (auth NONE; HMAC is the auth)
 |---|---|---|
 | DynamoDB on demand: about 45 writes, a handful of queries, 20 rows stored with TTL | < $0.001 | $1.25 per M writes; storage is pennies; $0 idle |
 | Bedrock calls for the local AgentCore entrypoint test (ask + summary) | ≈ $0.011 | ≈ $0.0045 per question, ≈ $0.0063 per summary |
-| AgentCore Runtime | $0 (not deployed) | CPU billed only while active; memory about 0.5 GB × (call + 300 s idle timeout) ≈ < $0.001 per question; $0 with no sessions |
+| AgentCore Runtime | ≈ $0 (a handful of live test calls) | CPU billed only while active; memory about 0.5 GB × (call + 300 s idle timeout) ≈ < $0.001 per question; $0 with no sessions |
 | CDK bootstrap (S3 bucket + ECR repo) | $0 | ≈ $0 |
 | **Total for this task** | **≈ $0.02** | A 50-question demo day costs about $0.30 |
 
