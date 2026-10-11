@@ -134,14 +134,17 @@ class CachingVision:
         import hashlib
 
         key = hashlib.sha256(image_jpeg).hexdigest()
-        if key in self.cache:
+        if key in self.cache and self.inner is None:  # replay mode only; live mode always calls
             self.hits += 1
             return label_from_json(self.cache[key], at, evidence_path)
         self.misses += 1
         if self.inner is None:
             return label_from_json({"confidence": 0.0, "note": "not in vision cache"}, at,
                                    evidence_path)
+        started = time.perf_counter()
         label = self.inner.classify(image_jpeg, at, evidence_path)
+        label.extra = {**(label.extra or {}), "vision_model": getattr(self.inner, "model_id", None),
+                       "vision_ms": round((time.perf_counter() - started) * 1000)}
         self.cache[key] = {
             "package_visible": label.package_visible, "person_present": label.person_present,
             "person_carrying_package": label.person_carrying_package,

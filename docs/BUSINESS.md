@@ -38,6 +38,7 @@ only) with paid summaries and Q&A.
 | Motion gate (skip the vision call on unchanged frames) | **38–60% fewer vision calls**, depending on scene activity | Our replay runs. In the offline `porch_cold` replay: 3 calls, 5 skipped (62%) |
 | CareAgent question (Claude Haiku 4.5) | **~US$0.0045** (Nova Pro fallback: ~US$0.003) | [aws_architecture.md](aws_architecture.md) (3.9k in / 0.13k out tokens); [agent_spike.md](agent_spike.md) |
 | Daily summary (Claude Haiku 4.5) | ~US$0.0063 | [aws_architecture.md](aws_architecture.md) |
+| AgentCore Runtime compute per question (CareAgent is deployed there) | < US$0.001 | Estimate in [aws_architecture.md](aws_architecture.md): CPU billed only while active, about 0.5 GB of memory for the call plus a 300 s idle timeout |
 | One alert message, LLM wording (Claude Haiku 4.5 → Nova Lite → template) | **≤ ~US$0.005** | Our measurements (short prompt plus at most 200 output tokens) |
 | SMS delivery (Amazon SNS, US) | ~US$0.01 per message | **Estimate.** Check current SNS SMS pricing and carrier fees |
 | Hosting, WHEP decode, DynamoDB, storage | ~US$1.00 per household | **Assumption** at a few hundred households. DynamoDB alone is cents (on demand, TTL-expired rows) |

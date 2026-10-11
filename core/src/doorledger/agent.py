@@ -108,6 +108,12 @@ class CareTools:
         if not o:
             return None
         out = {"time": self._local(o["at"]), "source": SOURCE_LABEL.get(o["source"], o["source"])}
+        if o["source"] == "simulated":
+            # Never let the model narrate a verification method for a scripted demo event.
+            out["verified"] = False
+            out["note"] = "simulated demo event: no camera evidence, not verified"
+            return out
+        out["verified"] = True
         if o.get("evidence_path"):
             out["evidence"] = o["evidence_path"]
         if o.get("detail", {}).get("method"):
@@ -442,7 +448,7 @@ class CareTools:
 # ---------------------------------------------------------------------------------------
 
 ASK_PROMPT = """You are DoorLedger, a home-care assistant that watches an older adult's front \
-door with a Ring doorbell and keeps a tamper-evident care ledger. A family member is asking you \
+door with a Ring doorbell and keeps a care ledger. A family member is asking you \
 a question.
 
 Rules:
@@ -454,6 +460,8 @@ example "Ring doorbell camera" or "presence code shown to the doorbell").
 Never guess, never invent people, times or temperatures.
 - Temperatures inside a package are model estimates, not measurements; say so. Do not give \
 medical advice; if medication may be compromised, suggest checking with the pharmacist.
+- Any fact whose source says "simulated" is a demo event with no camera evidence: say it is \
+simulated/unverified and never describe how it was verified (no QR, no camera, no code).
 - 2-4 short sentences, plain English, no markdown, no emojis."""
 
 SUMMARY_PROMPT = """You are DoorLedger, a home-care assistant. Write the end-of-day summary for \
@@ -468,7 +476,8 @@ and who DoorLedger contacted and why.
 - Only mention people who appear in the tool output; say someone was contacted only if they \
 appear in actions[].to.
 - Use ONLY facts from the tools, with local times. Package temperatures are estimates; say so. \
-If something is unknown, say so rather than guessing."""
+If something is unknown, say so rather than guessing. Facts whose source is "simulated" are demo \
+events without camera evidence: call them simulated/unverified."""
 
 HANDLE_PROMPT = """You are DoorLedger's response agent. A deterministic rule engine detected the \
 finding below at the patient's front door. Decide what, if anything, to do with your tools.

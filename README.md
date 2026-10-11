@@ -19,7 +19,7 @@ Built for the Amazon Developer Hackathon **"Build, Ship, Shape"**: Ring track, p
 | **AWS** | Amazon Bedrock: **Nova 2 Lite** (vision) and **Claude Haiku 4.5** (messages, agent; Nova fallback). **Strands Agents** CareAgent. **DynamoDB** ledger mirror (live). **Amazon SNS** SMS (sandbox). **AgentCore Runtime** (deployed; `/api/ask` and `/api/summary` run there) |
 | **Open source** | [`ringpartner`](packages/ringpartner): the Python SDK for the Ring Partner API that Ring doesn't ship. Apache-2.0, with [examples](packages/ringpartner/examples) |
 | **Business model** | [docs/BUSINESS.md](docs/BUSINESS.md): Ring Appstore pricing, measured unit economics, agency EVV value |
-| **Tests** | `uv run pytest -q`: **239 passed**, 2 skipped (live AWS tests are opt-in). No AWS credentials or network needed |
+| **Tests** | `uv run pytest -q`: **244 passed**, 2 skipped (live AWS tests are opt-in). No AWS credentials or network needed |
 
 > **Built with Claude Code** (Anthropic Claude via Amazon Bedrock) during the hackathon window.
 
@@ -319,7 +319,7 @@ Optional AWS integrations:
 **Tests and checks:**
 
 ```bash
-uv run pytest -q                       # 239 passed, 2 skipped; live AWS tests are opt-in
+uv run pytest -q                       # 244 passed, 2 skipped; live AWS tests are opt-in
 uv run ruff check packages/ringpartner
 make sdk-check                         # build ringpartner + twine check
 ```

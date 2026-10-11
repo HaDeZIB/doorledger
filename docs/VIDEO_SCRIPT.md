@@ -20,7 +20,7 @@
 | 0:52–1:15 | **[OWN]** Aide presses the doorbell, then holds the Caregiver Pass 30–50 cm from the camera → "Checked in 09:22 · signed code verified" (`Own footage`). Fallback: the Pass page on a phone, plus the dashboard check-in row with its `Simulated` badge | "So DoorLedger compares the care that was expected with what the doorbell actually saw. The aide presses the doorbell and shows a rotating, signed code. That's a verifiable check-in signal: a device showing this visit's current code was at the door. No face recognition." |
 | 1:15–1:30 | Late and short visit findings; agency notified; EVV CSV export open (`Dashboard`; check-in and check-out `Simulated` unless [OWN] is recorded) | "Maria arrived 22 minutes late and stayed 43 of 120 minutes. The agency gets a backup request, and an EVV record with the six fields the Cures Act requires, plus how the visit was verified." |
 | 1:30–1:52 | Architecture diagram animating: Ring history and snapshot → short WHEP live view → privacy-zone mask → face pixelation → Bedrock vision → tracker → deterministic reconcile → guardrailed messages (`Diagram`) | "Under the hood, our server only looks while care is expected or when Ring records an event. Privacy zones are blacked out and faces are pixelated before any frame reaches the cloud. A deterministic engine decides what happened. Claude Haiku on Amazon Bedrock only writes the messages, inside hard guardrails." |
-| 1:52–2:08 | Ask box: "Is mom's insulin OK?" → grounded answer with times and "estimated" (`Dashboard`). Optional, only if deployed: a 3 s AgentCore trace | "Families can just ask. A Strands agent answers from the ledger, says temperatures are estimates, and says 'I don't know' when the data isn't there." |
+| 1:52–2:08 | Ask box: "Is mom's insulin OK?" → grounded answer with times and "estimated", response showing `runtime: agentcore` (`Dashboard`). Then 3 s of the AgentCore trace or CloudWatch log for that call (`AWS console`) | "Families can just ask. A Strands agent running on Amazon Bedrock AgentCore answers from a read-only copy of the ledger, says temperatures are estimates, and says 'I don't know' when the data isn't there." |
 | 2:08–2:22 | Terminal: `ringpartner simulate button_press …` → API log "watch session (webhook:button_press…)" → evidence frame with faces pixelated → exposure report PDF (`Simulated webhook` / `Dashboard`) | "Ring webhooks and doorbell presses start a short watch session. Only the frames that back an event are kept, and the family gets a one-page exposure report for the pharmacy." |
 | 2:22–2:37 | GitHub: `ringpartner` README, `examples/`, tests passing, FRICTION_LOG summary table (`Screen`) | "Ring has no official partner SDK, so we built and open-sourced one: typed REST, server-side WHEP, webhook verification and a signed webhook simulator." |
 | 2:37–2:45 | End card: DoorLedger · GitHub link · "Built with Claude Code (Claude via Amazon Bedrock)" · **credit line** (below) | "DoorLedger. Care, verified at the door." |
@@ -44,8 +44,9 @@
 - Real Ring footage is the 14:07 package scene only. The aide and pickup scenes are own footage
   or `Simulated`.
 - Don't show the Playground's Vehicle or Motion scenes (no license; spring scenery).
-- Say AgentCore only if it is deployed by recording day. Otherwise say "a Strands agent on
-  Bedrock".
+- AgentCore is deployed, so naming it is accurate. Record the trace shot from a call that
+  actually returned `"runtime": "agentcore"`, not from a local fallback. Crop out the account ID
+  and ARNs.
 
 ## Capture checklist
 

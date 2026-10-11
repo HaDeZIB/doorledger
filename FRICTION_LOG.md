@@ -20,7 +20,7 @@ workaround · actionable suggestion.
 |---|---|---|---|---|---|
 | [F1](#f1--developer-registration-route-renders-404-blocks-the-playground) | Ring | Developer registration route renders 404, which blocks the Playground | Critical | ~45 min | Resolved (incognito) |
 | [A1](#a1--claude-on-bedrock-is-gated-by-the-anthropic-use-case-form-with-a-resourcenotfoundexception) | AWS | Claude on Bedrock is gated by the Anthropic use-case form and fails with `ResourceNotFoundException` | High | ~35 min | Resolved |
-| [A2](#a2--agentcore-cli-deploy-hits-an-iam-wall-cdk-bootstrap--bedrock-agentcore-not-in-amazonbedrockfullaccess) | AWS | AgentCore CLI deploy needs CDK bootstrap and `bedrock-agentcore:*`, which `AmazonBedrockFullAccess` lacks | High | ~1.5 h | Open (deploy pending IAM) |
+| [A2](#a2--agentcore-cli-deploy-hits-an-iam-wall-cdk-bootstrap--bedrock-agentcore-not-in-amazonbedrockfullaccess) | AWS | AgentCore CLI deploy needs CDK bootstrap and `bedrock-agentcore:*`, which `AmazonBedrockFullAccess` lacks | High | ~1.5 h | Resolved (after IAM grants + CDK bootstrap) |
 | [F3](#f3--the-playground-does-not-deliver-webhooks) | Ring | The Playground does not deliver webhooks | High | ~30 min | Worked around |
 | [F2](#f2--no-hardware-promise-vs-ring-getting-started) | Ring | "No hardware needed" promise vs. Ring Getting Started | Medium | ~1 h | Resolved (forum) |
 | [R1](#r1--ring-appstore-and-the-test-phase-are-us-only) | Ring | Ring Appstore and the Test phase are US-only | Medium | ~20 min | Open |
@@ -106,8 +106,10 @@ registration 404 (F1).
   for headless setups.
 
 ### A2 — AgentCore CLI deploy hits an IAM wall (CDK bootstrap + `bedrock-agentcore:*` not in `AmazonBedrockFullAccess`)
-- **Status:** Open. CareAgent is packaged and tested locally. Cloud deploy is pending IAM
-  grants. Details and the exact policy JSON are in
+- **Status:** **Resolved** the same day. An admin ran the one-time CDK bootstrap and granted
+  the AgentCore and bootstrap-role permissions. The CareAgent runtime is now deployed (stack
+  `AgentCore-DoorLedgerAgent-dev`) and passes the live tests. Details and the exact policy JSON
+  are in
   [`deploy/agentcore/README.md`](deploy/agentcore/README.md).
 - **Task:** Deploy the Strands CareAgent to Amazon Bedrock AgentCore Runtime from the
   developer IAM user.
@@ -135,8 +137,10 @@ registration 404 (F1).
   up one failure at a time.
 - **Severity:** High. It blocks the AWS-native deployment of the agent.
 - **Time lost:** ~1.5 h, including reading the toolkit vs. CLI docs and probing permissions.
-- **Workaround:** The API calls the in-process Strands agent. The AgentCore client is wired
-  behind `DOORLEDGER_AGENTCORE_ARN` and falls back to the local agent on any error.
+- **Workaround:** Until the grants landed, the API used the in-process Strands agent. The
+  AgentCore client is wired behind `DOORLEDGER_AGENTCORE_ARN` and still falls back to the local
+  agent on any error. The fix needed an account admin, which a team member working from a
+  scoped IAM user does not have.
 - **Suggestion:** Add an `agentcore doctor` (or `deploy --preflight`) that checks bootstrap
   state and simulates the needed IAM actions, then prints one policy to attach. Either fold
   `bedrock-agentcore:*` into `AmazonBedrockFullAccess` or name `BedrockAgentCoreFullAccess`

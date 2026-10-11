@@ -310,3 +310,12 @@ def test_live_ask(full_day):
     assert reply.tool_calls, "agent should ground its answer in a tool call"
     assert "09:22" in reply.text or "9:22" in reply.text
     assert "43" in reply.text
+
+
+def test_simulated_observations_are_marked_unverified(full_day):
+    """Regression (review-03): the agent narrated a QR check-in for a simulated event."""
+    _, tools, _ = full_day
+    s = json.loads(tools.get_today_status())
+    cin = s["visits"][0]["check_in"]
+    assert cin["verified"] is False and "simulated" in cin["note"]
+    assert "method" not in cin and "evidence" not in cin

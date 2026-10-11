@@ -57,7 +57,7 @@ flowchart TB
         AGM["Bedrock · Claude Haiku 4.5 → Nova Pro<br/>(agent, Converse tool use)"]
         SNS["Amazon SNS<br/>(SMS, sandbox)"]
         DDB[("DynamoDB doorledger-ledger<br/>(mirror, env-gated)")]
-        ACR["AgentCore Runtime<br/>(packaged; deploy pending IAM)"]
+        ACR["Bedrock AgentCore Runtime<br/>(CareAgent, read-only; deployed)"]
     end
 
     METEO["Open-Meteo<br/>(ambient °C)"]
