@@ -5,6 +5,7 @@ import type {
   DeliveryState,
   Finding,
   Household,
+  Observation,
   ObservationKind,
   ObservationSource,
   Person,
@@ -56,11 +57,42 @@ export function evvCsvFromState(st: State, patient: string, address: string, tz:
       v.check_out?.at ?? "",
       v.minutes_on_site ?? "",
       e.planned_minutes ?? "",
-      v.check_in ? "Rotating presence code at Ring doorbell" : "",
+      evvVerificationMethod(v),
       status,
     ];
   });
   return [header, ...rows].map((r) => r.map(esc).join(",")).join("\n") + "\n";
+}
+
+/** Camera sources whose frames can prove a signed presence code was shown at the door. */
+export const DOOR_CAMERA_SOURCES: readonly ObservationSource[] = ["own_footage", "ring_live_view", "ring_snapshot"];
+
+/**
+ * A check-in/out counts as "Verified at the door" ONLY when a camera frame (Ring live view,
+ * Ring snapshot, or our own footage) carried a valid signed rotating code: source in
+ * DOOR_CAMERA_SOURCES AND detail.method === "signed_code" (set by watcher.py on a valid code).
+ * Simulated presence, Ring events without a frame, and any other method never count.
+ */
+export function isDoorVerified(o: Pick<Observation, "source" | "detail"> | null | undefined): boolean {
+  return Boolean(o && DOOR_CAMERA_SOURCES.includes(o.source) && o.detail?.method === "signed_code");
+}
+
+export type PresenceProof = "verified" | "simulated" | "unverified" | "none";
+
+export function presenceProof(o: Pick<Observation, "source" | "detail"> | null | undefined): PresenceProof {
+  if (!o) return "none";
+  if (isDoorVerified(o)) return "verified";
+  return o.source === "simulated" ? "simulated" : "unverified";
+}
+
+/** EVV "verification method" column: never claims verification for simulated presence. */
+export function evvVerificationMethod(v: VisitState): string {
+  const pin = presenceProof(v.check_in);
+  const pout = presenceProof(v.check_out);
+  if (pin === "none") return "";
+  if (pin === "verified" && (pout === "verified" || pout === "none")) return `Signed rotating code at Ring doorbell (${SOURCE_LABEL[v.check_in!.source]})`;
+  if (pin === "simulated" || pout === "simulated") return "Simulated (demo) - not verified";
+  return "Not verified (no signed code in a camera frame)";
 }
 
 // Thresholds mirror core/src/doorledger/reconcile.py so derived and backend status agree.

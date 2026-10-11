@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { deriveBanner } from "@/lib/banner";
 import { featuredDelivery, featuredVisit, findingLabel, heroFocus } from "@/lib/derive";
-import { UnitsProvider } from "@/lib/units";
+import { fmtTime } from "@/lib/time";
+import { UnitsProvider, useUnits } from "@/lib/units";
 import { useDoorLedger, type InitialData } from "@/lib/useDoorLedger";
 import { AgencyView } from "./AgencyView";
+import { Announcer } from "./Announcer";
 import { AskCard, SummaryCard } from "./AskPanel";
 import { DayTimeline } from "./DayTimeline";
 import { DemoStrip } from "./DemoStrip";
 import { ActionsFeed, FindingsFeed } from "./Feeds";
-import { Header, type Tab } from "./Header";
+import { Header, panelId, tabId, type Tab } from "./Header";
 import { IconX } from "./icons";
 import { LedgerView } from "./LedgerView";
 import { MedicationCard } from "./MedicationCard";
@@ -32,6 +35,14 @@ function DashboardInner({ initial }: { initial: InitialData }) {
   const [tab, setTab] = useState<Tab>("today");
   const [demo, setDemo] = useState(true);
   const tz = dl.household.patient.timezone;
+  const { fmt } = useUnits();
+  const banner = useMemo(() => deriveBanner(dl.state, dl.household, fmt), [dl.state, dl.household, fmt]);
+
+  // dev only: check the banner against its table of cases (lib/banner.cases.ts) once
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    void import("@/lib/banner.cases").then((m) => m.reportBannerCases());
+  }, []);
 
   useEffect(() => {
     try {
@@ -103,8 +114,8 @@ function DashboardInner({ initial }: { initial: InitialData }) {
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 pt-5 sm:px-6 xl:space-y-4 xl:pt-3">
         {tab === "today" && (
-          <>
-            <StatusBanner state={dl.state} household={dl.household} />
+          <div role="tabpanel" id={panelId("today")} aria-labelledby={tabId("today")} className="space-y-6 xl:space-y-4">
+            <StatusBanner banner={banner} />
             {/* hero: the story in one screen (fits 1280×720 without scrolling) */}
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.38fr)_minmax(0,1fr)] xl:items-start xl:gap-5">
               <DayTimeline household={dl.household} state={dl.state} timeline={dl.timeline} observations={dl.observations} evidenceUrl={dl.evidenceUrl} />
@@ -123,22 +134,36 @@ function DashboardInner({ initial }: { initial: InitialData }) {
               <FindingsFeed state={dl.state} observations={dl.observations} tz={tz} />
               <ActionsFeed state={dl.state} household={dl.household} tz={tz} />
             </div>
-          </>
+          </div>
         )}
-        {tab === "agency" && <AgencyView state={dl.state} household={dl.household} onExport={dl.exportEvv} />}
-        {tab === "ledger" && <LedgerView timeline={dl.timeline} household={dl.household} />}
+        {tab === "agency" && (
+          <div role="tabpanel" id={panelId("agency")} aria-labelledby={tabId("agency")}>
+            <AgencyView state={dl.state} household={dl.household} onExport={dl.exportEvv} />
+          </div>
+        )}
+        {tab === "ledger" && (
+          <div role="tabpanel" id={panelId("ledger")} aria-labelledby={tabId("ledger")}>
+            <LedgerView timeline={dl.timeline} household={dl.household} />
+          </div>
+        )}
       </main>
+
+      <Announcer state={dl.state} household={dl.household} headline={banner.head} />
 
       <footer className="mx-auto mt-12 max-w-7xl px-4 text-center text-ink-3 sm:px-6">
         <p className="text-lg font-semibold text-ink-2">Care is delivered through the front door. DoorLedger makes sure it arrived.</p>
         <p className="mt-1 text-sm">
-          No face recognition. Aides check in with a rotating code shown to the Ring doorbell. Temperatures are estimates from a thermal model, not a
-          thermometer.
+          No face recognition. Aides check in with a rotating code shown to the Ring doorbell. Temperatures inside the box are estimates (est.) from a
+          thermal model, not a thermometer.
+        </p>
+        <p className="mt-3 text-[0.8rem] text-ink-3">
+          Ring Developer Playground footage: &lsquo;Thief stealing our package&rsquo; (CC BY 4.0), clipped — credited as provided by Ring
         </p>
       </footer>
 
       {/* toasts */}
-      <div className="pointer-events-none fixed right-3 top-3 z-[60] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col gap-2" aria-live="assertive">
+      {/* not a live region: <Announcer/> speaks new findings once */}
+      <div className="pointer-events-none fixed right-3 top-3 z-[60] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col gap-2">
         {dl.toasts.map((t) => {
           const s = SEVERITY_STYLE[t.finding.severity];
           const Icon = s.icon;
@@ -148,7 +173,15 @@ function DashboardInner({ initial }: { initial: InitialData }) {
                 <Icon size={17} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="font-semibold">{findingLabel(t.finding)}</p>
+                <p className="flex flex-wrap items-baseline justify-between gap-x-2 font-semibold">
+                  <span>
+                    <span className={cx("mr-1.5 text-[0.72rem] font-bold uppercase tracking-wide", s.text)}>{s.label}</span>
+                    {findingLabel(t.finding)}
+                  </span>
+                  <time className="text-sm font-normal text-ink-3 tabular" title="When this was noticed; the summary describes that moment">
+                    {fmtTime(t.finding.at, tz)}
+                  </time>
+                </p>
                 <p className="text-sm text-ink-2">{t.finding.summary}</p>
               </div>
               <button type="button" onClick={() => dl.dismissToast(t.id)} aria-label="Dismiss" className="rounded-lg p-1 text-ink-3 hover:bg-canvas">

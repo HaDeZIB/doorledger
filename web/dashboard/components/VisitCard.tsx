@@ -5,7 +5,7 @@ import { firstName, visitStatus } from "@/lib/derive";
 import { fmtTime, minutesBetween, ms } from "@/lib/time";
 import { EvidenceFrame } from "./EvidenceFrame";
 import { IconKey, IconUser } from "./icons";
-import { Card, CardHeader, ProgressRing, SourceBadge, StatusChip, VISIT_STATUS_STYLE, cx } from "./ui";
+import { Card, CardHeader, ProgressRing, SourceBadge, StatusChip, cx } from "./ui";
 
 const RING_COLOR: Record<string, string> = {
   in_progress: "var(--color-brand)",
@@ -171,8 +171,7 @@ export function VisitCard({
                           {v.minutes_on_site !== null && ` · ${v.minutes_on_site} of ${v.expectation.planned_minutes} min`}
                         </p>
                       </div>
-                      <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full", VISIT_STATUS_STYLE[s.key].dot)} title={s.label} />
-                      <span className="sr-only">{s.label}</span>
+                      <StatusChip status={s.key} label={s.label} className="!px-2 !py-0.5 text-[0.8rem]" />
                     </li>
                   );
                 })}

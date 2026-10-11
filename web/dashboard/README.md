@@ -48,18 +48,34 @@ EVV export downloads `/api/evv.csv?date=…`. The backend must allow CORS from `
 **Mock** — used when `NEXT_PUBLIC_MOCK=1`, or automatically when the backend is unreachable at load
 (the browser re-probes once on mount; the demo strip has *Retry API* / *Use mock*). A fixture **winter** day
 for a fictional household (Rosa Martínez, 81, Chicago, IL; aide Maria Gómez, BrightPath Home Care; insulin
-refill from CVS Specialty via UPS) is generated for *today* in America/Chicago. It mirrors the backend
+refill from a pharmacy via UPS) is generated for *today* in America/Chicago. It mirrors the backend
 scenarios in `core/src/doorledger/scenarios.py`. A client-side **demo clock** drives it: state at any instant
 is derived from the fixture (`lib/mock/engine.ts`), and the box temperature is computed with a TypeScript
 port of `core/src/doorledger/exposure.py` (Newton cooling/heating toward the outside temperature; on a
 freezing porch the danger is the 0 °C freezing limit, on a hot one the 30 °C excursion limit).
-Outside is −6 °C in the morning and −9 °C in the afternoon. Proof frames are drawn as labelled
-illustrations; EVV CSV is generated in the browser.
+Outside is −6 °C in the morning and −9 °C in the afternoon. EVV CSV is generated in the browser.
 
-Provenance is honest: vehicle + package drop come from Ring Developer Playground footage
-(`ring_live_view`); scenes whose footage isn't filmed yet (aide check-in/out, package pickup) are
-`simulated` with no `evidence_path`, and the UI shows a "No camera frame · simulated" panel for them,
-never an image.
+Provenance is honest: the 2:07 PM package drop shows a **real Ring Developer Playground frame**
+(`public/ring/package.jpg`, copied from `fixtures/evidence/package.jpg`; source `ring_live_view`,
+pre-labelled replay; clip CC BY 4.0, credited in the page footer). Scenes whose footage isn't filmed yet
+(aide check-in/out, package pickup) are `simulated` with no `evidence_path`, and the UI shows a
+"No camera frame · simulated" panel for them, never an image. Box temperatures are always labelled
+"est.": they come from the thermal model, not a thermometer.
+
+**"Right now" banner.** `lib/banner.ts` derives it with one pure function from state (open windows,
+pending visits, unresolved warnings/criticals, what was resolved today); it never says "all clear"
+over a late aide, an open delivery window or a short visit. `lib/banner.cases.ts` is its table of
+cases: `next dev` checks it on load (console `[banner] N/N cases pass`), or run
+`node_modules/.bin/jiti lib/banner.cases.ts`.
+
+**Agency / EVV.** A check-in counts as *Verified at the door* only when its source is `own_footage`,
+`ring_live_view` or `ring_snapshot` **and** `detail.method == "signed_code"`; simulated presence shows
+*Simulated (demo)* and never fills EVV elements 5–6.
+
+**Accessibility.** Today/Agency/Ledger are a WAI-ARIA tablist (←/→/Home/End), focus rings are always
+visible, new findings/actions and banner changes are announced through a polite live region (critical
+findings assertively), severity is icon + word (never color alone), and evidence frames carry alt
+text from the vision note.
 
 Mock scenarios (demo-clock windows over the same day; default speed 60×, i.e. 1 s = 1 min):
 

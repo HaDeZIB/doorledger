@@ -14,7 +14,7 @@ export function FindingsFeed({ state, observations, tz }: { state: State; observ
   return (
     <Card aria-labelledby="findings-title">
       <CardHeader id="findings-title" eyebrow="What DoorLedger noticed" title="Findings" right={<Count n={items.length} />} />
-      <ol className="max-h-[40rem] space-y-3 overflow-y-auto px-5 pb-6 pt-4 sm:px-6" aria-live="polite">
+      <ol className="max-h-[40rem] space-y-3 overflow-y-auto px-5 pb-6 pt-4 sm:px-6">
         {items.length === 0 && <Empty>Nothing unusual yet. Findings appear only when reality differs from the plan.</Empty>}
         {items.map((f) => {
           const s = SEVERITY_STYLE[f.severity];
@@ -31,7 +31,8 @@ export function FindingsFeed({ state, observations, tz }: { state: State; observ
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                     <p className="font-semibold">
                       {findingLabel(f)}
-                      <span className="sr-only"> ({s.label})</span>
+                      {f.severity !== "info" && <span className={cx("ml-2 text-[0.72rem] font-bold uppercase tracking-wide", s.text)}>{s.label}</span>}
+                      {f.severity === "info" && <span className="sr-only"> ({s.label})</span>}
                     </p>
                     <time className="text-sm text-ink-3 tabular">{fmtTime(f.at, tz)}</time>
                   </div>
@@ -74,7 +75,7 @@ export function ActionsFeed({ state, household, tz }: { state: State; household:
   return (
     <Card aria-labelledby="actions-title">
       <CardHeader id="actions-title" eyebrow="What DoorLedger did" title="Actions taken" right={<Count n={items.length} />} />
-      <ol className="max-h-[40rem] space-y-3 overflow-y-auto px-5 pb-6 pt-4 sm:px-6" aria-live="polite">
+      <ol className="max-h-[40rem] space-y-3 overflow-y-auto px-5 pb-6 pt-4 sm:px-6">
         {items.length === 0 && <Empty>No one needed to be contacted.</Empty>}
         {items.map((a) => (
           <ActionRow key={a.id} a={a} household={household} tz={tz} fresh={isNew(a.id)} />
@@ -111,7 +112,7 @@ function ActionRow({ a, household, tz, fresh }: { a: Action; household: Househol
             dl.tone === "ok" ? "text-ok" : dl.tone === "warn" ? "text-warn" : "text-ink-3",
           )}
         >
-          <span className={cx("h-2 w-2 rounded-full", dl.tone === "ok" ? "bg-ok-bar" : dl.tone === "warn" ? "bg-warn-bar" : "bg-ink-3")} />
+          <span className={cx("h-2 w-2 rounded-full", dl.tone === "ok" ? "bg-ok-bar" : dl.tone === "warn" ? "bg-warn-bar" : "bg-ink-3")} aria-hidden />
           {dl.text}
         </p>
       </div>

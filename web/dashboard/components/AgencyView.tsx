@@ -1,9 +1,9 @@
 "use client";
 
 import type { Household, State, VisitState } from "@/lib/types";
-import { visitStatus } from "@/lib/derive";
+import { isDoorVerified, visitStatus } from "@/lib/derive";
 import { dateIn, fmtDateLong, fmtTime, ms } from "@/lib/time";
-import { IconCheck, IconDownload, IconShield, IconX } from "./icons";
+import { IconCheck, IconDownload, IconFlask, IconShield, IconX } from "./icons";
 import { Card, CardHeader, SourceBadge, StatusChip, cx } from "./ui";
 
 const EVV_FIELDS = [
@@ -15,17 +15,29 @@ const EVV_FIELDS = [
   "Time service begins and ends",
 ];
 
+/**
+ * EVV completeness. Elements 5 (who provided it) and 6 (begin/end time) are only captured
+ * when presence was verified at the door (signed code in a camera frame). Simulated or
+ * unverified check-ins leave them open.
+ */
 function evvFields(v: VisitState): boolean[] {
   const e = v.expectation;
   const provider = Boolean((v.check_in?.detail.caregiver as string | undefined) ?? e.caregiver);
-  return [true, true, true, true, provider && Boolean(v.check_in), Boolean(v.check_in && v.check_out)];
+  const inOk = isDoorVerified(v.check_in);
+  const outOk = isDoorVerified(v.check_out);
+  return [true, true, true, true, provider && inOk, inOk && outOk];
 }
+
+/** A visit is "verified at the door" only if BOTH check-in and check-out are door-verified. */
+const visitVerified = (v: VisitState) => isDoorVerified(v.check_in) && isDoorVerified(v.check_out);
+const visitSimulated = (v: VisitState) => [v.check_in, v.check_out].some((o) => o?.source === "simulated");
 
 export function AgencyView({ state, household, onExport }: { state: State; household: Household; onExport: () => void }) {
   const tz = household.patient.timezone;
   const visits = [...state.visits].sort((a, b) => ms(a.expectation.window_start) - ms(b.expectation.window_start));
   const statuses = visits.map((v) => visitStatus(v, state.now, state.findings));
-  const verified = visits.filter((v) => v.check_in && v.check_out).length;
+  const verified = visits.filter(visitVerified).length;
+  const simulated = visits.filter(visitSimulated).length;
   const exceptions = statuses.filter((s) => s.key === "short" || s.key === "missed" || s.key === "late").length;
   const backups = visits.filter((v) => v.check_in?.detail.backup).length;
   const agency = household.people.find((p) => p.role === "agency")?.name ?? visits[0]?.expectation.agency ?? "Agency";
@@ -49,7 +61,12 @@ export function AgencyView({ state, household, onExport }: { state: State; house
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Scheduled visits" value={visits.length} />
-        <Stat label="Verified at the door" value={verified} tone="ok" />
+        <Stat
+          label="Verified at the door"
+          value={verified}
+          tone={verified ? "ok" : undefined}
+          note={simulated ? `${simulated} simulated (demo), not counted` : "Signed code seen by the camera"}
+        />
         <Stat label="Exceptions to review" value={exceptions} tone={exceptions ? "warn" : undefined} />
         <Stat label="Backup aides sent" value={backups} />
       </div>
@@ -109,14 +126,7 @@ export function AgencyView({ state, household, onExport }: { state: State; house
                       <Duration v={v} />
                     </td>
                     <td className="px-3 py-4">
-                      {v.check_in ? (
-                        <div className="space-y-1">
-                          <SourceBadge source={v.check_in.source} />
-                          <p className="whitespace-nowrap text-sm text-ink-3">Rotating code ✓</p>
-                        </div>
-                      ) : (
-                        <span className="text-ink-3">—</span>
-                      )}
+                      <VerifiedBy v={v} />
                     </td>
                     <td className="space-y-1.5 px-3 py-4">
                       <StatusChip status={s.key} label={s.label} />
@@ -166,7 +176,7 @@ export function AgencyView({ state, household, onExport }: { state: State; house
                   </dd>
                 </dl>
                 <div className="flex flex-wrap items-center gap-3">
-                  {v.check_in && <SourceBadge source={v.check_in.source} />}
+                  <VerifiedBy v={v} />
                   <EvvDots fields={evvFields(v)} />
                 </div>
               </li>
@@ -195,6 +205,42 @@ export function AgencyView({ state, household, onExport }: { state: State; house
           </div>
         </div>
       </Card>
+    </div>
+  );
+}
+
+/** "Verified by" cell: only a signed code in a camera frame earns the check mark. */
+function VerifiedBy({ v }: { v: VisitState }) {
+  if (!v.check_in) return <span className="text-ink-3">—</span>;
+  const proof = visitSimulated(v)
+    ? "simulated"
+    : visitVerified(v)
+      ? "verified"
+      : isDoorVerified(v.check_in) && !v.check_out
+        ? "checked_in"
+        : "unverified";
+  if (proof === "simulated") {
+    return (
+      <div className="space-y-1">
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-dashed border-warn/30 bg-warn-soft px-2 py-0.5 text-[0.78rem] font-semibold leading-5 text-warn">
+          <IconFlask size={13} /> Simulated (demo)
+        </span>
+        <p className="whitespace-nowrap text-sm text-ink-3" title="No camera footage of a signed code: not counted as verified">Not verified</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-1">
+      <SourceBadge source={v.check_in.source} />
+      {proof === "verified" || proof === "checked_in" ? (
+        <p className="flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-ok">
+          <IconCheck size={14} /> {proof === "verified" ? "Verified at the door" : "Check-in verified"}
+        </p>
+      ) : (
+        <p className="flex items-center gap-1 whitespace-nowrap text-sm text-warn">
+          <IconX size={14} /> No signed code seen
+        </p>
+      )}
     </div>
   );
 }
@@ -239,11 +285,12 @@ function EvvDots({ fields }: { fields: boolean[] }) {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone?: "ok" | "warn" }) {
+function Stat({ label, value, tone, note }: { label: string; value: number; tone?: "ok" | "warn"; note?: string }) {
   return (
     <Card as="div" className="px-5 py-4">
       <p className="text-sm font-semibold text-ink-3">{label}</p>
       <p className={cx("mt-1 text-4xl font-bold tabular", tone === "ok" && "text-ok", tone === "warn" && "text-warn")}>{value}</p>
+      {note && <p className="mt-0.5 text-sm text-ink-3">{note}</p>}
     </Card>
   );
 }

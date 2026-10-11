@@ -1,6 +1,6 @@
 import type { ObservationSource, Severity } from "@/lib/types";
 import { SOURCE_LABEL, type VisitStatusKey } from "@/lib/derive";
-import { IconAlert, IconBolt, IconCamera, IconCheck, IconFilm, IconFlask, IconInfo } from "./icons";
+import { IconAlert, IconBolt, IconCamera, IconCheck, IconFilm, IconFlask, IconInfo, IconUrgent } from "./icons";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -87,10 +87,11 @@ export function SourceBadge({ source, className }: { source: ObservationSource; 
   );
 }
 
-export const SEVERITY_STYLE: Record<Severity, { chip: string; bar: string; icon: React.ComponentType<{ size?: number }>; label: string }> = {
-  info: { chip: "bg-info-soft text-info", bar: "bg-info", icon: IconInfo, label: "Info" },
-  warning: { chip: "bg-warn-soft text-warn", bar: "bg-warn-bar", icon: IconAlert, label: "Needs attention" },
-  critical: { chip: "bg-crit-soft text-crit", bar: "bg-crit-bar", icon: IconAlert, label: "Urgent" },
+/** Severity is always icon + word, never color alone (info ⓘ, warning △, critical ⊘). */
+export const SEVERITY_STYLE: Record<Severity, { chip: string; bar: string; text: string; icon: React.ComponentType<{ size?: number }>; label: string }> = {
+  info: { chip: "bg-info-soft text-info", bar: "bg-info", text: "text-info", icon: IconInfo, label: "Info" },
+  warning: { chip: "bg-warn-soft text-warn", bar: "bg-warn-bar", text: "text-warn", icon: IconAlert, label: "Needs attention" },
+  critical: { chip: "bg-crit-soft text-crit", bar: "bg-crit-bar", text: "text-crit", icon: IconUrgent, label: "Urgent" },
 };
 
 export function SeverityChip({ severity }: { severity: Severity }) {

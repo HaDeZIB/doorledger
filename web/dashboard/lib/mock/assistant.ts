@@ -72,7 +72,7 @@ function insulinAnswer(st: State, h: Household): string {
         ? `It was brought inside at ${fmtTime(d.removed.at, tz)}, but after ${fmtDuration(est.minutes_on_porch)} on the porch it may have frozen. Frozen insulin has to be thrown away, so please don't use it and call the pharmacy for a replacement. (Temperatures are model estimates, not a thermometer.)`
         : `It was brought inside at ${fmtTime(d.removed.at, tz)}, but after ${fmtDuration(est.minutes_on_porch)} on the porch the box likely passed ${limit}. Please call the pharmacy before using it. (Temperatures are model estimates, not a thermometer.)`;
     }
-    return `It looks OK. ${med} sat on the porch ${fmtDuration(est.minutes_on_porch)} and was brought inside at ${fmtTime(d.removed.at, tz)}. Our estimate ${cold ? "bottomed out" : "peaked"} around ${temp(est.estimated_internal_c)}, ${cold ? `just above freezing (${limit}), so it never froze` : `under the ${limit} limit`}. It should go in the fridge now. (Estimate from a thermal model, not a thermometer.)`;
+    return `It looks OK. ${med} sat on the porch ${fmtDuration(est.minutes_on_porch)} and was brought inside at ${fmtTime(d.removed.at, tz)}. Our estimate ${cold ? "bottomed out" : "peaked"} around ${temp(est.estimated_internal_c)}, ${cold ? `just above freezing (${limit}), so it most likely didn't freeze` : `under the ${limit} limit`}. It should go in the fridge now. (Estimate from a thermal model, not a thermometer.)`;
   }
   if (est.status === "compromised") {
     return cold

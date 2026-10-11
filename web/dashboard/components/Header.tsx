@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { Household } from "@/lib/types";
 import type { Mode } from "@/lib/useDoorLedger";
 import { useUnits } from "@/lib/units";
@@ -17,8 +18,11 @@ const TABS: { id: Tab; label: string }[] = [
 const SOURCE_BADGE: Record<Household["device"]["source"], string> = {
   ring_playground: "Ring Playground",
   ring_api: "Ring API",
-  replay: "Replay",
+  replay: "Demo replay",
 };
+
+export const tabId = (t: Tab) => `tab-${t}`;
+export const panelId = (t: Tab) => `panel-${t}`;
 
 const AMBIENT_SRC: Record<Household["ambient"]["source"], string> = {
   "open-meteo": "Open-Meteo",
@@ -42,23 +46,48 @@ export function Header({
   /** Short "demo data" chip shown in the header on wide screens (mock mode). */
   demoNote?: string | null;
 }) {
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ today: null, agency: null, ledger: null });
+  // WAI-ARIA tabs: roving tabindex, ←/→ (wrapping), Home/End move focus AND select (automatic activation)
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const i = TABS.findIndex((t) => t.id === tab);
+    let j = -1;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") j = (i + 1) % TABS.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") j = (i - 1 + TABS.length) % TABS.length;
+    else if (e.key === "Home") j = 0;
+    else if (e.key === "End") j = TABS.length - 1;
+    if (j < 0) return;
+    e.preventDefault();
+    const next = TABS[j].id;
+    onTab(next);
+    tabRefs.current[next]?.focus();
+  };
   const nav = (
-    <nav aria-label="Views" className="flex w-full rounded-2xl bg-canvas p-1 sm:w-auto">
-      {TABS.map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          onClick={() => onTab(t.id)}
-          aria-current={tab === t.id ? "page" : undefined}
-          className={cx(
-            "flex-1 rounded-xl px-3 py-1.5 text-[0.95rem] font-semibold transition sm:flex-none sm:px-4",
-            tab === t.id ? "bg-surface text-ink shadow-sm" : "text-ink-2 hover:text-ink",
-          )}
-        >
-          {t.label}
-        </button>
-      ))}
-    </nav>
+    <div role="tablist" aria-label="Views" aria-orientation="horizontal" onKeyDown={onKeyDown} className="flex w-full rounded-2xl bg-canvas p-1 sm:w-auto">
+      {TABS.map((t) => {
+        const selected = tab === t.id;
+        return (
+          <button
+            key={t.id}
+            ref={(el) => {
+              tabRefs.current[t.id] = el;
+            }}
+            id={tabId(t.id)}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            aria-controls={panelId(t.id)}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onTab(t.id)}
+            className={cx(
+              "flex-1 rounded-xl px-3 py-1.5 text-[0.95rem] font-semibold transition sm:flex-none sm:px-4",
+              selected ? "bg-surface text-ink shadow-sm" : "text-ink-2 hover:text-ink",
+            )}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
   );
   return (
     <>
@@ -79,8 +108,9 @@ export function Header({
             </div>
           </div>
           <div className="hidden items-center gap-2 xl:flex">
-            <StatusChips household={household} mode={mode} streamConnected={streamConnected} compact />
-            {demoNote && (
+            <StatusChips household={household} mode={mode} streamConnected={streamConnected} compact note={demoNote} />
+            {/* the device chip already says "Demo replay" for a replayed doorbell */}
+            {demoNote && household.device.source !== "replay" && (
               <span className="rounded-full border border-dashed border-line-strong px-2.5 py-1 text-[0.8rem] font-semibold text-ink-3" title={demoNote}>
                 Demo data
               </span>
@@ -116,11 +146,13 @@ function StatusChips({
   mode,
   streamConnected,
   compact = false,
+  note,
 }: {
   household: Household;
   mode: Mode;
   streamConnected: boolean;
   compact?: boolean;
+  note?: string | null;
 }) {
   const { fmt, alt, unit, setUnit } = useUnits();
   const d = household.device;
@@ -134,11 +166,12 @@ function StatusChips({
           online === false && "border-crit-bar/30 bg-crit-soft text-crit",
           online === null && "border-line-strong bg-canvas text-ink-2",
         )}
-        title={`Ring doorbell “${d.name}” (${d.id})`}
+        title={`Ring doorbell “${d.name}” (${d.id}) · ${online === null ? "online status not reported" : online ? "online" : "offline"} · ${SOURCE_BADGE[d.source]}${note ? `. ${note}` : ""}`}
       >
         <span className={cx("h-2 w-2 rounded-full", online === true ? "bg-ok-bar animate-pulse-ring text-ok-bar" : online === false ? "bg-crit-bar" : "bg-ink-3")} />
-        Ring doorbell <span className={cx(compact ? "hidden" : "hidden sm:inline")}>· {d.name}</span> ·{" "}
-        {online === true ? "Online" : online === false ? "Offline" : "Unknown"}
+        Ring doorbell <span className={cx(compact ? "hidden" : "hidden sm:inline")}>· {d.name}</span>
+        {/* unknown online status: say so in full width, but don't spend header space on it when compact */}
+        {online === true ? " · Online" : online === false ? " · Offline" : compact ? <span className="sr-only"> · online status unknown</span> : <span className="font-medium"> · status unknown</span>}
         <span className="rounded-md bg-surface/80 px-1.5 py-px text-[0.72rem] font-bold uppercase tracking-wide text-ink-2">{SOURCE_BADGE[d.source]}</span>
       </span>
       <button
@@ -150,14 +183,18 @@ function StatusChips({
       >
         <IconThermo size={16} />
         <span className="tabular">{fmt(household.ambient.celsius)}</span>
-        <span className="font-normal tabular text-ink-3">({alt(household.ambient.celsius)})</span>
+        {/* live mode adds a third chip: drop the other unit there so the header stays one row at 1280 px */}
+        <span className={cx("font-normal tabular text-ink-3", compact && mode === "live" && "hidden")}>({alt(household.ambient.celsius)})</span>
         <span className={cx("font-normal text-ink-3", compact && "hidden")}>outside · {AMBIENT_SRC[household.ambient.source]}</span>
         {compact && <span className="font-normal text-ink-3">outside</span>}
       </button>
       {mode === "live" && (
-        <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line-strong px-3 py-1.5 text-sm font-semibold text-ink-2" title="Live ledger stream">
-          <span className={cx("h-2 w-2 rounded-full", streamConnected ? "bg-ok-bar" : "bg-warn-bar")} />
-          {streamConnected ? "Live" : "Reconnecting…"}
+        <span
+          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line-strong px-3 py-1.5 text-sm font-semibold text-ink-2"
+          title="Connection to the DoorLedger backend's live update stream (not the camera)"
+        >
+          <span className={cx("h-2 w-2 rounded-full", streamConnected ? "bg-ok-bar" : "bg-warn-bar")} aria-hidden />
+          {streamConnected ? "Live updates" : "Reconnecting…"}
         </span>
       )}
     </>

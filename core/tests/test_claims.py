@@ -35,8 +35,8 @@ def porch_cold_engine(evidence_root, *, with_visit: bool = False):
     engine = Engine(hh, Ledger(":memory:", household=hh.id),
                     Responder(hh, ConsoleNotifier(), TemplateWriter()), SimClock(t(14), speed=0),
                     AmbientTemperature(hh.lat, hh.lon, override_c=-9.0))
-    exp = Expectation(ExpectationKind.MEDICATION_DELIVERY, "Insulin refill (CVS Specialty)",
-                      t(13), t(17), carrier="UPS", tracking="1Z-DEMO-4471",
+    exp = Expectation(ExpectationKind.MEDICATION_DELIVERY, "Insulin refill (pharmacy)",
+                      t(13), t(17), carrier="Courier", tracking="DEMO-4471",
                       medication=MedicationProfile())
     engine.add_expectation(exp)
     visit = None

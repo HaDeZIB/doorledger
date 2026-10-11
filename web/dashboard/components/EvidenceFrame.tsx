@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import type { Observation } from "@/lib/types";
-import { fmtTimeSec } from "@/lib/time";
-import { visionNote } from "@/lib/derive";
+import { fmtTime, fmtTimeSec } from "@/lib/time";
+import { OBS_LABEL, visionNote } from "@/lib/derive";
 import { IconFlask } from "./icons";
 import { SourceBadge, cx } from "./ui";
 
@@ -48,20 +48,27 @@ export function EvidenceFrame({
   const o = shown?.obs ?? drawn?.obs ?? obs;
   const none = !shown && !drawn;
   const note = visionNote(o);
+  const caption = shown && typeof o.detail.caption === "string" ? o.detail.caption : null;
+  const captionShort = caption && typeof o.detail.caption_short === "string" ? o.detail.caption_short : caption;
+  // e.g. "Ring doorbell frame at 2:07 PM: package on snowy doorstep"
+  const alt = `${o.source === "own_footage" ? "Own footage" : "Ring doorbell"} frame at ${fmtTime(o.at, tz)}: ${note ?? OBS_LABEL[o.kind].toLowerCase()}`;
   return (
-    <figure className={cx("overflow-hidden rounded-2xl border", none ? "border-dashed border-warn/40 bg-canvas" : "border-line bg-[#0f1720]", className)}>
+    <figure
+      className={cx("overflow-hidden rounded-2xl border", none ? "border-dashed border-warn/40 bg-canvas" : "border-line bg-[#0f1720]", className)}
+      title={caption ?? undefined}
+    >
       <div className="relative aspect-[16/10] w-full">
         {shown?.url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             key={shown.url}
             src={shown.url}
-            alt={`Ring doorbell frame: ${note ?? o.kind.replaceAll("_", " ")}`}
+            alt={alt}
             className="absolute inset-0 h-full w-full object-cover"
             onError={() => setFailed((s) => new Set(s).add(shown.url!))}
           />
         ) : drawn ? (
-          <Scene kind={drawn.obs.kind} detail={drawn.obs.detail} />
+          <Scene kind={drawn.obs.kind} detail={drawn.obs.detail} label={`Illustration, not a camera frame: ${OBS_LABEL[drawn.obs.kind].toLowerCase()} at ${fmtTime(drawn.obs.at, tz)}`} />
         ) : (
           <NoFrame compact={compact} roomForBadge={wideOverlay && !compact} />
         )}
@@ -71,15 +78,19 @@ export function EvidenceFrame({
           </span>
         )}
         {!none && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-x-2 bg-gradient-to-t from-black/70 to-transparent px-2.5 pb-1.5 pt-6">
-            <span className="whitespace-nowrap font-mono text-[0.7rem] font-semibold tracking-wide text-white/95">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-x-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2.5 pb-1.5 pt-6">
+            <span className="whitespace-nowrap font-mono text-[0.7rem] font-semibold tracking-wide text-white">
               <span className={cx(compact ? "hidden" : "xl:hidden")}>FRONT DOOR · </span>
               {fmtTimeSec(o.at, tz)}
             </span>
             {shown?.url ? (
-              o !== obs && <span className="text-[0.68rem] font-medium text-white/80">{OBS_SHORT[o.kind] ?? "earlier frame"}</span>
+              o !== obs ? (
+                <span className="text-[0.68rem] font-medium text-white">{OBS_SHORT[o.kind] ?? "earlier frame"}</span>
+              ) : (
+                caption && wideOverlay && !compact && <span className="hidden min-w-0 truncate text-[0.62rem] font-medium text-white xl:block">{captionShort}</span>
+              )
             ) : (
-              <span className="text-[0.68rem] font-medium text-white/80">{o !== obs ? `${OBS_SHORT[o.kind] ?? "earlier frame"} · ` : ""}illustration</span>
+              <span className="text-[0.68rem] font-medium text-white">{o !== obs ? `${OBS_SHORT[o.kind] ?? "earlier frame"} · ` : ""}illustration</span>
             )}
           </div>
         )}
@@ -91,6 +102,7 @@ export function EvidenceFrame({
             {o.source !== "simulated" && <span className="tabular">{Math.round(o.confidence * 100)}% confidence</span>}
             {none && <span className="tabular text-ink-3">{fmtTimeSec(o.at, tz)}</span>}
           </span>
+          {caption && <span className="mt-1 block text-[0.8rem] text-ink-3">{caption}</span>}
           {note && (
             <span className="mt-1 block text-ink-2">
               <span className="font-semibold text-ink-3">{o.source === "simulated" ? "Note:" : "Vision:"}</span> {note}
@@ -124,14 +136,14 @@ const FLAKES = [
   [196, 70], [272, 60], [80, 92], [236, 96], [150, 54], [306, 82],
 ];
 
-function Scene({ kind }: { kind: Observation["kind"]; detail: Record<string, unknown> }) {
+function Scene({ kind, label }: { kind: Observation["kind"]; detail: Record<string, unknown>; label: string }) {
   const showBox = kind === "package_dropped";
   const gone = kind === "package_removed";
   const person = kind === "presence_check_in" || kind === "presence_check_out" || kind === "person_at_door";
   const code = kind === "presence_check_in" || kind === "presence_check_out";
   const car = kind === "vehicle_arrived";
   return (
-    <svg viewBox="0 0 320 200" className="absolute inset-0 h-full w-full" role="img" aria-label="Illustrated doorbell camera frame (snowy doorstep)">
+    <svg viewBox="0 0 320 200" className="absolute inset-0 h-full w-full" role="img" aria-label={label}>
       <defs>
         <radialGradient id="vig" cx="50%" cy="45%" r="75%">
           <stop offset="55%" stopColor="#000" stopOpacity="0" />

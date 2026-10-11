@@ -26,7 +26,7 @@
   --color-ok-bar: #2f9e66;
   --color-warn: #8a4b00;
   --color-warn-soft: #fff2d9;
-  --color-warn-bar: #e0920f;
+  --color-warn-bar: #bf7a05; /* ≥3:1 on surface/canvas (non-text contrast, WCAG 1.4.11) */
   --color-crit: #ad1f2a;
   --color-crit-soft: #fdeaea;
   --color-crit-bar: #d23a44;
@@ -163,10 +163,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Visible keyboard focus everywhere. Outlines follow each element's own border-radius (no
+   radius override, so round timeline markers stay round). A white halo keeps the ring visible
+   on tinted and dark surfaces; .focus-on-dark switches to a light ring (demo strip). */
 :focus-visible {
   outline: 3px solid var(--color-brand);
   outline-offset: 2px;
-  border-radius: 6px;
+}
+button:focus-visible,
+a:focus-visible,
+[role="tab"]:focus-visible,
+[tabindex]:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+.focus-on-dark :focus-visible {
+  outline-color: #fcd34d;
+  box-shadow: none;
 }
 
 .tabular {

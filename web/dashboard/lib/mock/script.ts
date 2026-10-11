@@ -6,9 +6,11 @@
 // Every record is placed on today's date in the household timezone so the demo always looks
 // like "today". Scenarios are just windows of demo-clock time over this same day.
 //
-// Provenance is honest: vehicle + package drop come from Ring Playground footage
-// (ring_live_view). Scenes whose real footage hasn't been filmed yet (aide check-in/out,
-// package pickup) are `simulated` and carry no evidence_path.
+// Provenance is honest: the package drop is a real Ring Developer Playground frame
+// (ring_live_view, served from public/ring/package.jpg, CC BY 4.0 clip credited as provided by
+// Ring). Scenes whose real footage hasn't been filmed yet (aide check-in/out, package pickup)
+// are `simulated` and carry no evidence_path: no frame is ever faked for them. (The Playground
+// vehicle clip is a green spring parking lot, so it is not part of this winter day.)
 
 import type {
   Action,
@@ -22,6 +24,8 @@ import type {
 import { DEFAULT_TZ, minuteOfDay, zonedISO } from "../time";
 
 export const MOCK_TZ = DEFAULT_TZ; // America/Chicago
+/** Public asset (web/dashboard/public/ring/package.jpg), copied from fixtures/evidence/package.jpg. */
+export const MOCK_RING_PACKAGE_FRAME = "/ring/package.jpg";
 export const AMBIENT_MORNING_C = -6;
 export const AMBIENT_AFTERNOON_C = -9;
 
@@ -109,11 +113,11 @@ export function buildMockDay(date: string): MockDay {
     {
       id: "exp_delivery_insulin",
       kind: "medication_delivery",
-      title: "Insulin refill (CVS Specialty)",
+      title: "Insulin refill (pharmacy)",
       window_start: t("13:00"),
       window_end: t("17:00"),
-      carrier: "UPS",
-      tracking: "1Z-DEMO-4471",
+      carrier: "Courier",
+      tracking: "DEMO-4471",
       medication: { name: "Insulin glargine pens", store_min_c: 2, store_max_c: 8, excursion_max_c: 30, freeze_c: 0 },
     },
   ];
@@ -124,9 +128,23 @@ export function buildMockDay(date: string): MockDay {
     // Morning visit: our own footage of the aide's code isn't filmed yet → simulated, no frame.
     O({ id: "obs_am_in", kind: "presence_check_in", at: t("09:22"), source: "simulated", confidence: 1, visit_id: am.visit_id, detail: { caregiver: "Maria Gómez", method: "compact_qr" } }),
     O({ id: "obs_am_out", kind: "presence_check_out", at: t("10:05"), source: "simulated", confidence: 1, visit_id: am.visit_id, detail: { caregiver: "Maria Gómez", method: "compact_qr" } }),
-    // Afternoon: Ring Developer Playground footage (snowy doorstep).
-    O({ id: "obs_ins_vehicle", kind: "vehicle_arrived", at: t("14:05"), source: "ring_live_view", confidence: 0.9, evidence_path: "evidence/vehicle.jpg", detail: { description: "Delivery van in front of the house", note: "vehicle in front of the house" } }),
-    O({ id: "obs_ins_drop", kind: "package_dropped", at: t("14:07"), source: "ring_live_view", confidence: 0.94, evidence_path: "evidence/package.jpg", detail: { expectation_id: ins.id, description: "Package left on the snowy doorstep", note: "parcel on the doorstep", in_sun: false } }),
+    // Afternoon: a real Ring Developer Playground frame (snowy doorstep), pre-labelled replay.
+    O({
+      id: "obs_ins_drop",
+      kind: "package_dropped",
+      at: t("14:07"),
+      source: "ring_live_view",
+      confidence: 0.94,
+      evidence_path: MOCK_RING_PACKAGE_FRAME,
+      detail: {
+        expectation_id: ins.id,
+        description: "Package left on the snowy doorstep",
+        note: "package on snowy doorstep",
+        caption: "Ring Developer Playground frame · package clip CC BY 4.0",
+        caption_short: "Ring Playground · CC BY 4.0",
+        in_sun: false,
+      },
+    }),
     // Pickup footage not filmed yet → simulated, no frame.
     O({ id: "obs_ins_removed", kind: "package_removed", at: t("14:40"), source: "simulated", confidence: 1, detail: { expectation_id: ins.id, description: "Neighbor picked it up and took it inside" } }),
   ];
@@ -136,8 +154,8 @@ export function buildMockDay(date: string): MockDay {
     { id: "f_am_arrived", kind: "late_arrival", severity: "info", at: t("09:22"), summary: "Maria checked in at 9:22 AM, 22 min late.", expectation_id: am.id, observation_ids: ["obs_am_in"], data: { late_minutes: 22 } },
     { id: "f_am_short", kind: "short_visit", severity: "warning", at: t("10:05"), summary: "Maria stayed 43 of the 120 planned minutes (36%). It's 21°F (−6°C) outside.", expectation_id: am.id, observation_ids: ["obs_am_in", "obs_am_out"], data: { minutes_on_site: 43, planned_minutes: 120 } },
     { id: "f_ins_exposed", kind: "package_exposed", severity: "info", at: t("14:07"), summary: "Ring saw the insulin left on the porch at 2:07 PM. It's 16°F (−9°C) outside, so it could freeze.", expectation_id: ins.id, observation_ids: ["obs_ins_drop"], data: { ambient_c: -9, direction: "cold", unsafe_c: 0 } },
-    { id: "f_ins_risk", kind: "package_at_risk", severity: "warning", at: t("14:27"), summary: "Getting too cold: box estimated at 36°F (2.2°C), about 20 min from freezing at 32°F (0°C). Rosa hasn't brought it in.", expectation_id: ins.id, observation_ids: ["obs_ins_drop"], data: { estimated_internal_c: 2.2, minutes_until_excursion_max: 19.8, direction: "cold", unsafe_c: 0 } },
-    { id: "f_ins_retrieved", kind: "package_retrieved", severity: "info", at: t("14:40"), summary: "Brought inside after 33 min, 3 min after we messaged Ana. Estimated 33°F (0.7°C) inside the box: it never froze. Close call.", expectation_id: ins.id, observation_ids: ["obs_ins_drop", "obs_ins_removed"], data: { minutes_on_porch: 33, estimated_internal_c: 0.7, direction: "cold", unsafe_c: 0 } },
+    { id: "f_ins_risk", kind: "package_at_risk", severity: "warning", at: t("14:27"), summary: "Getting too cold: box est. 36°F (2.2°C), est. ~20 min from freezing at 32°F (0°C). Rosa hasn't brought it in.", expectation_id: ins.id, observation_ids: ["obs_ins_drop"], data: { estimated_internal_c: 2.2, minutes_until_excursion_max: 19.8, direction: "cold", unsafe_c: 0 } },
+    { id: "f_ins_retrieved", kind: "package_retrieved", severity: "info", at: t("14:40"), summary: "Brought inside after 33 min, 3 min after we messaged Ana. Estimated to have stayed above freezing (est. 33°F / 0.7°C in the box). Close call.", expectation_id: ins.id, observation_ids: ["obs_ins_drop", "obs_ins_removed"], data: { minutes_on_porch: 33, estimated_internal_c: 0.7, direction: "cold", unsafe_c: 0 } },
   ];
 
   const A = (a: Action): Action => a;
@@ -148,7 +166,7 @@ export function buildMockDay(date: string): MockDay {
     A({ id: "a_ins_rosa", kind: "notify", target: "Rosa Martínez", message: "Hola Rosa, le dejaron su insulina en la puerta y afuera está helando (−9 °C). Por favor métala a la casa y guárdela en el refrigerador.", at: t("14:07:30"), finding_id: "f_ins_exposed", delivered: true, data: { channel: "sms", language: "es" } }),
     A({ id: "a_ins_luis", kind: "notify", target: "Luis Ortega", message: "Hi Luis, Rosa's insulin has been on her porch for 20 min in the freezing cold and she hasn't picked it up. Could you bring it inside for her?", at: t("14:27:20"), finding_id: "f_ins_risk", delivered: true, data: { channel: "sms", language: "en" } }),
     A({ id: "a_ins_ana", kind: "notify", target: "Ana Martínez", message: "Mom's insulin has been outside 30 min in the freezing cold and nobody nearby has brought it in yet. Could you call her or someone close by?", at: t("14:37"), finding_id: "f_ins_risk", delivered: true, data: { channel: "push", language: "en" } }),
-    A({ id: "a_ins_done", kind: "notify", target: "Ana Martínez", message: "Good news: Mom's insulin was brought inside after 33 min (est. 33°F / 0.7°C in the box). It never froze. Ask her to put it in the fridge.", at: t("14:40:20"), finding_id: "f_ins_retrieved", delivered: true, data: { channel: "push", language: "en" } }),
+    A({ id: "a_ins_done", kind: "notify", target: "Ana Martínez", message: "Good news: Mom's insulin was brought inside after 33 min. Estimated to have stayed above freezing (est. 33°F / 0.7°C in the box). Ask her to put it in the fridge.", at: t("14:40:20"), finding_id: "f_ins_retrieved", delivered: true, data: { channel: "push", language: "en" } }),
   ];
 
   const records: LedgerRecord[] = [

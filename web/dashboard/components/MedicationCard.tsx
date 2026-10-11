@@ -17,7 +17,7 @@ import { fmtClock, fmtDuration, fmtTime, ms } from "@/lib/time";
 import { useArrivals } from "@/lib/useArrivals";
 import { useUnits } from "@/lib/units";
 import { EvidenceFrame } from "./EvidenceFrame";
-import { IconCheck, IconClock, IconPackage, IconSnow, IconSun, IconThermo } from "./icons";
+import { IconCheck, IconClock, IconPackage, IconSnow, IconSun, IconThermo, IconUrgent } from "./icons";
 import { Card, CardHeader, LangTag, Pill, SourceBadge, cx } from "./ui";
 
 const CHANNEL_VERB: Record<string, string> = {
@@ -78,7 +78,7 @@ export function MedicationCard({
   const sc = est ? statusCopy(est.status, dir) : null;
   const pill =
     inside && est && est.status !== "compromised"
-      ? { label: "Inside · OK", chip: TONE.ok.chip }
+      ? { label: "Inside · est. OK", chip: TONE.ok.chip }
       : inside && est
         ? { label: cold ? "Inside · may have frozen" : "Inside · too warm", chip: TONE.crit.chip }
         : sc && { label: sc.label, chip: sc.tone.chip };
@@ -171,7 +171,14 @@ export function MedicationCard({
                 <IconThermo size={16} /> Estimated in the box
               </p>
               <p className={cx("mt-0.5 text-[2.1rem] font-bold leading-tight tracking-tight tabular sm:text-[2.6rem] xl:leading-[1.1] xl:text-[2.35rem]", sc?.tone.text)}>
-                {est ? fmt(est.estimated_internal_c, 1) : "—"}
+                {est ? (
+                  <>
+                    <span className="mr-1 align-baseline text-base font-semibold text-ink-3">est.</span>
+                    {fmt(est.estimated_internal_c, 1)}
+                  </>
+                ) : (
+                  "—"
+                )}
               </p>
               <p className="flex items-center gap-1 text-[0.95rem] text-ink-2">
                 {est && (
@@ -271,7 +278,7 @@ function ThermoBar({ internal, med, dir, moving }: { internal: number; med: Medi
           )}
           style={{ left: `clamp(2.2rem, ${p}%, calc(100% - 2.2rem))` }}
         >
-          {arrow}box {fmt(internal, 0)}
+          {arrow}box est. {fmt(internal, 0)}
           {arrowAfter}
         </div>
       </div>
@@ -333,13 +340,13 @@ function Countdown({ delivery, dir, limitText }: { delivery: DeliveryState; dir:
     const ok = est.status !== "compromised";
     return (
       <div className={cx("mt-2 flex items-center gap-3 rounded-2xl px-4 py-2 animate-swap", ok ? "bg-ok-soft text-ok" : "bg-crit-soft text-crit")}>
-        <IconCheck size={22} className="shrink-0" />
+        {ok ? <IconCheck size={22} className="shrink-0" /> : <IconUrgent size={22} className="shrink-0" />}
         <div className="min-w-0 flex-1">
-          <p className="text-[1.05rem] font-semibold leading-snug">
+          <p className="text-[1.05rem] font-semibold leading-snug xl:text-[1rem]">
             {ok
               ? cold
-                ? "Inside. It never froze."
-                : "Inside, never reached the unsafe limit."
+                ? "Estimated to have stayed above freezing."
+                : "Estimated to have stayed under the unsafe limit."
               : cold
                 ? "Brought inside, but it may have frozen. Frozen insulin must be thrown away; call the pharmacy for a replacement."
                 : "Brought inside, but it likely got too warm. Call the pharmacy before using it."}
@@ -369,9 +376,9 @@ function Countdown({ delivery, dir, limitText }: { delivery: DeliveryState; dir:
   const headline =
     left === null
       ? cold
-        ? "Won't freeze at today's temperature"
+        ? "Not expected to freeze at today's temperature"
         : dir === "hot"
-          ? "Won't overheat at today's temperature"
+          ? "Not expected to overheat at today's temperature"
           : "Fine at today's temperature"
       : risk
         ? cold
@@ -397,7 +404,7 @@ function Countdown({ delivery, dir, limitText }: { delivery: DeliveryState; dir:
       </div>
       {left !== null && (
         <p className="flex flex-col items-end whitespace-nowrap text-right leading-tight tabular">
-          <span className="text-sm font-medium">{cold ? "freezes in" : "unsafe in"}</span>
+          <span className="text-sm font-medium">{cold ? "est. freezes in" : "est. unsafe in"}</span>
           <span className="text-2xl font-bold">{fmtDuration(left)}</span>
         </p>
       )}
@@ -413,7 +420,7 @@ function Escalation({ household, actions, tz, done }: { household: Household; ac
       <p className="mb-1.5 text-sm font-semibold uppercase tracking-[0.08em] text-ink-3" title="Order set by the family. Alerts stop once it's inside.">
         Who we&apos;ve contacted
       </p>
-      <ol className="relative space-y-2.5 xl:space-y-1.5">
+      <ol className="relative space-y-2.5 xl:space-y-1">
         {chain.map((p, i) => {
           const mine = actions.filter((a) => personFor(household, a.target)?.name === p.name);
           // reached = they answered/replied; contacted = message delivered; unanswered = only failed attempts

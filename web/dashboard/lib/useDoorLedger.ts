@@ -231,7 +231,9 @@ export function useDoorLedger(initial: InitialData) {
 
   const evidenceUrl = useCallback(
     (o: Observation | null | undefined): string | null => {
-      if (!o?.evidence_path || mode === "mock") return null;
+      if (!o?.evidence_path) return null;
+      // mock: only real frames bundled under public/ (e.g. /ring/package.jpg); never invented ones
+      if (mode === "mock") return o.evidence_path.startsWith("/ring/") && o.source !== "simulated" ? o.evidence_path : null;
       return api.evidenceUrl(o.evidence_path);
     },
     [mode],

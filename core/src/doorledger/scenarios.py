@@ -55,9 +55,9 @@ def day_plan(day: datetime, tz: ZoneInfo) -> list[Expectation]:
         Expectation(ExpectationKind.CAREGIVER_VISIT, "Morning personal care",
                     _at(day, 9, 0, tz), _at(day, 11, 0, tz), caregiver="Maria",
                     agency="BrightPath Home Care", planned_minutes=120, visit_id=VISIT_ID),
-        Expectation(ExpectationKind.MEDICATION_DELIVERY, "Insulin refill (CVS Specialty)",
-                    _at(day, 13, 0, tz), _at(day, 17, 0, tz), carrier="UPS",
-                    tracking="1Z-DEMO-4471", medication=MedicationProfile()),
+        Expectation(ExpectationKind.MEDICATION_DELIVERY, "Insulin refill (pharmacy)",
+                    _at(day, 13, 0, tz), _at(day, 17, 0, tz), carrier="Courier",
+                    tracking="DEMO-4471", medication=MedicationProfile()),
     ]
 
 

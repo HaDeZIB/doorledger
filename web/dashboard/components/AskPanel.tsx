@@ -77,7 +77,7 @@ export function AskCard({
             e.preventDefault();
             void submit(q);
           }}
-          className="flex items-center gap-2 rounded-2xl border border-line-strong bg-canvas/60 p-1.5 pl-4 focus-within:border-brand focus-within:bg-surface"
+          className="flex items-center gap-2 rounded-2xl border border-line-strong bg-canvas/60 p-1.5 pl-4 focus-within:border-brand focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/60"
         >
           <label htmlFor="ask-input" className="sr-only">
             Ask a question about {name}&apos;s day

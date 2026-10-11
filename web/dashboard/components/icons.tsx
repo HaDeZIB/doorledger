@@ -71,6 +71,14 @@ export const IconAlert = (p: P) => (
     <circle cx="12" cy="17.2" r="0.8" fill="currentColor" />
   </Base>
 );
+/** Critical severity: octagon with "!", distinct in shape from the warning triangle. */
+export const IconUrgent = (p: P) => (
+  <Base {...p}>
+    <path d="M8.3 2.5h7.4l5.8 5.8v7.4l-5.8 5.8H8.3l-5.8-5.8V8.3Z" />
+    <path d="M12 7.5v5.5" />
+    <circle cx="12" cy="16.5" r="0.9" fill="currentColor" />
+  </Base>
+);
 export const IconInfo = (p: P) => (
   <Base {...p}>
     <circle cx="12" cy="12" r="9" />

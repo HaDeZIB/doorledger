@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { DeliveryState, Finding, Household, LedgerRecord, Observation, State, VisitState } from "@/lib/types";
-import { findingLabel, OBS_LABEL, firstName, latestFindings, visionNote, visitStatus } from "@/lib/derive";
+import { findingLabel, OBS_LABEL, firstName, latestFindings, presenceProof, visionNote, visitStatus } from "@/lib/derive";
 import { exposureDirection } from "@/lib/thermal";
 import { useArrivals } from "@/lib/useArrivals";
 import { fmtDateLong, fmtDuration, fmtHourShort, fmtTime, minuteOfDay, ms, zonedISO, dateIn } from "@/lib/time";
@@ -334,7 +334,7 @@ function deliveryLane(d: DeliveryState, nowIso: string, tz: string, findings: Fi
             >
               {est && (
                 <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.75rem] font-semibold text-ink-2 tabular">
-                  {fmtDuration(est.minutes_on_porch)} outside · {fmt(est.estimated_internal_c)}
+                  {fmtDuration(est.minutes_on_porch)} outside · est. {fmt(est.estimated_internal_c)}
                 </span>
               )}
             </div>
@@ -346,7 +346,7 @@ function deliveryLane(d: DeliveryState, nowIso: string, tz: string, findings: Fi
               title={`Estimated ${cold ? "to freeze" : "unsafe"} at ${fmtTime(deadlineIso, tz)}`}
             >
               <span className={cx("absolute -top-0.5 left-1 whitespace-nowrap text-[0.72rem] font-semibold", cold ? "text-cold-text" : "text-crit")}>
-                {cold ? "freezes" : "unsafe"} ~{fmtTime(deadlineIso, tz)}
+                est. {cold ? "freezes" : "unsafe"} ~{fmtTime(deadlineIso, tz)}
               </span>
             </div>
           )}
@@ -447,12 +447,14 @@ function Flag({ left, finding, onClick, active, fresh }: { left: number; finding
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${findingLabel(finding)}: ${finding.summary}`}
-      title={`${findingLabel(finding)}: ${finding.summary}`}
+      aria-label={`${s.label}: ${findingLabel(finding)}. ${finding.summary}`}
+      title={`${s.label} · ${findingLabel(finding)}: ${finding.summary}`}
       className={cx("absolute top-0 z-10 hidden -translate-x-1/2 animate-pop transition-[scale] hover:scale-125 sm:block", active && "scale-125")}
       style={{ left: `${left}%` }}
     >
-      <span className={cx("relative block h-3 w-3 rotate-45 rounded-[3px] ring-2 ring-surface", s.bar)}>
+      {/* shape carries severity too: plain diamond = needs attention, diamond with a white core = urgent */}
+      <span className={cx("relative flex rotate-45 items-center justify-center rounded-[3px] ring-2 ring-surface", finding.severity === "critical" ? "h-3.5 w-3.5" : "h-3 w-3", s.bar)}>
+        {finding.severity === "critical" && <span className="h-1.5 w-1.5 rounded-[1px] bg-surface" aria-hidden />}
         {fresh && <span className={cx("pointer-events-none absolute inset-0 rounded-[3px] animate-ping-once", s.bar)} aria-hidden />}
       </span>
     </button>
@@ -476,6 +478,12 @@ function Legend() {
       </li>
       <li className="flex items-center gap-1.5">
         <span className="inline-block h-2.5 w-2.5 rotate-45 rounded-[2px] bg-warn-bar" /> Alert
+      </li>
+      <li className="flex items-center gap-1.5">
+        <span className="inline-flex h-3 w-3 rotate-45 items-center justify-center rounded-[2px] bg-crit-bar">
+          <span className="h-1 w-1 bg-surface" />
+        </span>{" "}
+        Urgent
       </li>
     </ul>
   );
@@ -521,14 +529,20 @@ function SelectionDetail({
   const o = observations.get(selected.id);
   if (!o) return null;
   const note = visionNote(o);
+  const presence = o.kind === "presence_check_in" || o.kind === "presence_check_out";
+  const proof = presenceProof(o);
+  const proofText =
+    proof === "verified"
+      ? "signed rotating code verified at the door"
+      : proof === "simulated"
+        ? "rotating-code check-in, simulated (demo) until our footage is filmed"
+        : "no signed code seen in a camera frame";
   const desc =
     (o.detail.description as string | undefined) ??
     (o.detail.caregiver
-      ? `${o.detail.caregiver}${o.detail.backup ? " (backup aide)" : ""} · ${o.source === "simulated" ? "rotating-code check-in, simulated until our footage is filmed" : "rotating code verified"}`
-      : o.source === "simulated" && (o.kind === "presence_check_in" || o.kind === "presence_check_out")
-        ? "Rotating-code check-in, simulated until our footage is filmed"
-      : o.detail.method === "signed_code" || o.detail.method === "compact_qr"
-        ? "Rotating signed code verified at the door"
+      ? `${o.detail.caregiver}${o.detail.backup ? " (backup aide)" : ""} · ${proofText}`
+      : presence
+        ? proofText[0].toUpperCase() + proofText.slice(1)
         : "");
   return (
     <div className="flex flex-col gap-4 border-t border-line bg-canvas/50 px-5 py-4 sm:flex-row sm:items-center sm:px-6 lg:py-3" aria-live="polite">
