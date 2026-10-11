@@ -158,3 +158,35 @@ export type Scenario = "porch_heat" | "late_short_visit" | "full_day";
 export interface OkResponse {
   ok: boolean;
 }
+
+// ----- CareAgent (Bedrock) ------------------------------------------------------------
+
+export interface ToolCall {
+  name: string;
+  input: Record<string, unknown>;
+}
+
+export interface AgentUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  [k: string]: unknown;
+}
+
+/** POST /api/ask → 200; 503 when no Bedrock model is available. */
+export interface AskResponse {
+  answer: string;
+  tool_calls: ToolCall[];
+  model: string;
+  latency_ms: number;
+  usage: AgentUsage | null;
+}
+
+/** GET /api/summary */
+export interface SummaryResponse {
+  summary: string;
+  tool_calls: ToolCall[];
+  model: string;
+  latency_ms: number;
+  usage: AgentUsage | null;
+}

@@ -207,3 +207,56 @@ def summary() -> dict[str, Any]:
         return _agent().daily_summary().to_api("summary")
     except RuntimeError as exc:
         raise HTTPException(503, str(exc)[:300]) from None
+
+
+# --- Ring webhooks, live watching, Caregiver Pass ------------------------------------------
+
+from fastapi import Request  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from ringpartner.webhooks import SIGNATURE_HEADER, InvalidSignature, verify_and_parse  # noqa: E402
+
+from . import presence as _presence  # noqa: E402
+from .live import LiveController  # noqa: E402
+
+live = LiveController(engine, watcher, ROOT / "fixtures" / "ring_playground")
+PASS_DIR = ROOT / "web" / "caregiver-pass"
+if PASS_DIR.is_dir():
+    app.mount("/pass", StaticFiles(directory=PASS_DIR, html=True), name="pass")
+
+
+@app.post("/webhooks/ring")
+async def ring_webhook(request: Request) -> dict[str, Any]:
+    """Ring partner webhook endpoint. Verify first, parse second, answer fast (<5 s)."""
+    key = os.environ.get("RING_HMAC_KEY")
+    if not key:
+        raise HTTPException(503, "RING_HMAC_KEY not configured")
+    raw = await request.body()
+    try:
+        event = verify_and_parse(key, raw, request.headers.get(SIGNATURE_HEADER))
+    except InvalidSignature:
+        raise HTTPException(401, "invalid signature") from None
+    status = await live.on_webhook(event)
+    return {"ok": True, "status": status, "type": event.type, "sub_type": event.sub_type}
+
+
+@app.post("/api/live/watch")
+async def live_watch() -> dict[str, Any]:
+    started = live.start_watching()
+    return {"ok": True, "started": started, "token": bool(live.token),
+            "windows_open": live.windows_open()}
+
+
+@app.post("/api/live/stop")
+def live_stop() -> dict[str, Any]:
+    live.stop_watching()
+    return {"ok": True}
+
+
+@app.get("/api/visits/{visit_id}/pass")
+def visit_pass(visit_id: str, role: str = "in", request: Request = None) -> dict[str, Any]:  # type: ignore[assignment]
+    secret = engine.visit_secrets.get(visit_id)
+    if secret is None:
+        raise HTTPException(404, "unknown visit (start a scenario first)")
+    base = str(request.base_url).rstrip("/") if request else "http://localhost:8787"
+    url = f"{base}/pass/index.html#v={visit_id}&k={_presence.secret_to_b64url(secret)}&role={role}"
+    return {"visit_id": visit_id, "role": role, "url": url}

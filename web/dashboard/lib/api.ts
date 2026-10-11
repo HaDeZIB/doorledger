@@ -1,6 +1,6 @@
 // Typed client for the DoorLedger FastAPI backend. See API_CONTRACT.md.
 
-import type { Household, LedgerRecord, OkResponse, Scenario, State } from "./types";
+import type { AskResponse, Household, LedgerRecord, OkResponse, Scenario, State, SummaryResponse } from "./types";
 
 export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8787").replace(/\/$/, "");
 export const FORCE_MOCK = process.env.NEXT_PUBLIC_MOCK === "1" || process.env.NEXT_PUBLIC_MOCK === "true";
@@ -25,7 +25,16 @@ async function request<T>(path: string, init: RequestInit & { timeoutMs?: number
       cache: "no-store",
       headers: { Accept: "application/json", ...(rest.body ? { "Content-Type": "application/json" } : {}), ...rest.headers },
     });
-    if (!res.ok) throw new ApiError(res.status, `${res.status} ${res.statusText} on ${path}`);
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const body = (await res.json()) as { detail?: unknown };
+        if (typeof body.detail === "string") detail = body.detail;
+      } catch {
+        /* non-JSON error body */
+      }
+      throw new ApiError(res.status, detail || `${res.status} ${res.statusText} on ${path}`);
+    }
     return (await res.json()) as T;
   } finally {
     clearTimeout(timer);
@@ -40,7 +49,15 @@ export const api = {
   runDemo: (scenario: Scenario, speed: number) =>
     request<OkResponse>("/api/demo/run", { method: "POST", body: JSON.stringify({ scenario, speed }) }),
   resetDemo: () => request<OkResponse>("/api/demo/reset", { method: "POST" }),
-  evidenceUrl: (path: string) => `${API_BASE}/api/evidence/${path.split("/").map(encodeURIComponent).join("/")}`,
+  // CareAgent calls hit Bedrock (seconds, and cost money): generous timeout, never auto-called.
+  ask: (question: string) =>
+    request<AskResponse>("/api/ask", { method: "POST", body: JSON.stringify({ question }), timeoutMs: 90000 }),
+  summary: () => request<SummaryResponse>("/api/summary", { timeoutMs: 120000 }),
+  // Observation.evidence_path is e.g. "evidence/captured/20261011T140702_f_x.jpg" or "evidence/package.jpg".
+  // The backend route is /api/evidence/{path} and strips one leading "evidence/", so we pass the
+  // path through as-is (→ /api/evidence/evidence/captured/…), which resolves under its evidence dir.
+  evidenceUrl: (path: string) =>
+    `${API_BASE}/api/evidence/${path.replace(/^\/+/, "").split("/").map(encodeURIComponent).join("/")}`,
   evvCsvUrl: (date: string) => `${API_BASE}/api/evv.csv?date=${encodeURIComponent(date)}`,
   streamUrl: () => `${API_BASE}/api/stream`,
 };

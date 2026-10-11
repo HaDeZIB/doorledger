@@ -29,6 +29,23 @@ log = logging.getLogger("doorledger.scenarios")
 VISIT_ID = "v_morning"
 
 
+def demo_visit_secret() -> bytes:
+    """Secret for the demo visit. Fixed (from env or fixtures) so footage we film with the
+    Caregiver Pass can be verified again when it is replayed; random otherwise."""
+    import json
+    import os
+    from pathlib import Path
+
+    from . import presence
+
+    if os.environ.get("DOORLEDGER_VISIT_SECRET"):
+        return presence.secret_from_b64url(os.environ["DOORLEDGER_VISIT_SECRET"])
+    meta = Path(__file__).resolve().parents[3] / "fixtures" / "own_footage" / "visit.json"
+    if meta.exists():
+        return presence.secret_from_b64url(json.loads(meta.read_text())["secret_b64url"])
+    return presence.new_visit_secret()
+
+
 def _at(day: datetime, hh: int, mm: int, tz: ZoneInfo) -> datetime:
     return datetime.combine(day.date(), time(hh, mm), tzinfo=tz)
 
@@ -116,6 +133,7 @@ class ScenarioRunner:
         clock = self.engine.clock
         if hasattr(clock, "set"):
             clock.set(start, speed)
+        self.engine.visit_secrets[VISIT_ID] = demo_visit_secret()
         kinds = spec.get("plan")
         for e in day_plan(day, tz):
             if kinds is None or e.kind in kinds:

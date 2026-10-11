@@ -37,6 +37,9 @@ class Frame:
     at: datetime
     image: np.ndarray  # BGR
     source: Source
+    # Wall-clock capture time, used to verify time-based presence codes. Differs from ``at``
+    # when recorded footage is replayed inside a simulated day.
+    captured_at: float | None = None
 
 
 class ReplaySource:
@@ -44,18 +47,24 @@ class ReplaySource:
 
     def __init__(self, frames_dir: str | Path, start: datetime, *, fps: float = 1.0,
                  capture_fps: float = 4.0, limit: int | None = None,
-                 source: Source = Source.RING_LIVE, realtime: float = 0.0) -> None:
+                 source: Source = Source.RING_LIVE, realtime: float = 0.0,
+                 recorded_start: float | None = None) -> None:
         files = sorted(glob.glob(str(Path(frames_dir) / "*.jpg")))
         step = max(int(round(capture_fps / fps)), 1)
         self.files = files[::step][:limit]
         self.start, self.fps, self.source, self.realtime = start, fps, source, realtime
+        self.capture_fps = capture_fps
+        self.step = step
+        self.recorded_start = recorded_start  # epoch of the first captured frame, if known
 
     async def frames(self) -> AsyncIterator[Frame]:
         for i, f in enumerate(self.files):
             img = cv2.imread(f)
             if img is None:
                 continue
-            yield Frame(self.start + timedelta(seconds=i / self.fps), img, self.source)
+            captured = (None if self.recorded_start is None
+                        else self.recorded_start + i * self.step / self.capture_fps)
+            yield Frame(self.start + timedelta(seconds=i / self.fps), img, self.source, captured)
             if self.realtime:
                 await asyncio.sleep(self.realtime / self.fps)
 
@@ -112,7 +121,7 @@ class Watcher:
             return []
         result = self.reader.read(frame.image)
         out: list[Observation] = []
-        at_epoch = frame.at.timestamp()
+        at_epoch = frame.captured_at if frame.captured_at is not None else frame.at.timestamp()
         for text in result.texts:
             for role, kind in (("in", ObservationKind.PRESENCE_CHECK_IN),
                                ("out", ObservationKind.PRESENCE_CHECK_OUT)):
