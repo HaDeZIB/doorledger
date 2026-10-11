@@ -25,6 +25,9 @@ export interface MedicationProfile {
   store_min_c: number;
   store_max_c: number;
   excursion_max_c: number;
+  /** Insulin that has frozen must be discarded. Backend default 0.0. */
+  freeze_c?: number;
+  max_minutes_above_store?: number | null;
 }
 
 export type ExpectationKind = "caregiver_visit" | "medication_delivery";
@@ -111,13 +114,21 @@ export interface Action {
 }
 
 export type ExposureStatus = "safe" | "at_risk" | "compromised";
+/** Which limit the box is drifting toward: "hot" = excursion_max_c, "cold" = freeze_c. */
+export type ExposureDirection = "hot" | "cold" | null;
 
 export interface ExposureEstimate {
   minutes_on_porch: number;
   ambient_c: number;
   estimated_internal_c: number;
+  /** Minutes until the RELEVANT limit (freezing when direction is cold, excursion_max when hot). */
   minutes_until_excursion_max: number | null;
   status: ExposureStatus;
+  direction?: ExposureDirection;
+  /** The limit being approached: 0.0 for cold, 30.0 (excursion_max_c) for hot, null otherwise. */
+  unsafe_c?: number | null;
+  minutes_above_store_max?: number;
+  minutes_until_store_max?: number | null;
 }
 
 export interface VisitState {
@@ -153,7 +164,8 @@ export interface LedgerRecord {
   body: Record<string, unknown>;
 }
 
-export type Scenario = "porch_heat" | "late_short_visit" | "full_day";
+/** `porch_heat` is still accepted by the backend as an alias of `porch_cold`. */
+export type Scenario = "porch_cold" | "late_short_visit" | "full_day";
 
 export interface OkResponse {
   ok: boolean;

@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Tests must never reach AWS or the Ring API. No credentials are configured in CI;
+  # this also stops boto3 from probing the EC2 metadata endpoint.
+  AWS_EC2_METADATA_DISABLED: "true"
+  UV_LOCKED: "1"
+
+jobs:
+  python:
+    name: Python tests + lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install workspace (core + ringpartner)
+        run: uv sync --all-packages
+
+      - name: Tests
+        run: uv run pytest -q
+
+      - name: Ruff (ringpartner)
+        run: uv run ruff check packages/ringpartner
+
+  sdk:
+    name: ringpartner build + Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Build sdist + wheel
+        working-directory: packages/ringpartner
+        run: uv build
+
+      - name: twine check
+        run: uvx twine check --strict dist/ringpartner-*
+
+      - name: Test the built wheel on Python ${{ matrix.python }}
+        run: |
+          uv run --no-project --isolated --python ${{ matrix.python }} \
+            --with "$(ls dist/ringpartner-*.whl)[whep]" \
+            --with pytest --with pytest-asyncio --with respx \
+            python -m pytest -q -p no:cacheprovider -o asyncio_mode=auto \
+            --rootdir packages/ringpartner packages/ringpartner/tests
+
+  dashboard:
+    name: Dashboard build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web/dashboard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/dashboard/package-lock.json
+
+      - run: npm ci
+      - run: npm run build

@@ -1,0 +1,83 @@
+DoorLedger
+Copyright 2026 Brandon Garcia
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+It includes the ringpartner SDK (packages/ringpartner), also Apache-2.0,
+Copyright 2026 Brandon Garcia.
+
+DoorLedger and ringpartner are independent projects. They are not affiliated
+with, endorsed by, or sponsored by Ring LLC or Amazon.com, Inc. "Ring",
+"Amazon", "Amazon Bedrock", "Amazon Nova" and "AWS" are trademarks of their
+respective owners. "Claude" is a trademark of Anthropic, PBC. The names are
+used only to describe compatibility and the services the software calls.
+
+-------------------------------------------------------------------------------
+Third-party content included in this repository
+-------------------------------------------------------------------------------
+
+1. Ring Developer Playground footage
+   Paths: fixtures/ring_playground/**, fixtures/evidence/package.jpg,
+          fixtures/evidence/vehicle.jpg, fixtures/evidence/ring_snapshot.jpg,
+          fixtures/playground/** (recorded API responses)
+
+   Frames and API responses captured on 2026-10-11 from the Ring Developer
+   Playground (simulated live view over WHEP, snapshots and REST responses)
+   using a developer account. They are included only to let the
+   demo and tests run without a live Playground token. The recorded REST
+   responses belong to a Playground demo account ("Demo Developer",
+   developer@example.com); bearer tokens and pre-signed media tokens were
+   never written to disk.
+
+   The Playground "Package" scene (fixtures/ring_playground/package/**,
+   fixtures/evidence/package.jpg) is derived from:
+
+     "Thief stealing our package", by a YouTube user,
+     licensed under Creative Commons Attribution 4.0 International
+     (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/).
+     Clipped from the original, as credited by Ring in the Developer
+     Playground. DoorLedger further changed it: frames were re-encoded
+     from the WHEP stream, sampled at about 1 frame per second, and
+     saved as JPEG.
+
+   The "Vehicle" and "Motion" (bird feeder) scenes carry no license
+   statement in the Playground. They remain the property of their
+   respective owners and are NOT covered by this repository's Apache-2.0
+   license.
+
+2. YuNet face detection model
+   Path: core/src/doorledger/models/face_detection_yunet_2023mar.onnx
+   Source: OpenCV Model Zoo,
+           https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet
+   License: MIT License. Copyright (c) the YuNet authors / OpenCV Model Zoo
+   contributors. Used unmodified, only to pixelate faces in stored evidence
+   frames.
+
+3. Synthetic evaluation images
+   Paths: eval/vision/images/**, eval/vision/contact_sheet.png
+   Generated for this project with Stability AI "Stable Image Core" on Amazon
+   Bedrock (2026-10-11), then post-processed (resize, barrel distortion, JPEG,
+   PIL composites for phone screens and night-IR variants). They are subject
+   to the Stability AI terms that applied when they were generated. They are
+   synthetic: they show no real people or places.
+
+4. Synthetic presence-code frames
+   Paths: eval/presence/**
+   Rendered by eval/presence/make_synthetic.py (part of this project).
+
+-------------------------------------------------------------------------------
+Third-party software (not vendored; installed by package managers)
+-------------------------------------------------------------------------------
+
+Python (see uv.lock): httpx (BSD-3-Clause), aiortc (BSD-3-Clause),
+PyAV (BSD-3-Clause; wheels bundle FFmpeg under LGPL-2.1+), NumPy (BSD-3-Clause and bundled permissive licenses),
+OpenCV / opencv-python-headless (Apache-2.0; wheels bundle third-party
+components under their own licenses), segno (BSD-3-Clause), Pillow (MIT-CMU),
+boto3 / botocore (Apache-2.0), FastAPI (MIT), Uvicorn (BSD-3-Clause),
+Strands Agents SDK (Apache-2.0), pytest (MIT), respx (BSD-3-Clause),
+ruff (MIT).
+
+JavaScript (see web/dashboard/package-lock.json): Next.js (MIT), React (MIT),
+Tailwind CSS (MIT), TypeScript (Apache-2.0).
+
+Each dependency is distributed under its own license; consult the package
+metadata for the authoritative terms.

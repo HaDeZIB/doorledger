@@ -9,7 +9,7 @@ import { api, FORCE_MOCK, subscribeStream } from "./api";
 import { evvCsvFromState } from "./derive";
 import { DemoClock, defaultStart, mockStateAt, mockTimelineAt, resetTime, scenarioRange } from "./mock/engine";
 import { mockAsk, mockSummary } from "./mock/assistant";
-import { mockHousehold } from "./mock/script";
+import { mockAmbientAt, mockHousehold } from "./mock/script";
 import type { AskResponse, Finding, Household, LedgerRecord, Observation, Scenario, State, SummaryResponse } from "./types";
 import { dateIn } from "./time";
 
@@ -121,6 +121,11 @@ export function useDoorLedger(initial: InitialData) {
   }, [mode, refreshLive]);
 
   const state = mode === "mock" ? mockState! : liveState;
+  // mock: the outside temperature follows the demo clock (−6 °C morning → −9 °C afternoon)
+  const shownHousehold = useMemo<Household>(
+    () => (mode === "mock" ? { ...household, ambient: { ...household.ambient, celsius: mockAmbientAt(state.now) } } : household),
+    [mode, household, state.now],
+  );
   const timeline = mode === "mock" ? mockTimeline! : liveTimeline;
 
   // ----- observations index (for source badges / evidence lookup) ----------------------
@@ -165,6 +170,8 @@ export function useDoorLedger(initial: InitialData) {
         } else {
           await api.runDemo(sc, speed);
           setLiveTimeline([]);
+          // the scenario overrides the outside temperature (e.g. −9 °C for porch_cold)
+          api.household(2000).then(setHousehold).catch(() => {});
           await refreshLive();
           setLiveTimeline(await api.timeline());
         }
@@ -185,6 +192,7 @@ export function useDoorLedger(initial: InitialData) {
         setTick(clock.now());
       } else {
         await api.resetDemo();
+        api.household(2000).then(setHousehold).catch(() => {});
         setLiveTimeline(await api.timeline());
         await refreshLive();
       }
@@ -274,7 +282,7 @@ export function useDoorLedger(initial: InitialData) {
   return {
     mode,
     mockReason,
-    household,
+    household: shownHousehold,
     state,
     timeline,
     observations,

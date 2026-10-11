@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { cToF } from "./thermal";
 
+// US families read °F first; °C is always shown alongside as the secondary unit.
 export type Unit = "F" | "C";
 const KEY = "doorledger.unit";
 
@@ -29,15 +30,26 @@ export function UnitsProvider({ children }: { children: React.ReactNode }) {
   return <Ctx.Provider value={{ unit, setUnit }}>{children}</Ctx.Provider>;
 }
 
+/** toFixed without "-0" and with a real minus sign. */
+export function num(v: number, digits = 0): string {
+  const s = v.toFixed(digits);
+  const zero = Number(s) === 0;
+  const out = zero ? s.replace(/^-/, "") : s;
+  return out.replace(/^-/, "−");
+}
+
+export const degF = (c: number, digits = 0) => `${num(cToF(c), digits)}°F`;
+export const degC = (c: number, digits = 0) => `${num(c, digits)}°C`;
+/** "32°F (0°C)" — used where the unit toggle isn't available (e.g. canned text). */
+export const degBoth = (c: number, digits = 0) => `${degF(c, digits)} (${degC(c, digits)})`;
+
 export function useUnits() {
   const { unit, setUnit } = useContext(Ctx);
-  const fmt = useCallback(
-    (c: number, digits = 0) => (unit === "F" ? `${cToF(c).toFixed(digits)}°F` : `${c.toFixed(digits === 0 ? 0 : digits)}°C`),
-    [unit],
-  );
-  const alt = useCallback(
-    (c: number, digits = 0) => (unit === "F" ? `${c.toFixed(digits)}°C` : `${cToF(c).toFixed(digits)}°F`),
-    [unit],
-  );
-  return { unit, setUnit, fmt, alt };
+  /** Primary unit. */
+  const fmt = useCallback((c: number, digits = 0) => (unit === "F" ? degF(c, digits) : degC(c, digits)), [unit]);
+  /** Secondary unit. */
+  const alt = useCallback((c: number, digits = 0) => (unit === "F" ? degC(c, digits) : degF(c, digits)), [unit]);
+  /** "32°F (0°C)" in the current primary/secondary order. */
+  const both = useCallback((c: number, digits = 0) => `${fmt(c, digits)} (${alt(c, digits)})`, [fmt, alt]);
+  return { unit, setUnit, fmt, alt, both };
 }

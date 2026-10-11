@@ -6,12 +6,12 @@ import { estimate } from "../thermal";
 import { evvCsvFromState } from "../derive";
 import { ms, zonedISO } from "../time";
 import {
-  AMBIENT_C,
   DEFAULT_START,
   MOCK_TZ,
   RESET_TIME,
   SCENARIOS,
   buildMockDay,
+  mockAmbientAt,
   type MockDay,
 } from "./script";
 
@@ -50,9 +50,12 @@ export function mockStateAt(date: string, nowMs: number): State {
       let est = null;
       if (dropped && e.medication) {
         const end = removed ? ms(removed.at) : nowMs;
-        est = estimate((end - ms(dropped.at)) / 60000, AMBIENT_C, e.medication, {
+        // like the backend: ambient at the end of the exposure (removal, or now)
+        est = estimate((end - ms(dropped.at)) / 60000, mockAmbientAt(new Date(end).toISOString()), e.medication, {
           inSun: Boolean(dropped.detail.in_sun),
         });
+        // it made it inside before crossing the limit (same rule as reconcile.py)
+        if (removed && est.status === "at_risk") est.status = "safe";
       }
       return { expectation: e, dropped, removed, estimate: est };
     });

@@ -4,7 +4,8 @@
 
 import type { AskResponse, Household, State, SummaryResponse, ToolCall } from "../types";
 import { actionHeadline, featuredDelivery, firstName, latestFindings, personFor, visitStatus } from "../derive";
-import { cToF } from "../thermal";
+import { exposureDirection, unsafeLimitC } from "../thermal";
+import { degBoth } from "../units";
 import { fmtDuration, fmtTime, ms } from "../time";
 
 export const MOCK_MODEL = "mock-canned";
@@ -12,7 +13,7 @@ export const MOCK_MODEL = "mock-canned";
 const TODAY: ToolCall = { name: "get_today_status", input: {} };
 const TIMELINE: ToolCall = { name: "get_timeline", input: { since_hour: 0 } };
 
-const temp = (c: number) => `${Math.round(cToF(c))}°F (${c.toFixed(1)}°C)`;
+const temp = (c: number) => degBoth(c, 1).replace(/\.0°F/, "°F");
 
 function visitAnswer(st: State, h: Household): string {
   const tz = h.patient.timezone;
@@ -58,21 +59,30 @@ function insulinAnswer(st: State, h: Household): string {
   if (!d) return "There's no medication delivery on today's plan.";
   const med = d.expectation.medication?.name ?? "The medication";
   const est = d.estimate;
+  const dir = exposureDirection(est, d.expectation.medication, h.ambient.celsius);
+  const cold = dir === "cold";
   if (!d.dropped || !est) {
-    return `${med} hasn't been delivered yet. It's expected between ${fmtTime(d.expectation.window_start, tz)} and ${fmtTime(d.expectation.window_end, tz)}; we'll start a heat clock as soon as the doorbell sees it on the porch.`;
+    return `${med} hasn't been delivered yet. It's expected between ${fmtTime(d.expectation.window_start, tz)} and ${fmtTime(d.expectation.window_end, tz)}; we'll start an exposure clock as soon as the Ring doorbell sees it on the porch${cold ? ` (it's ${temp(h.ambient.celsius)} outside, so freezing is the risk)` : ""}.`;
   }
-  const limit = d.expectation.medication ? temp(d.expectation.medication.excursion_max_c) : "its limit";
+  const limitC = unsafeLimitC(est, d.expectation.medication, dir);
+  const limit = limitC !== null ? degBoth(limitC) : "its limit";
   if (d.removed) {
-    return est.status === "compromised"
-      ? `It was brought inside at ${fmtTime(d.removed.at, tz)}, but after ${fmtDuration(est.minutes_on_porch)} on the porch the box likely passed ${limit}. Please call the pharmacy before using it. (Temperatures are model estimates, not a thermometer.)`
-      : `It looks OK. ${med} sat on the porch ${fmtDuration(est.minutes_on_porch)} and was brought inside at ${fmtTime(d.removed.at, tz)}. Our estimate peaked around ${temp(est.estimated_internal_c)}, under the ${limit} limit. It should go in the fridge now. (Estimate from a thermal model, not a thermometer.)`;
+    if (est.status === "compromised") {
+      return cold
+        ? `It was brought inside at ${fmtTime(d.removed.at, tz)}, but after ${fmtDuration(est.minutes_on_porch)} on the porch it may have frozen. Frozen insulin has to be thrown away, so please don't use it and call the pharmacy for a replacement. (Temperatures are model estimates, not a thermometer.)`
+        : `It was brought inside at ${fmtTime(d.removed.at, tz)}, but after ${fmtDuration(est.minutes_on_porch)} on the porch the box likely passed ${limit}. Please call the pharmacy before using it. (Temperatures are model estimates, not a thermometer.)`;
+    }
+    return `It looks OK. ${med} sat on the porch ${fmtDuration(est.minutes_on_porch)} and was brought inside at ${fmtTime(d.removed.at, tz)}. Our estimate ${cold ? "bottomed out" : "peaked"} around ${temp(est.estimated_internal_c)}, ${cold ? `just above freezing (${limit}), so it never froze` : `under the ${limit} limit`}. It should go in the fridge now. (Estimate from a thermal model, not a thermometer.)`;
   }
   if (est.status === "compromised") {
-    return `It's still on the porch after ${fmtDuration(est.minutes_on_porch)} and the box is estimated past ${limit}. Don't use it until the pharmacy confirms.`;
+    return cold
+      ? `It's still on the porch after ${fmtDuration(est.minutes_on_porch)} and the box is estimated at or below freezing, so it may have frozen. Frozen insulin must be thrown away; don't use it until the pharmacy confirms.`
+      : `It's still on the porch after ${fmtDuration(est.minutes_on_porch)} and the box is estimated past ${limit}. Don't use it until the pharmacy confirms.`;
   }
+  const left = est.minutes_until_excursion_max;
   return `It's on the porch right now, ${fmtDuration(est.minutes_on_porch)} so far, estimated ${temp(est.estimated_internal_c)} inside the box${
-    est.minutes_until_excursion_max !== null ? `, about ${fmtDuration(est.minutes_until_excursion_max)} before it reaches ${limit}` : ""
-  }. ${est.status === "at_risk" ? "We're calling for help to bring it inside." : "We've asked Rosa to bring it in."}`;
+    left !== null ? `, about ${fmtDuration(left)} before it ${cold ? `freezes at ${limit}` : `reaches ${limit}`}` : ""
+  }. ${est.status === "at_risk" ? "We're asking the next person on the list to bring it inside." : `We've asked ${firstName(h.patient.name)} to bring it in.`}`;
 }
 
 function luisAnswer(st: State, h: Household): string {
@@ -86,12 +96,24 @@ function luisAnswer(st: State, h: Household): string {
   const reply = a.data.reply ? ` He replied "${String(a.data.reply)}".` : "";
   return (
     `At ${fmtTime(a.at, tz)} we ${actionHeadline(a, h).split(" ")[0].toLowerCase()} ${firstName(luis.name)} because ${
-      f ? f.summary.charAt(0).toLowerCase() + f.summary.slice(1).replace(/\.$/, "") : "the insulin needed to come inside"
+      f ? reasonFor(f, h) : "the insulin needed to come inside"
     }.` +
     (before.length ? ` ${firstName(h.patient.name)} had been contacted first and didn't respond.` : "") +
     reply +
     ` He's next in the order the family set: ${firstName(h.patient.name)}, then ${firstName(luis.name)}, then family.`
   );
+}
+
+function reasonFor(f: State["findings"][number], h: Household): string {
+  const name = firstName(h.patient.name);
+  const c = typeof f.data.estimated_internal_c === "number" ? f.data.estimated_internal_c : null;
+  const left = typeof f.data.minutes_until_excursion_max === "number" ? f.data.minutes_until_excursion_max : null;
+  if (f.kind === "package_at_risk" && f.data.direction === "cold") {
+    return `${name}'s insulin was getting too cold on the porch${c !== null ? ` (box estimated at ${temp(c)}` : ""}${
+      c !== null && left !== null ? `, about ${fmtDuration(left)} from freezing)` : c !== null ? ")" : ""
+    } and she hadn't brought it in`;
+  }
+  return f.summary.charAt(0).toLowerCase() + f.summary.slice(1).replace(/\.$/, "");
 }
 
 function genericAnswer(st: State, h: Household): string {

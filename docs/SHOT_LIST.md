@@ -31,5 +31,16 @@ y en el README va etiquetado como **"Own footage"**; nunca lo hacemos pasar por 
 | 5 | **(Opcional) Respaldo de 6 dígitos** | Como la 1, pero a ~80 cm (para mostrar el código numérico grande) | 15 s | |
 
 ## Después
-Pásame los videos (AirDrop a la Mac → carpeta `~/ring-hackathon/doorledger/fixtures/raw/own/`).
-Yo extraigo los cuadros, verifico los códigos y los meto al flujo como "Own footage".
+Pásame los videos (AirDrop a la Mac → carpeta `~/ring-hackathon/doorledger/fixtures/raw/own/`)
+con estos nombres (o dime cuál es cuál):
+
+| Toma | Nombre de archivo |
+|---|---|
+| 1 Check-in | `checkin.mov` |
+| 2 Check-out | `checkout.mov` |
+| 3 Paquete dejado | `drop.mov` |
+| 4 Paquete recogido | `pickup.mov` |
+
+Yo corro `uv run python scripts/ingest_own_footage.py`: extrae cuadros, lee la hora de grabación
+del video, verifica los códigos con el secreto de la visita (`fixtures/own_footage/visit.json`) y
+el escenario del demo los usa automáticamente en lugar de los pasos "Simulated".

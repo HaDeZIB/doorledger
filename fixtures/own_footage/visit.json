@@ -1,0 +1,5 @@
+{
+  "visit_id": "V-MORNING",
+  "secret_b64url": "TTFex3c1qbjL25Q2DlcAEShm8JFnyIhMywLl58CsTr8",
+  "note": "Demo-only secret for the filmed caregiver visit. Committed on purpose so judges can replay and verify the footage; it protects nothing real."
+}

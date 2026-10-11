@@ -1,8 +1,8 @@
 // Time helpers. All display formatting is done in the household's timezone so that the
 // server render and the client render agree (no hydration mismatch) and so that a family
-// member in Chicago sees Rosa's local time, which is what the care plan is written in.
+// member in another city sees Rosa's local time, which is what the care plan is written in.
 
-export const DEFAULT_TZ = "America/New_York";
+export const DEFAULT_TZ = "America/Chicago";
 
 /** "GMT-04:00" style offset for a timezone at a given instant → "-04:00". */
 export function tzOffset(tz: string, at: Date): string {

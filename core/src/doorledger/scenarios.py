@@ -26,7 +26,7 @@ from .engine import Engine
 
 log = logging.getLogger("doorledger.scenarios")
 
-VISIT_ID = "v_morning"
+VISIT_ID = "V-MORNING"  # QR alphanumeric set: [A-Z0-9-]
 
 
 def demo_visit_secret() -> bytes:
@@ -81,9 +81,9 @@ SCENARIOS: dict[str, dict] = {
         "steps": [
             # Until our own footage is recorded these two are simulated (and labelled so).
             Step(9, 22, ObservationKind.PRESENCE_CHECK_IN, Source.SIMULATED, VISIT_ID,
-                 None, {"method": "compact_qr"}),
+                 None, {"method": "compact_qr"}, frames="own:checkin"),
             Step(10, 5, ObservationKind.PRESENCE_CHECK_OUT, Source.SIMULATED, VISIT_ID,
-                 None, {"method": "compact_qr"}),
+                 None, {"method": "compact_qr"}, frames="own:checkout"),
         ],
     },
     # Winter: the Ring Playground "Package" clip is a snowy doorstep, so the porch story is
@@ -98,7 +98,7 @@ SCENARIOS: dict[str, dict] = {
             Step(14, 7, ObservationKind.PACKAGE_DROPPED, Source.RING_LIVE, None,
                  "evidence/package.jpg", {"note": "parcel on the doorstep"}, frames="package"),
             Step(14, 40, ObservationKind.PACKAGE_REMOVED, Source.SIMULATED, None,
-                 None, {"note": "neighbor picked it up"}),
+                 None, {"note": "neighbor picked it up"}, frames="own:pickup"),
         ],
     },
 }
@@ -146,6 +146,27 @@ class ScenarioRunner:
         self.name = name
         self.task = asyncio.create_task(self._run(steps, day, tz, end))
 
+    def _source_for(self, s: Step, day: datetime, tz: ZoneInfo):
+        """Recorded footage for a step: Ring Playground frames, or our own clip ("own:<clip>")."""
+        import json
+        from pathlib import Path
+
+        from .watcher import ReplaySource
+
+        start = _at(day, s.hh, s.mm, tz)
+        if s.frames.startswith("own:"):
+            clip_dir = Path(__file__).resolve().parents[3] / "fixtures" / "own_footage" / s.frames[4:]
+            meta_path = clip_dir / "clip.json"
+            if not meta_path.exists():
+                return None
+            meta = json.loads(meta_path.read_text())
+            return ReplaySource(clip_dir / "frames", start, fps=2.0, capture_fps=meta["fps"],
+                                source=Source.OWN_FOOTAGE, recorded_start=meta["recorded_start"])
+        if self.frames_root is None or not (self.frames_root / s.frames).exists():
+            return None
+        return ReplaySource(self.frames_root / s.frames / "frames", start, limit=s.limit,
+                            capture_fps=1.0)
+
     async def _run(self, steps: list[Step], day: datetime, tz: ZoneInfo, end: datetime) -> None:
         pending = list(steps)
         try:
@@ -153,12 +174,11 @@ class ScenarioRunner:
                 now = self.engine.clock.now()
                 while pending and _at(day, pending[0].hh, pending[0].mm, tz) <= now:
                     s = pending.pop(0)
-                    if s.frames and self.watcher is not None and self.frames_root is not None:
-                        from .watcher import ReplaySource
-
-                        src = ReplaySource(self.frames_root / s.frames / "frames",
-                                           _at(day, s.hh, s.mm, tz), limit=s.limit,
-                                           capture_fps=1.0)
+                    src = self._source_for(s, day, tz) if s.frames and self.watcher else None
+                    if src is not None:
+                        if s.kind == ObservationKind.PACKAGE_REMOVED:
+                            # the clip starts with the parcel already on the porch
+                            self.watcher.tracker(src.source).seed(package_present=True)
                         # Freeze simulated time while the vision model works so the demo
                         # timeline matches the footage, then resume where the frames ended.
                         clock = self.engine.clock
@@ -169,10 +189,10 @@ class ScenarioRunner:
                         finally:
                             if hasattr(clock, "set"):
                                 clock.set(max(clock.now(), _at(day, s.hh, s.mm, tz)
-                                              + timedelta(seconds=len(src.files))))
-                        if found:
+                                              + timedelta(seconds=len(src.files) / src.fps)))
+                        if any(o.kind == s.kind for o in found):
                             continue
-                        log.warning("perception found nothing in %s; using scripted step", s.frames)
+                        log.warning("footage %s did not yield %s; using scripted step", s.frames, s.kind)
                     self.engine.ingest(Observation(
                         kind=s.kind, at=_at(day, s.hh, s.mm, tz), source=s.source,
                         visit_id=s.visit_id, evidence_path=s.evidence, detail=dict(s.detail),

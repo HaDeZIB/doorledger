@@ -13,6 +13,14 @@ import type {
 } from "./types";
 import { dateIn, ms } from "./time";
 
+/** Language of an outbound message ("es" → "ES"), when the backend tells us. */
+export function actionLanguage(a: Pick<Action, "data">): string | null {
+  const l = a.data?.language;
+  return typeof l === "string" && /^[a-z]{2}(-[a-z]{2})?$/i.test(l.trim()) ? l.trim().slice(0, 2).toUpperCase() : null;
+}
+
+export const LANGUAGE_NAME: Record<string, string> = { ES: "Spanish", EN: "English" };
+
 /** Builds the EVV CSV (21st Century Cures Act §12006 six data elements + status). */
 export function evvCsvFromState(st: State, patient: string, address: string, tz: string): string {
   const header = [
@@ -209,6 +217,7 @@ export function actionHeadline(a: Action, h: Household | null): string {
       if (channel === "voice") return `Called ${who}`;
       if (channel === "agency_portal") return `Alerted ${who}`;
       if (channel === "email") return `Emailed ${who}`;
+      if (channel === "telegram" || channel === "whatsapp") return `Messaged ${who}`;
       if (channel === "app" || channel === "push") return `Sent an app alert to ${who}`;
       return `Notified ${who}`;
   }
@@ -265,4 +274,24 @@ export function featuredVisit(st: State): VisitState | null {
   const past = sorted.filter((v) => ms(v.expectation.window_start) <= now);
   if (past.length) return past[past.length - 1];
   return sorted[0] ?? null;
+}
+
+/**
+ * Which card leads the "above the fold" hero next to the timeline: the medication card while a
+ * package is on the porch, the visit card while a visit needs attention, otherwise whichever of
+ * the two had the most recent door event.
+ */
+export function heroFocus(st: State): "medication" | "visit" {
+  const d = featuredDelivery(st);
+  const v = featuredVisit(st);
+  if (d?.dropped && !d.removed) return "medication";
+  if (!v) return "medication";
+  if (!d) return "visit";
+  const vk = visitStatus(v, st.now, st.findings).key;
+  if (vk === "in_progress" || vk === "late" || vk === "awaiting" || vk === "missed") return "visit";
+  const dAt = d.removed?.at ?? d.dropped?.at ?? null;
+  const vAt = v.check_out?.at ?? v.check_in?.at ?? null;
+  if (dAt && (!vAt || ms(dAt) >= ms(vAt))) return "medication";
+  if (vAt) return "visit";
+  return "medication";
 }
