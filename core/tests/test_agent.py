@@ -94,9 +94,9 @@ def test_today_status_is_grounded(full_day):
     (d,) = s["deliveries"]
     assert d["dropped"]["time"] == "14:07" and d["brought_inside"]["time"] == "14:40"
     assert d["dropped"]["source"].startswith("Ring doorbell")
-    assert d["exposure_estimate"]["minutes_on_porch"] == 79.0
+    assert d["exposure_estimate"]["minutes_on_porch"] == 33.0
     assert "estimate" in d["exposure_estimate"]["note"]
-    assert "pharmacist" in d["exposure_estimate"]["assessment"]  # wording is deterministic
+    assert d["exposure_estimate"]["assessment"] == "estimate stayed within tolerance; likely fine"
     assert d["fridge_range_c"] == [2.0, 8.0] and d["never_above_c"] == 30.0
     kinds = [f["kind"] for f in s["findings"]]
     assert "short_visit" in kinds and "package_at_risk" in kinds
