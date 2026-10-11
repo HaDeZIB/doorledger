@@ -80,9 +80,12 @@ def reconcile(
     for exp in sorted(expectations, key=lambda e: e.window_start):
         if exp.kind == ExpectationKind.CAREGIVER_VISIT:
             result.visits.append(_visit(exp, obs, now, result.findings))
-    for exp in sorted(expectations, key=lambda e: e.window_start):
-        if exp.kind == ExpectationKind.MEDICATION_DELIVERY:
-            result.deliveries.append(_delivery(exp, obs, now, ambient, in_sun, used, result.findings))
+    deliveries = sorted((e for e in expectations if e.kind == ExpectationKind.MEDICATION_DELIVERY),
+                        key=lambda e: e.window_start)
+    assigned = _assign_drops(deliveries, obs)
+    for exp in deliveries:
+        result.deliveries.append(_delivery(exp, obs, now, ambient, in_sun, used, result.findings,
+                                           assigned.get(exp.id)))
     return result
 
 
@@ -133,6 +136,28 @@ def _visit(exp: Expectation, obs: list[Observation], now: datetime, out: list[Fi
     return st
 
 
+def _window_distance(exp: Expectation, at: datetime) -> float:
+    if exp.window_start <= at <= exp.window_end:
+        return 0.0
+    edge = exp.window_start if at < exp.window_start else exp.window_end
+    return abs((at - edge).total_seconds())
+
+
+def _assign_drops(deliveries: list[Expectation], obs: list[Observation]) -> dict[str, Observation]:
+    """Give each parcel drop to the expected delivery whose window is NEAREST (not merely the
+    first one that would accept it), one drop per delivery."""
+    assigned: dict[str, Observation] = {}
+    for o in obs:
+        if o.kind != ObservationKind.PACKAGE_DROPPED:
+            continue
+        candidates = [e for e in deliveries if e.id not in assigned
+                      and e.window_start - DROP_MATCH_BEFORE <= o.at <= e.window_end + DROP_MATCH_AFTER]
+        if candidates:
+            best = min(candidates, key=lambda e: _window_distance(e, o.at))
+            assigned[best.id] = o
+    return assigned
+
+
 def _delivery(
     exp: Expectation,
     obs: list[Observation],
@@ -141,16 +166,16 @@ def _delivery(
     in_sun: bool,
     used: set[str],
     out: list[Finding],
+    drop: Observation | None = None,
 ) -> DeliveryState:
     st = DeliveryState(exp)
+    if drop is not None:
+        st.dropped = drop
+        used.add(drop.id)
     for o in obs:
         if o.id in used:
             continue
-        if (o.kind == ObservationKind.PACKAGE_DROPPED and st.dropped is None
-                and exp.window_start - DROP_MATCH_BEFORE <= o.at <= exp.window_end + DROP_MATCH_AFTER):
-            st.dropped = o
-            used.add(o.id)
-        elif o.kind == ObservationKind.PACKAGE_REMOVED and st.dropped and o.at > st.dropped.at:
+        if o.kind == ObservationKind.PACKAGE_REMOVED and st.dropped and o.at > st.dropped.at:
             st.removed = o
             used.add(o.id)
             break

@@ -35,7 +35,9 @@ def exposure_report(engine: Engine, expectation_id: str, evidence_root: Path) ->
     tz = ZoneInfo(engine.household.patient.timezone)
     r = reconcile(list(engine.expectations.values()), engine.observations, engine.clock.now(),
                   engine.ambient, in_sun=engine.household.porch_in_sun)
-    d = next(x for x in r.deliveries if x.expectation.id == expectation_id)
+    d = next((x for x in r.deliveries if x.expectation.id == expectation_id), None)
+    if d is None:
+        raise KeyError(f"{expectation_id} is not a medication delivery")
     est = d.estimate
     styles = getSampleStyleSheet()
     story = [
@@ -74,8 +76,10 @@ def exposure_report(engine: Engine, expectation_id: str, evidence_root: Path) ->
                           Image(str(path), width=4.8 * inch, height=2.7 * inch),
                           Spacer(1, 0.1 * inch)]
 
+    # Only this delivery's notifications — never other care details (e.g. aide visits).
+    finding_ids = {rec["id"] for rec in engine.ledger.records(kinds=["finding"], ref=expectation_id)}
     actions = [rec["body"] for rec in engine.ledger.records(kinds=["action"])
-               if rec["ref"] == expectation_id or rec["body"].get("finding_id")]
+               if rec["ref"] == expectation_id or rec["body"].get("finding_id") in finding_ids]
     if actions:
         story.append(Paragraph("Who was notified", styles["Heading3"]))
         for a in actions:

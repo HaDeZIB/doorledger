@@ -229,6 +229,15 @@ class Responder:
             out.append(Action(kind="pharmacy_claim", target="Pharmacy", at=now, finding_id=finding.id,
                               message="Replacement request drafted with exposure log and camera evidence.",
                               delivered=False, data={"draft": True, **finding.data}))
+        elif k == FindingKind.PACKAGE_RETRIEVED and finding.severity == "critical":
+            # Brought inside, but only after the estimate crossed the limit: not good news.
+            inc = self.incidents.setdefault(exp, Incident(exp, "porch", now))
+            for person in [*family, ladder[0]] if ladder else family:
+                out.append(self._send("notify", person, finding, "porch_compromised", inc, now))
+            out.append(Action(kind="pharmacy_claim", target="Pharmacy", at=now, finding_id=finding.id,
+                              message="Replacement request drafted with exposure log and camera evidence.",
+                              delivered=False, data={"draft": True, **finding.data}))
+            inc.closed = True
         elif k == FindingKind.PACKAGE_RETRIEVED:
             inc = self.incidents.get(exp)
             if inc and not inc.closed:

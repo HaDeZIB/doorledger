@@ -96,7 +96,8 @@ def estimate(
     if compromised:
         status = "compromised"
     else:
-        budget_left = (cap - above_store) if (cap is not None and t_store is not None) else None
+        # Strict profiles: the cap only starts counting once the box is above store_max_c.
+        budget_left = (t_store + cap - elapsed) if (cap is not None and t_store is not None) else None
         soonest = min(x for x in (until_exc, until_freeze, budget_left, math.inf) if x is not None)
         status = "at_risk" if soonest <= at_risk_window_min else "safe"
     if direction == "cold":
