@@ -46,23 +46,40 @@ backoff); each streamed record is appended to the ledger and triggers a state re
 EVV export downloads `/api/evv.csv?date=…`. The backend must allow CORS from `http://localhost:3000`.
 
 **Mock** — used when `NEXT_PUBLIC_MOCK=1`, or automatically when the backend is unreachable at load
-(the browser re-probes once on mount; the demo strip has *Retry API* / *Use mock*). A fixture day for a
-fictional household (Rosa Martínez, 81, Tampa FL; aide Maria Gómez, BrightPath Home Care; insulin from
-CVS Specialty) is generated for *today* in America/New_York. A client-side **demo clock** drives it:
-state at any instant is derived from the fixture (`lib/mock/engine.ts`), and the porch temperature is
-computed with a TypeScript port of `core/src/doorledger/exposure.py` (Newton heating, sun halves tau).
-Proof frames are drawn as labelled illustrations; EVV CSV is generated in the browser.
+(the browser re-probes once on mount; the demo strip has *Retry API* / *Use mock*). A fixture **winter** day
+for a fictional household (Rosa Martínez, 81, Chicago, IL; aide Maria Gómez, BrightPath Home Care; insulin
+refill from CVS Specialty via UPS) is generated for *today* in America/Chicago. It mirrors the backend
+scenarios in `core/src/doorledger/scenarios.py`. A client-side **demo clock** drives it: state at any instant
+is derived from the fixture (`lib/mock/engine.ts`), and the box temperature is computed with a TypeScript
+port of `core/src/doorledger/exposure.py` (Newton cooling/heating toward the outside temperature; on a
+freezing porch the danger is the 0 °C freezing limit, on a hot one the 30 °C excursion limit).
+Outside is −6 °C in the morning and −9 °C in the afternoon. Proof frames are drawn as labelled
+illustrations; EVV CSV is generated in the browser.
+
+Provenance is honest: vehicle + package drop come from Ring Developer Playground footage
+(`ring_live_view`); scenes whose footage isn't filmed yet (aide check-in/out, package pickup) are
+`simulated` with no `evidence_path`, and the UI shows a "No camera frame · simulated" panel for them,
+never an image.
 
 Mock scenarios (demo-clock windows over the same day; default speed 60×, i.e. 1 s = 1 min):
 
 | Button | Clock | What happens |
 |---|---|---|
-| Insulin on a hot porch | 1:05 PM → 2:36 PM | Drop at 1:12 PM in 94°F sun · text Rosa · call unanswered · at-risk at 2:17 PM → call neighbor Luis + notify Ana · box taken inside 2:26 PM (est. 28.7°C peak, under the 30°C limit) |
-| Late & short visit | 8:55 AM → 10:15 AM | No check-in by 9:20 → agency + family alerted · check-in 9:41 (41 min late) · checkout 10:08 (27 of 60 min) → flagged |
-| Full day | 7:00 AM → 7:45 PM | Both of the above + evening visit missed → backup aide requested → backup checks in 6:06 PM, completes · EVV export + daily summary |
+| Insulin on a freezing porch | 1:55 PM → 2:55 PM | 2:05 van, 2:07 Ring sees the package (16°F / −9°C) → text Rosa (Spanish) · 2:27 at risk (~20 min from freezing) → neighbor Luis · 2:37 → Ana (call Rosa or someone nearby) · 2:40 brought inside (simulated pickup), est. 33°F / 0.7°C, never froze → "good news" to Ana |
+| Late & short visit | 8:50 AM → 10:20 AM | No check-in by 9:16 → agency alerted · check-in 9:22 (22 min late, simulated) · checkout 10:05 (43 of 120 min, simulated) at 21°F / −6°C → flagged to Ana + agency |
+| Full day | 8:50 AM → 2:55 PM | Both of the above |
 
-The page opens at 2:05 PM (insulin already on the porch) and ticks in real time; after a scenario ends the
-clock keeps running at 1×. **Reset** jumps to 7:00 AM.
+The page opens at 2:20 PM (insulin already on the porch) and ticks in real time; after a scenario ends the
+clock keeps running at 1×. **Reset** jumps to 8:30 AM.
+
+### Recording the demo video
+
+The *Today* view puts the story above the fold on desktop (≥1280 px wide): status banner, then
+*Care plan vs. reality* next to the featured card (medication while a package is outside, the visit card
+while a visit needs attention). It is sized to fit a 1280×720 viewport without scrolling; at
+≥1800×1000 the root font scales up so 1920×1080 renders the same layout ~1.4× larger. Press **D** to hide
+the demo strip once a scenario is running. New findings/actions slide in with a short highlight; new
+timeline markers pop in.
 
 ## Layout
 
@@ -82,5 +99,8 @@ lib/thermal.ts  exposure model port (mock only)
 
 - No Ring logos or Amazon trademarks are used; the UI only says "Ring doorbell" in text.
 - No face recognition anywhere: aides are identified only by the rotating signed code they show to the doorbell.
-- Temperatures are model estimates, labelled as such. Units toggle °F/°C by clicking the outdoor temperature.
+- Temperatures are model estimates, labelled as such. °F first (US families) with °C alongside; click the
+  outdoor temperature to swap which one is primary.
+- Each action shows a small language tag (e.g. `ES`) when the backend sends `data.language`; messages to
+  Rosa are in Spanish.
 - Accessibility: base font 17px, text colors ≥ 4.5:1, visible focus rings, `aria-live` feeds, reduced-motion respected.

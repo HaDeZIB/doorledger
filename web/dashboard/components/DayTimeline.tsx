@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import type { DeliveryState, Finding, Household, LedgerRecord, Observation, State, VisitState } from "@/lib/types";
 import { findingLabel, OBS_LABEL, firstName, latestFindings, visionNote, visitStatus } from "@/lib/derive";
+import { exposureDirection } from "@/lib/thermal";
+import { useArrivals } from "@/lib/useArrivals";
 import { fmtDateLong, fmtDuration, fmtHourShort, fmtTime, minuteOfDay, ms, zonedISO, dateIn } from "@/lib/time";
 import { useUnits } from "@/lib/units";
 import { EvidenceFrame } from "./EvidenceFrame";
@@ -24,6 +26,7 @@ interface RenderCtx {
   pct: (iso: string) => number;
   pctMin: (m: number) => number;
   nowIso: string;
+  isNew: (id: string) => boolean;
   select: (s: Sel) => void;
   selected: Sel;
 }
@@ -44,6 +47,7 @@ export function DayTimeline({
   const tz = household.patient.timezone;
   const { fmt } = useUnits();
   const [userSel, setUserSel] = useState<Sel>(null);
+  const isNew = useArrivals([...[...observations.values()].filter((o) => ms(o.at) <= ms(state.now)).map((o) => o.id), ...state.findings.map((f) => f.id)]);
 
   // ----- axis ------------------------------------------------------------------------
   const { startMin, endMin } = useMemo(() => {
@@ -52,8 +56,8 @@ export function DayTimeline({
     const s = Math.min(...exps.map((e) => minuteOfDay(e.window_start, tz)));
     const e = Math.max(...exps.map((x) => minuteOfDay(x.window_end, tz)));
     return {
-      startMin: Math.max(0, Math.floor((s - 120) / 60) * 60),
-      endMin: Math.min(24 * 60, Math.ceil((e + 120) / 60) * 60),
+      startMin: Math.max(0, Math.floor((s - 60) / 60) * 60),
+      endMin: Math.min(24 * 60, Math.ceil((e + 60) / 60) * 60),
     };
   }, [state.visits, state.deliveries, tz]);
   const span = endMin - startMin;
@@ -89,14 +93,14 @@ export function DayTimeline({
   ].sort((a, b) => a.at - b.at);
 
   const lanes: Lane[] = items.map((it) =>
-    it.lane === "v" ? visitLane(it.v!, state.now, tz, findingsByExp(it.v!.expectation.id)) : deliveryLane(it.d!, state.now, tz, findingsByExp(it.d!.expectation.id), fmt),
+    it.lane === "v" ? visitLane(it.v!, state.now, tz, findingsByExp(it.v!.expectation.id)) : deliveryLane(it.d!, state.now, tz, findingsByExp(it.d!.expectation.id), fmt, household.ambient.celsius),
   );
   lanes.push({
     key: "other",
     title: "Other activity",
     subtitle: other.length ? `${other.length} event${other.length > 1 ? "s" : ""} at the door` : "Nothing unscheduled",
     icon: IconDoor,
-    render: ({ pct, select, selected }) => (
+    render: ({ pct, select, selected, isNew }) => (
       <>
         <div className="absolute inset-x-0 top-1/2 h-px bg-line" />
         {other.map((o) => (
@@ -108,12 +112,14 @@ export function DayTimeline({
             active={selected?.type === "obs" && selected.id === o.id}
             onClick={() => select({ type: "obs", id: o.id })}
             small
+            simulated={o.source === "simulated"}
+            fresh={isNew(o.id)}
           />
         ))}
         {state.findings
           .filter((f) => !f.expectation_id)
           .map((f) => (
-            <Flag key={f.id} left={pct(f.at)} finding={f} onClick={() => select({ type: "finding", id: f.id })} active={selected?.type === "finding" && selected.id === f.id} />
+            <Flag key={f.id} left={pct(f.at)} finding={f} onClick={() => select({ type: "finding", id: f.id })} active={selected?.type === "finding" && selected.id === f.id} fresh={isNew(f.id)} />
           ))}
       </>
     ),
@@ -125,33 +131,34 @@ export function DayTimeline({
     userSel &&
     ((userSel.type === "obs" && observations.has(userSel.id)) || (userSel.type === "finding" && state.findings.some((f) => f.id === userSel.id)));
   const selected: Sel = selValid ? userSel : latestObs ? { type: "obs", id: latestObs.id } : null;
-  const ctx: RenderCtx = { pct, pctMin, nowIso: state.now, select: setUserSel, selected };
+  const ctx: RenderCtx = { pct, pctMin, nowIso: state.now, select: setUserSel, selected, isNew };
 
   return (
     <Card aria-labelledby="timeline-title" className="overflow-hidden">
-      <div className="flex flex-wrap items-end justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">{fmtDateLong(state.now, tz)}</p>
-          <h2 id="timeline-title" className="mt-0.5 text-2xl font-semibold tracking-tight sm:text-[1.7rem]">
+      <div className="px-5 pt-5 sm:px-6 xl:pt-4">
+        <div className="flex flex-col-reverse gap-0.5 xl:flex-row xl:items-baseline xl:justify-between xl:gap-4">
+          <h2 id="timeline-title" className="text-2xl font-semibold tracking-tight sm:text-[1.7rem] xl:text-[1.5rem]">
             Care plan vs. reality
           </h2>
-          <p className="mt-1 max-w-2xl text-ink-2">What was expected at Rosa&apos;s front door today, and what the Ring doorbell actually saw.</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">{fmtDateLong(state.now, tz)}</p>
         </div>
-        <Legend />
+        <p className="mt-0.5 max-w-2xl text-ink-2 xl:text-[0.95rem]">
+          What was expected at {firstName(household.patient.name)}&apos;s front door today, and what the Ring doorbell actually saw.
+        </p>
       </div>
 
-      <div className="mt-5 flex px-3 pb-3 sm:px-6">
+      <div className="mt-4 flex px-3 pb-2 sm:px-6 xl:mt-2">
         {/* label column (tablet+) */}
-        <div className="hidden w-56 shrink-0 pr-4 md:block">
+        <div className="hidden w-56 shrink-0 pr-4 md:block lg:w-48 xl:w-52 xl:pr-3">
           <div className="h-8" />
           {lanes.map((l) => (
-            <div key={l.key} className="flex h-[76px] items-center gap-3 border-t border-line/70">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-canvas text-ink-2">
-                <l.icon size={20} />
+            <div key={l.key} className="flex h-[4.47rem] items-center gap-3 border-t border-line/70 xl:h-[3.41rem]">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-canvas text-ink-2 xl:h-8 xl:w-8 xl:rounded-xl">
+                <l.icon size={18} />
               </span>
-              <div className="min-w-0">
-                <p className="truncate font-semibold leading-tight">{l.title}</p>
-                <p className="truncate text-sm text-ink-3">{l.subtitle}</p>
+              <div className="min-w-0" title={`${l.title} · ${l.subtitle}`}>
+                <p className="truncate font-semibold leading-tight xl:text-[0.95rem]">{l.title}</p>
+                <p className="truncate text-sm text-ink-3 xl:text-[0.8rem]">{l.subtitle}</p>
               </div>
             </div>
           ))}
@@ -191,7 +198,7 @@ export function DayTimeline({
                 <p className="shrink-0 text-[0.95rem] font-semibold">{l.title}</p>
                 <span className="min-w-0 truncate text-sm text-ink-3">· {l.subtitle}</span>
               </div>
-              <div className="relative h-[64px] md:h-[76px]">{l.render(ctx)}</div>
+              <div className="relative h-[3.76rem] md:h-[4.47rem] xl:h-[3.41rem]">{l.render(ctx)}</div>
             </div>
           ))}
 
@@ -205,6 +212,11 @@ export function DayTimeline({
             </div>
           )}
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 pb-3 sm:px-6 xl:pb-2.5">
+        <p className="hidden text-[0.8rem] text-ink-3 sm:block">Tap any marker for details.</p>
+        <Legend />
       </div>
 
       <SelectionDetail selected={selected} state={state} observations={observations} evidenceUrl={evidenceUrl} tz={tz} />
@@ -224,7 +236,7 @@ function visitLane(v: VisitState, nowIso: string, tz: string, findings: Finding[
     subtitle: `${firstName(who)}${v.check_in?.detail.backup ? " (backup)" : ""} · ${fmtTime(e.window_start, tz)}–${fmtTime(e.window_end, tz)}`,
     icon: IconUser,
     chip: <StatusChip status={st.key} label={st.label} />,
-    render: ({ pct, nowIso, select, selected }) => {
+    render: ({ pct, nowIso, select, selected, isNew }) => {
       const bandL = pct(e.window_start);
       const bandW = pct(e.window_end) - bandL;
       const missed = st.key === "missed" && !v.check_in;
@@ -248,7 +260,7 @@ function visitLane(v: VisitState, nowIso: string, tz: string, findings: Finding[
               className="absolute top-1/2 h-0 -translate-y-1/2 border-t-2 border-dashed border-warn-bar"
               style={{ left: `${bandL}%`, width: `${(inL ?? pct(nowIso)) - bandL}%` }}
             >
-              {((inL ?? pct(nowIso)) - bandL > 3) && (
+              {inL === null && pct(nowIso) - bandL > 3 && (
                 <span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 whitespace-nowrap text-[0.75rem] font-semibold text-warn sm:block">
                   {Math.round(lateMin)} min late
                 </span>
@@ -259,22 +271,23 @@ function visitLane(v: VisitState, nowIso: string, tz: string, findings: Finding[
             <div className={cx("absolute top-1/2 h-3.5 -translate-y-1/2 rounded-full transition-[width] duration-300", color)} style={{ left: `${inL}%`, width: `${Math.max(outL - inL, 0.4)}%` }}>
               {v.minutes_on_site !== null && outL - inL > 4 && (
                 <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.75rem] font-semibold text-ink-2 tabular">
+                  {showLate && lateMin > 0 && `${Math.round(lateMin)} min late · `}
                   {v.minutes_on_site} of {e.planned_minutes} min
                 </span>
               )}
             </div>
           )}
           {v.check_in && (
-            <Marker left={inL!} className={cx("border-surface text-white", color)} label={`Checked in ${fmtTime(v.check_in.at, tz)}`} active={selected?.type === "obs" && selected.id === v.check_in.id} onClick={() => select({ type: "obs", id: v.check_in!.id })} />
+            <Marker left={inL!} className={cx("border-surface text-white", color)} label={`Checked in ${fmtTime(v.check_in.at, tz)}${v.check_in.source === "simulated" ? " (simulated)" : ""}`} active={selected?.type === "obs" && selected.id === v.check_in.id} onClick={() => select({ type: "obs", id: v.check_in!.id })} simulated={v.check_in.source === "simulated"} fresh={isNew(v.check_in.id)} />
           )}
           {v.check_out && (
-            <Marker left={outL!} className={cx("border-surface text-white", color)} label={`Checked out ${fmtTime(v.check_out.at, tz)}`} active={selected?.type === "obs" && selected.id === v.check_out.id} onClick={() => select({ type: "obs", id: v.check_out!.id })} />
+            <Marker left={outL!} className={cx("border-surface text-white", color)} label={`Checked out ${fmtTime(v.check_out.at, tz)}${v.check_out.source === "simulated" ? " (simulated)" : ""}`} active={selected?.type === "obs" && selected.id === v.check_out.id} onClick={() => select({ type: "obs", id: v.check_out!.id })} simulated={v.check_out.source === "simulated"} fresh={isNew(v.check_out.id)} />
           )}
           {v.check_in && !v.check_out && <Pulse left={outL!} className="text-brand" />}
           {latestFindings(findings)
             .filter((f) => f.severity !== "info")
             .map((f) => (
-              <Flag key={f.id} left={pct(f.at)} finding={f} onClick={() => select({ type: "finding", id: f.id })} active={selected?.type === "finding" && selected.id === f.id} />
+              <Flag key={f.id} left={pct(f.at)} finding={f} onClick={() => select({ type: "finding", id: f.id })} active={selected?.type === "finding" && selected.id === f.id} fresh={isNew(f.id)} />
             ))}
         </>
       );
@@ -282,22 +295,31 @@ function visitLane(v: VisitState, nowIso: string, tz: string, findings: Finding[
   };
 }
 
-function deliveryLane(d: DeliveryState, nowIso: string, tz: string, findings: Finding[], fmt: (c: number) => string): Lane {
+function deliveryLane(d: DeliveryState, nowIso: string, tz: string, findings: Finding[], fmt: (c: number) => string, ambientC: number): Lane {
   const e = d.expectation;
   const est = d.estimate;
+  const cold = exposureDirection(est, e.medication, ambientC) === "cold";
   return {
     key: e.id,
     title: e.title,
     subtitle: `${e.carrier?.replace(" courier", "") ?? "Pharmacy"} · ${fmtTime(e.window_start, tz)}–${fmtTime(e.window_end, tz)}`,
     icon: IconPackage,
-    render: ({ pct, nowIso: n, select, selected }) => {
+    render: ({ pct, nowIso: n, select, selected, isNew }) => {
       const bandL = pct(e.window_start);
       const bandW = pct(e.window_end) - bandL;
       const dL = d.dropped ? pct(d.dropped.at) : null;
       const endIso = d.removed?.at ?? (d.dropped ? n : null);
       const rL = endIso ? pct(endIso) : null;
       const statusColor =
-        est?.status === "compromised" ? "var(--color-crit-bar)" : est?.status === "at_risk" ? "var(--color-warn-bar)" : "var(--color-ok-bar)";
+        est?.status === "compromised"
+          ? "var(--color-crit-bar)"
+          : est?.status === "at_risk"
+            ? "var(--color-warn-bar)"
+            : cold
+              ? "var(--color-cold)"
+              : "var(--color-ok-bar)";
+      // the bar starts fridge-cold and drifts toward the danger: icy blue on a freezing porch
+      const startColor = cold ? "var(--color-ok-bar)" : "var(--color-cold)";
       const deadlineIso =
         d.dropped && !d.removed && est?.minutes_until_excursion_max != null && est.minutes_until_excursion_max > 0
           ? new Date(ms(n) + est.minutes_until_excursion_max * 60000).toISOString()
@@ -308,7 +330,7 @@ function deliveryLane(d: DeliveryState, nowIso: string, tz: string, findings: Fi
           {dL !== null && rL !== null && (
             <div
               className="absolute top-1/2 h-3.5 -translate-y-1/2 rounded-full transition-[width] duration-300"
-              style={{ left: `${dL}%`, width: `${Math.max(rL - dL, 0.4)}%`, background: `linear-gradient(90deg, var(--color-cold), ${statusColor})` }}
+              style={{ left: `${dL}%`, width: `${Math.max(rL - dL, 0.4)}%`, background: `linear-gradient(90deg, ${startColor}, ${statusColor})` }}
             >
               {est && (
                 <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.75rem] font-semibold text-ink-2 tabular">
@@ -318,21 +340,27 @@ function deliveryLane(d: DeliveryState, nowIso: string, tz: string, findings: Fi
             </div>
           )}
           {deadlineIso && pct(deadlineIso) < 100 && (
-            <div className="absolute bottom-2 top-2 w-0 border-l-2 border-dashed border-crit-bar" style={{ left: `${pct(deadlineIso)}%` }} title={`Estimated unsafe at ${fmtTime(deadlineIso, tz)}`}>
-              <span className="absolute -top-0.5 left-1 whitespace-nowrap text-[0.72rem] font-semibold text-crit">unsafe ~{fmtTime(deadlineIso, tz)}</span>
+            <div
+              className={cx("absolute bottom-2 top-2 w-0 border-l-2 border-dashed", cold ? "border-cold" : "border-crit-bar")}
+              style={{ left: `${pct(deadlineIso)}%` }}
+              title={`Estimated ${cold ? "to freeze" : "unsafe"} at ${fmtTime(deadlineIso, tz)}`}
+            >
+              <span className={cx("absolute -top-0.5 left-1 whitespace-nowrap text-[0.72rem] font-semibold", cold ? "text-cold-text" : "text-crit")}>
+                {cold ? "freezes" : "unsafe"} ~{fmtTime(deadlineIso, tz)}
+              </span>
             </div>
           )}
           {d.dropped && (
-            <Marker left={dL!} className="border-surface bg-cold text-white" label={`Left at door ${fmtTime(d.dropped.at, tz)}`} active={selected?.type === "obs" && selected.id === d.dropped.id} onClick={() => select({ type: "obs", id: d.dropped!.id })} />
+            <Marker left={dL!} className="border-surface bg-cold text-white" label={`Left at door ${fmtTime(d.dropped.at, tz)}`} active={selected?.type === "obs" && selected.id === d.dropped.id} onClick={() => select({ type: "obs", id: d.dropped!.id })} simulated={d.dropped.source === "simulated"} fresh={isNew(d.dropped.id)} />
           )}
           {d.removed && (
-            <Marker left={rL!} className="border-surface bg-ok-bar text-white" label={`Taken inside ${fmtTime(d.removed.at, tz)}`} active={selected?.type === "obs" && selected.id === d.removed.id} onClick={() => select({ type: "obs", id: d.removed!.id })} />
+            <Marker left={rL!} className="border-surface bg-ok-bar text-white" label={`Taken inside ${fmtTime(d.removed.at, tz)}${d.removed.source === "simulated" ? " (simulated)" : ""}`} active={selected?.type === "obs" && selected.id === d.removed.id} onClick={() => select({ type: "obs", id: d.removed!.id })} simulated={d.removed.source === "simulated"} fresh={isNew(d.removed.id)} />
           )}
-          {d.dropped && !d.removed && <Pulse left={rL!} className={est?.status === "safe" ? "text-ok-bar" : est?.status === "at_risk" ? "text-warn-bar" : "text-crit-bar"} />}
+          {d.dropped && !d.removed && <Pulse left={rL!} className={est?.status === "safe" ? (cold ? "text-cold" : "text-ok-bar") : est?.status === "at_risk" ? "text-warn-bar" : "text-crit-bar"} />}
           {latestFindings(findings)
             .filter((f) => f.severity !== "info")
             .map((f) => (
-              <Flag key={f.id} left={pct(f.at)} finding={f} onClick={() => select({ type: "finding", id: f.id })} active={selected?.type === "finding" && selected.id === f.id} />
+              <Flag key={f.id} left={pct(f.at)} finding={f} onClick={() => select({ type: "finding", id: f.id })} active={selected?.type === "finding" && selected.id === f.id} fresh={isNew(f.id)} />
             ))}
           {!d.dropped && ms(nowIso) > ms(e.window_end) && (
             <span className="absolute top-1/2 -translate-y-1/2 text-sm font-semibold text-crit" style={{ left: `${pct(e.window_end) + 1}%` }}>
@@ -372,6 +400,8 @@ function Marker({
   onClick,
   active,
   small,
+  simulated,
+  fresh,
 }: {
   left: number;
   className: string;
@@ -379,6 +409,10 @@ function Marker({
   onClick: () => void;
   active?: boolean;
   small?: boolean;
+  /** No real footage: drawn with a dashed halo (see legend). */
+  simulated?: boolean;
+  /** Arrived after the page loaded: one-shot ring burst. */
+  fresh?: boolean;
 }) {
   return (
     <button
@@ -388,13 +422,16 @@ function Marker({
       title={label}
       aria-pressed={active}
       className={cx(
-        "absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] shadow-sm transition-transform duration-200 hover:scale-125 animate-enter",
+        "absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] shadow-sm transition-[scale] duration-200 hover:scale-125 animate-pop",
         small ? "h-3.5 w-3.5 border-2" : "h-4 w-4 sm:h-5 sm:w-5",
+        simulated && "outline-2 outline-offset-2 outline-dashed outline-ink-3/70",
         active && "scale-125 ring-4 ring-brand/30",
         className,
       )}
       style={{ left: `${left}%` }}
-    />
+    >
+      {fresh && <span className="pointer-events-none absolute -inset-[3px] rounded-full bg-brand/45 animate-ping-once" aria-hidden />}
+    </button>
   );
 }
 
@@ -404,7 +441,7 @@ function Pulse({ left, className }: { left: number; className: string }) {
   );
 }
 
-function Flag({ left, finding, onClick, active }: { left: number; finding: Finding; onClick: () => void; active?: boolean }) {
+function Flag({ left, finding, onClick, active, fresh }: { left: number; finding: Finding; onClick: () => void; active?: boolean; fresh?: boolean }) {
   const s = SEVERITY_STYLE[finding.severity];
   return (
     <button
@@ -412,27 +449,32 @@ function Flag({ left, finding, onClick, active }: { left: number; finding: Findi
       onClick={onClick}
       aria-label={`${findingLabel(finding)}: ${finding.summary}`}
       title={`${findingLabel(finding)}: ${finding.summary}`}
-      className={cx("absolute top-0 z-10 hidden -translate-x-1/2 animate-enter transition-transform hover:scale-125 sm:block", active && "scale-125")}
+      className={cx("absolute top-0 z-10 hidden -translate-x-1/2 animate-pop transition-[scale] hover:scale-125 sm:block", active && "scale-125")}
       style={{ left: `${left}%` }}
     >
-      <span className={cx("block h-3 w-3 rotate-45 rounded-[3px] ring-2 ring-surface", s.bar)} />
+      <span className={cx("relative block h-3 w-3 rotate-45 rounded-[3px] ring-2 ring-surface", s.bar)}>
+        {fresh && <span className={cx("pointer-events-none absolute inset-0 rounded-[3px] animate-ping-once", s.bar)} aria-hidden />}
+      </span>
     </button>
   );
 }
 
 function Legend() {
   return (
-    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink-2" aria-label="Legend">
-      <li className="flex items-center gap-2">
-        <span className="hatch inline-block h-4 w-7 rounded-md border-2 border-dashed border-line-strong" /> Expected
+    <ul className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[0.8rem] text-ink-2" aria-label="Legend">
+      <li className="flex items-center gap-1.5">
+        <span className="hatch inline-block h-3.5 w-6 rounded-md border-2 border-dashed border-line-strong" /> Expected
       </li>
-      <li className="flex items-center gap-2">
-        <span className="inline-block h-2.5 w-7 rounded-full bg-ok-bar" /> Observed
+      <li className="flex items-center gap-1.5">
+        <span className="inline-block h-2.5 w-6 rounded-full bg-ok-bar" /> Observed
       </li>
-      <li className="flex items-center gap-2">
+      <li className="flex items-center gap-1.5">
         <span className="inline-block h-3 w-3 rounded-full border-2 border-surface bg-cold shadow" /> Camera event
       </li>
-      <li className="flex items-center gap-2">
+      <li className="flex items-center gap-1.5">
+        <span className="inline-block h-2.5 w-2.5 rounded-full bg-ink-3 outline-2 outline-offset-2 outline-dashed outline-ink-3/70" /> Simulated
+      </li>
+      <li className="flex items-center gap-1.5">
         <span className="inline-block h-2.5 w-2.5 rotate-45 rounded-[2px] bg-warn-bar" /> Alert
       </li>
     </ul>
@@ -482,27 +524,31 @@ function SelectionDetail({
   const desc =
     (o.detail.description as string | undefined) ??
     (o.detail.caregiver
-      ? `${o.detail.caregiver}${o.detail.backup ? " (backup aide)" : ""} · rotating code verified`
+      ? `${o.detail.caregiver}${o.detail.backup ? " (backup aide)" : ""} · ${o.source === "simulated" ? "rotating-code check-in, simulated until our footage is filmed" : "rotating code verified"}`
+      : o.source === "simulated" && (o.kind === "presence_check_in" || o.kind === "presence_check_out")
+        ? "Rotating-code check-in, simulated until our footage is filmed"
       : o.detail.method === "signed_code" || o.detail.method === "compact_qr"
         ? "Rotating signed code verified at the door"
         : "");
   return (
-    <div className="flex flex-col gap-4 border-t border-line bg-canvas/50 px-5 py-4 sm:flex-row sm:items-center sm:px-6" aria-live="polite">
-      <EvidenceFrame obs={o} url={evidenceUrl(o)} tz={tz} compact className="w-full shrink-0 sm:w-56" />
+    <div className="flex flex-col gap-4 border-t border-line bg-canvas/50 px-5 py-4 sm:flex-row sm:items-center sm:px-6 lg:py-3" aria-live="polite">
+      <EvidenceFrame obs={o} url={evidenceUrl(o)} tz={tz} compact className="w-full shrink-0 sm:w-56 lg:w-44" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">Selected camera event</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">
+          {o.source === "simulated" ? "Selected event · simulated, no footage yet" : "Selected camera event"}
+        </p>
         <p className="mt-0.5 text-lg font-semibold">
           {OBS_LABEL[o.kind]} <span className="font-normal text-ink-3 tabular">at {fmtTime(o.at, tz)}</span>
         </p>
         {desc && <p className="text-ink-2">{desc}</p>}
         {note && (
           <p className="text-ink-2">
-            <span className="font-semibold text-ink-3">Vision:</span> {note}
+            <span className="font-semibold text-ink-3">{o.source === "simulated" ? "Note:" : "Vision:"}</span> {note}
           </p>
         )}
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-2">
           <SourceBadge source={o.source} />
-          <span className="tabular">{Math.round(o.confidence * 100)}% confidence</span>
+          {o.source !== "simulated" && <span className="tabular">{Math.round(o.confidence * 100)}% confidence</span>}
           {o.kind === "vehicle_arrived" && <IconCar size={16} />}
         </div>
       </div>

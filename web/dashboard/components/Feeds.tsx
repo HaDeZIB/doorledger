@@ -1,14 +1,16 @@
 "use client";
 
 import type { Action, Household, Observation, State } from "@/lib/types";
-import { findingLabel, actionDeliveryLabel, actionHeadline, latestFindings } from "@/lib/derive";
+import { LANGUAGE_NAME, actionDeliveryLabel, actionHeadline, actionLanguage, findingLabel, latestFindings } from "@/lib/derive";
+import { useArrivals } from "@/lib/useArrivals";
 import { fmtTime, ms } from "@/lib/time";
 import { IconBell, IconBuilding, IconLedger, IconMail, IconMessage, IconPhone, IconUser } from "./icons";
-import { Card, CardHeader, Empty, SEVERITY_STYLE, SourceBadge, cx } from "./ui";
+import { Card, CardHeader, Empty, LangTag, SEVERITY_STYLE, SourceBadge, cx } from "./ui";
 
 export function FindingsFeed({ state, observations, tz }: { state: State; observations: Map<string, Observation>; tz: string }) {
   // one row per (visit/delivery, kind): e.g. "late, not here yet" is replaced by "arrived 22 min late"
   const items = latestFindings(state.findings).sort((a, b) => ms(b.at) - ms(a.at));
+  const isNew = useArrivals(items.map((f) => f.id));
   return (
     <Card aria-labelledby="findings-title">
       <CardHeader id="findings-title" eyebrow="What DoorLedger noticed" title="Findings" right={<Count n={items.length} />} />
@@ -19,7 +21,7 @@ export function FindingsFeed({ state, observations, tz }: { state: State; observ
           const Icon = s.icon;
           const obs = f.observation_ids.map((id) => observations.get(id)).filter(Boolean) as Observation[];
           return (
-            <li key={f.id} className="animate-enter relative overflow-hidden rounded-2xl border border-line bg-surface pl-4">
+            <li key={f.id} className={cx("relative overflow-hidden rounded-2xl border border-line bg-surface pl-4", isNew(f.id) ? "animate-arrive" : "animate-enter")}>
               <span className={cx("absolute inset-y-0 left-0 w-1.5", s.bar)} aria-hidden />
               <div className="flex gap-3 px-3 py-3">
                 <span className={cx("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full", s.chip)}>
@@ -37,8 +39,8 @@ export function FindingsFeed({ state, observations, tz }: { state: State; observ
                   {obs.length > 0 && (
                     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-sm text-ink-3">
                       <span>Based on</span>
-                      {obs.map((o) => (
-                        <SourceBadge key={o.id} source={o.source} />
+                      {[...new Set(obs.map((o) => o.source))].map((src) => (
+                        <SourceBadge key={src} source={src} />
                       ))}
                     </div>
                   )}
@@ -62,38 +64,47 @@ const CHANNEL_ICON: Record<string, React.ComponentType<{ size?: number }>> = {
   app: IconBell,
   agency_portal: IconBuilding,
   email: IconMail,
+  telegram: IconMessage,
+  whatsapp: IconMessage,
 };
 
 export function ActionsFeed({ state, household, tz }: { state: State; household: Household; tz: string }) {
   const items = [...state.actions].sort((a, b) => ms(b.at) - ms(a.at));
+  const isNew = useArrivals(items.map((a) => a.id));
   return (
     <Card aria-labelledby="actions-title">
       <CardHeader id="actions-title" eyebrow="What DoorLedger did" title="Actions taken" right={<Count n={items.length} />} />
       <ol className="max-h-[40rem] space-y-3 overflow-y-auto px-5 pb-6 pt-4 sm:px-6" aria-live="polite">
         {items.length === 0 && <Empty>No one needed to be contacted.</Empty>}
         {items.map((a) => (
-          <ActionRow key={a.id} a={a} household={household} tz={tz} />
+          <ActionRow key={a.id} a={a} household={household} tz={tz} fresh={isNew(a.id)} />
         ))}
       </ol>
     </Card>
   );
 }
 
-function ActionRow({ a, household, tz }: { a: Action; household: Household; tz: string }) {
+function ActionRow({ a, household, tz, fresh }: { a: Action; household: Household; tz: string; fresh: boolean }) {
   const channel = String(a.data.channel ?? "");
   const Icon = a.kind === "export_evv" ? IconLedger : (CHANNEL_ICON[channel] ?? IconUser);
   const dl = actionDeliveryLabel(a);
+  const lang = actionLanguage(a);
   return (
-    <li className="animate-enter flex gap-3 rounded-2xl border border-line px-3 py-3">
+    <li className={cx("flex gap-3 rounded-2xl border border-line px-3 py-3", fresh ? "animate-arrive" : "animate-enter")}>
       <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-strong">
         <Icon size={17} />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-          <p className="font-semibold">{actionHeadline(a, household)}</p>
+          <p className="flex flex-wrap items-center gap-x-2 font-semibold">
+            {actionHeadline(a, household)}
+            {lang && <LangTag code={lang} title={LANGUAGE_NAME[lang] ? `Message in ${LANGUAGE_NAME[lang]}` : undefined} />}
+          </p>
           <time className="text-sm text-ink-3 tabular">{fmtTime(a.at, tz)}</time>
         </div>
-        <p className="mt-1 rounded-xl bg-canvas px-3 py-2 text-[0.95rem] text-ink-2">“{a.message}”</p>
+        <p className="mt-1 rounded-xl bg-canvas px-3 py-2 text-[0.95rem] text-ink-2" lang={lang ? lang.toLowerCase() : undefined}>
+          “{a.message}”
+        </p>
         <p
           className={cx(
             "mt-1.5 inline-flex items-center gap-1.5 text-sm font-semibold",

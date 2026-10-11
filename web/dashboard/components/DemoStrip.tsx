@@ -17,7 +17,7 @@ export function DemoStrip({ dl, onHide }: { dl: DoorLedger; onHide: () => void }
       aria-label="Demo controls"
       className="fixed inset-x-2 bottom-2 z-50 mx-auto max-w-5xl rounded-2xl border border-white/10 bg-[#141c25]/95 px-3 py-2.5 text-white shadow-2xl backdrop-blur sm:inset-x-4 sm:bottom-4"
     >
-      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap md:flex-wrap">
+      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap md:flex-wrap xl:flex-nowrap">
         <span className="mr-1 inline-flex items-center gap-2 text-sm font-semibold">
           <span className={cx("h-2 w-2 rounded-full", dl.mode === "live" ? "bg-emerald-400" : "bg-amber-300")} />
           {dl.mode === "live" ? "Live API" : "Mock"}

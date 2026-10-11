@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { featuredDelivery, featuredVisit, findingLabel } from "@/lib/derive";
+import { featuredDelivery, featuredVisit, findingLabel, heroFocus } from "@/lib/derive";
 import { UnitsProvider } from "@/lib/units";
 import { useDoorLedger, type InitialData } from "@/lib/useDoorLedger";
 import { AgencyView } from "./AgencyView";
@@ -65,6 +65,10 @@ function DashboardInner({ initial }: { initial: InitialData }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const focus = heroFocus(dl.state);
+  const medCard = <MedicationCard delivery={featuredDelivery(dl.state)} household={dl.household} state={dl.state} evidenceUrl={dl.evidenceUrl} />;
+  const visitCard = <VisitCard visit={featuredVisit(dl.state)} household={dl.household} state={dl.state} evidenceUrl={dl.evidenceUrl} />;
+
   const changeTab = (t: Tab) => {
     setTab(t);
     try {
@@ -76,10 +80,17 @@ function DashboardInner({ initial }: { initial: InitialData }) {
 
   return (
     <div className="min-h-screen pb-28">
-      <Header household={dl.household} tab={tab} onTab={changeTab} mode={dl.mode} streamConnected={dl.streamConnected} />
+      <Header
+        household={dl.household}
+        tab={tab}
+        onTab={changeTab}
+        mode={dl.mode}
+        streamConnected={dl.streamConnected}
+        demoNote={dl.mode === "mock" ? "Playing a recorded day for a fictional household. Press D for demo controls." : null}
+      />
 
       {dl.mode === "mock" && (
-        <div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6">
+        <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 xl:hidden">
           <p className="rounded-2xl border border-dashed border-line-strong bg-surface/60 px-4 py-2 text-sm text-ink-2">
             <strong className="font-semibold text-ink">Demo data.</strong>{" "}
             {dl.mockReason === "unreachable"
@@ -90,20 +101,25 @@ function DashboardInner({ initial }: { initial: InitialData }) {
         </div>
       )}
 
-      <main className="mx-auto max-w-6xl space-y-6 px-4 pt-5 sm:px-6">
+      <main className="mx-auto max-w-7xl space-y-6 px-4 pt-5 sm:px-6 xl:space-y-4 xl:pt-3">
         {tab === "today" && (
           <>
             <StatusBanner state={dl.state} household={dl.household} />
-            <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-              <AskCard key={`ask-${dl.mode}`} household={dl.household} mode={dl.mode} ask={dl.ask} />
-              <SummaryCard key={`sum-${dl.mode}`} mode={dl.mode} summarize={dl.summarize} />
+            {/* hero: the story in one screen (fits 1280×720 without scrolling) */}
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.38fr)_minmax(0,1fr)] xl:items-start xl:gap-5">
+              <DayTimeline household={dl.household} state={dl.state} timeline={dl.timeline} observations={dl.observations} evidenceUrl={dl.evidenceUrl} />
+              <div key={focus} className="animate-swap">
+                {focus === "medication" ? medCard : visitCard}
+              </div>
             </div>
-            <DayTimeline household={dl.household} state={dl.state} timeline={dl.timeline} observations={dl.observations} evidenceUrl={dl.evidenceUrl} />
-            <div className="grid gap-6 lg:grid-cols-2">
-              <MedicationCard delivery={featuredDelivery(dl.state)} household={dl.household} state={dl.state} evidenceUrl={dl.evidenceUrl} />
-              <VisitCard visit={featuredVisit(dl.state)} household={dl.household} state={dl.state} evidenceUrl={dl.evidenceUrl} />
+            <div className="grid gap-6 lg:grid-cols-2 xl:gap-5">
+              {focus === "medication" ? visitCard : medCard}
+              <div className="flex flex-col gap-6 xl:gap-5">
+                <AskCard key={`ask-${dl.mode}`} household={dl.household} mode={dl.mode} ask={dl.ask} />
+                <SummaryCard key={`sum-${dl.mode}`} mode={dl.mode} summarize={dl.summarize} />
+              </div>
             </div>
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2 xl:gap-5">
               <FindingsFeed state={dl.state} observations={dl.observations} tz={tz} />
               <ActionsFeed state={dl.state} household={dl.household} tz={tz} />
             </div>
@@ -113,7 +129,7 @@ function DashboardInner({ initial }: { initial: InitialData }) {
         {tab === "ledger" && <LedgerView timeline={dl.timeline} household={dl.household} />}
       </main>
 
-      <footer className="mx-auto mt-12 max-w-6xl px-4 text-center text-ink-3 sm:px-6">
+      <footer className="mx-auto mt-12 max-w-7xl px-4 text-center text-ink-3 sm:px-6">
         <p className="text-lg font-semibold text-ink-2">Care is delivered through the front door. DoorLedger makes sure it arrived.</p>
         <p className="mt-1 text-sm">
           No face recognition. Aides check in with a rotating code shown to the Ring doorbell. Temperatures are estimates from a thermal model, not a

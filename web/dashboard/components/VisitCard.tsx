@@ -74,6 +74,8 @@ export function VisitCard({
           </span>
         }
         title={headline}
+        className="xl:pt-3.5"
+        titleClassName="xl:text-[1.25rem]"
         right={<StatusChip status={st.key} label={st.label} />}
       />
       <p className="px-5 pt-1 text-ink-2 sm:px-6">
@@ -81,7 +83,7 @@ export function VisitCard({
         {backup && " (backup aide)"} · {e.agency}
       </p>
 
-      <div className="flex flex-col items-center gap-5 px-5 pt-5 sm:flex-row sm:items-center sm:px-6">
+      <div className="flex flex-col items-center gap-5 px-5 pt-4 sm:flex-row sm:items-center sm:px-6 xl:pt-3">
         <ProgressRing
           value={visit.check_in ? onSite / planned : 0}
           color={RING_COLOR[st.key]}
@@ -136,23 +138,16 @@ export function VisitCard({
         </dl>
       </div>
 
-      <div className="mx-5 mt-5 flex items-start gap-3 rounded-2xl bg-canvas p-3.5 text-ink-2 sm:mx-6">
-        <IconKey size={22} className="mt-0.5 shrink-0 text-brand" />
-        <p className="text-[0.95rem]">
-          Aides check in by holding a <strong className="font-semibold text-ink">rotating signed code</strong> on their phone up to the Ring doorbell.
-          No face recognition, no app for {firstName(household.patient.name)}.
-        </p>
-      </div>
-
-      <div className="grid gap-5 px-5 pb-6 pt-5 sm:grid-cols-2 sm:px-6">
+      <div className="grid gap-4 px-5 pb-5 pt-4 sm:grid-cols-2 sm:px-6 xl:gap-3 xl:pb-4 xl:pt-3">
         {evidence ? (
-          <div>
-            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">Proof</p>
+          <div className="min-w-0">
+            <p className="mb-1.5 text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">Proof</p>
             <EvidenceFrame
               obs={evidence}
               url={evidenceUrl(evidence)}
               alternates={visit.check_out && visit.check_in ? [{ obs: visit.check_in, url: evidenceUrl(visit.check_in) }] : []}
               tz={tz}
+              wideOverlay
             />
           </div>
         ) : (
@@ -160,27 +155,42 @@ export function VisitCard({
             The check-in frame will appear here.
           </div>
         )}
-        <div>
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">Other visits today</p>
-          <ul className="divide-y divide-line rounded-2xl border border-line">
-            {others.length === 0 && <li className="px-3 py-3 text-ink-3">None</li>}
-            {others.map((v) => {
-              const s = visitStatus(v, state.now, state.findings);
-              return (
-                <li key={v.expectation.id} className="flex items-center justify-between gap-2 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{v.expectation.title}</p>
-                    <p className="text-sm text-ink-3 tabular">
-                      {fmtTime(v.expectation.window_start, tz)}
-                      {v.minutes_on_site !== null && ` · ${v.minutes_on_site} of ${v.expectation.planned_minutes} min`}
-                    </p>
-                  </div>
-                  <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full", VISIT_STATUS_STYLE[s.key].dot)} title={s.label} />
-                  <span className="sr-only">{s.label}</span>
-                </li>
-              );
-            })}
-          </ul>
+        <div className="min-w-0 space-y-3">
+          {others.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">Other visits today</p>
+              <ul className="divide-y divide-line rounded-2xl border border-line">
+                {others.map((v) => {
+                  const s = visitStatus(v, state.now, state.findings);
+                  return (
+                    <li key={v.expectation.id} className="flex items-center justify-between gap-2 px-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">{v.expectation.title}</p>
+                        <p className="text-sm text-ink-3 tabular">
+                          {fmtTime(v.expectation.window_start, tz)}
+                          {v.minutes_on_site !== null && ` · ${v.minutes_on_site} of ${v.expectation.planned_minutes} min`}
+                        </p>
+                      </div>
+                      <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full", VISIT_STATUS_STYLE[s.key].dot)} title={s.label} />
+                      <span className="sr-only">{s.label}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+          <div className="flex items-start gap-3 rounded-2xl bg-canvas p-3.5 text-ink-2">
+            <IconKey size={22} className="mt-0.5 shrink-0 text-brand" />
+            <p className="text-[0.95rem] xl:text-[0.88rem]">
+              Aides check in by holding a <strong className="font-semibold text-ink">rotating signed code</strong> on their phone up to the Ring
+              doorbell. No face recognition, no app for {firstName(household.patient.name)}.
+            </p>
+          </div>
+          {[visit.check_in, visit.check_out].some((o) => o?.source === "simulated") && (
+            <p className="text-sm text-ink-3 xl:hidden">
+              Today&apos;s check-in/out is <strong className="font-semibold text-warn">simulated</strong> until our own footage of the code is filmed.
+            </p>
+          )}
         </div>
       </div>
     </Card>

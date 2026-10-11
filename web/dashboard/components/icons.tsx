@@ -2,11 +2,13 @@ import type { SVGProps } from "react";
 
 type P = SVGProps<SVGSVGElement> & { size?: number };
 
-function Base({ size = 20, children, ...rest }: P & { children: React.ReactNode }) {
+function Base({ size = 20, children, style, ...rest }: P & { children: React.ReactNode }) {
   return (
     <svg
       width={size}
       height={size}
+      // sized in rem so icons scale with the root font size (big-screen recordings)
+      style={{ width: `${size / 17}rem`, height: `${size / 17}rem`, ...style }}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -184,5 +186,17 @@ export const IconKey = (p: P) => (
     <rect x="13" y="4" width="7" height="7" rx="1" />
     <rect x="4" y="13" width="7" height="7" rx="1" />
     <path d="M13 13h3v3h-3zM17 17h3v3h-3z" />
+  </Base>
+);
+export const IconSnow = (p: P) => (
+  <Base {...p}>
+    <path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11" />
+    <path d="m9.5 3.5 2.5 2 2.5-2M9.5 20.5l2.5-2 2.5 2M3 9.8l3 .6.6-3M21 14.2l-3-.6-.6 3M3.6 17.2l.6-3 3-.6M20.4 6.8l-.6 3-3 .6" />
+  </Base>
+);
+export const IconSun = (p: P) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
   </Base>
 );

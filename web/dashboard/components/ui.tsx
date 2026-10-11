@@ -30,17 +30,21 @@ export function CardHeader({
   eyebrow,
   right,
   id,
+  className,
+  titleClassName,
 }: {
   title: React.ReactNode;
   eyebrow?: React.ReactNode;
   right?: React.ReactNode;
   id?: string;
+  className?: string;
+  titleClassName?: string;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
+    <div className={cx("flex flex-wrap items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6", className)}>
       <div className="min-w-0">
         {eyebrow && <p className="text-sm font-semibold uppercase tracking-[0.08em] text-ink-3">{eyebrow}</p>}
-        <h2 id={id} className="mt-0.5 text-xl font-semibold tracking-tight text-ink sm:text-[1.35rem]">
+        <h2 id={id} className={cx("mt-0.5 text-xl font-semibold tracking-tight text-ink sm:text-[1.35rem]", titleClassName)}>
           {title}
         </h2>
       </div>
@@ -120,6 +124,22 @@ export function StatusChip({ status, label, className }: { status: VisitStatusKe
   );
 }
 
+/** Tiny language tag for an outbound message, e.g. "ES". */
+export function LangTag({ code, title, className }: { code: string; title?: string; className?: string }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center rounded-[5px] border border-line-strong bg-surface px-1 py-px font-mono text-[0.66rem] font-bold leading-none tracking-wider text-ink-2",
+        className,
+      )}
+      title={title ?? `Message language: ${code}`}
+      aria-label={title ?? `Message language ${code}`}
+    >
+      {code}
+    </span>
+  );
+}
+
 export function Pill({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <span className={cx("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-sm font-semibold", className)}>
@@ -147,8 +167,8 @@ export function ProgressRing({
   const c = 2 * Math.PI * r;
   const v = Math.max(0, Math.min(1, value));
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={label}>
-      <svg width={size} height={size} className="-rotate-90">
+    <div className="relative shrink-0" style={{ width: `${size / 17}rem`, height: `${size / 17}rem` }} role="img" aria-label={label}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full -rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} stroke="var(--color-line)" strokeWidth={stroke} fill="none" />
         <circle
           cx={size / 2}

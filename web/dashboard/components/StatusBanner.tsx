@@ -4,7 +4,8 @@ import type { Household, State } from "@/lib/types";
 import { firstName, visitStatus } from "@/lib/derive";
 import { fmtDuration, fmtTime, ms } from "@/lib/time";
 import { useUnits } from "@/lib/units";
-import { IconAlert, IconCheck, IconPackage, IconUser } from "./icons";
+import { exposureDirection } from "@/lib/thermal";
+import { IconAlert, IconCheck, IconPackage, IconSnow, IconUser } from "./icons";
 import { cx } from "./ui";
 
 type Tone = "ok" | "warn" | "crit" | "calm";
@@ -28,17 +29,24 @@ export function StatusBanner({ state, household }: { state: State; household: Ho
 
   if (porch?.estimate) {
     const e = porch.estimate;
+    const dir = exposureDirection(e, porch.expectation.medication, household.ambient.celsius);
+    const cold = dir === "cold";
+    const what = porch.expectation.medication?.name.split(" ")[0].toLowerCase() ?? "medication";
     tone = e.status === "safe" ? "warn" : "crit";
-    icon = IconPackage;
+    icon = cold ? IconSnow : IconPackage;
     head =
       e.status === "compromised"
-        ? `${name}'s ${porch.expectation.medication?.name.split(" ")[0].toLowerCase() ?? "medication"} likely got too warm on the porch`
-        : `${name}'s ${porch.expectation.medication?.name.split(" ")[0].toLowerCase() ?? "medication"} is on the porch`;
+        ? cold
+          ? `${name}'s ${what} may have frozen on the porch`
+          : `${name}'s ${what} likely got too warm on the porch`
+        : e.status === "at_risk" && cold
+          ? `${name}'s ${what} is getting too cold on the porch`
+          : `${name}'s ${what} is on the porch${cold ? ` in ${fmt(e.ambient_c)} cold` : ""}`;
     sub =
       e.status === "compromised"
-        ? `Out ${fmtDuration(e.minutes_on_porch)}; estimated ${fmt(e.estimated_internal_c)} inside the box.`
-        : `Out ${fmtDuration(e.minutes_on_porch)} · estimated ${fmt(e.estimated_internal_c)} inside the box${
-            e.minutes_until_excursion_max !== null ? ` · unsafe in ${fmtDuration(e.minutes_until_excursion_max)}` : ""
+        ? `Out ${fmtDuration(e.minutes_on_porch)}; estimated ${fmt(e.estimated_internal_c)} inside the box.${cold ? " Frozen insulin must be thrown away." : ""}`
+        : `Out ${fmtDuration(e.minutes_on_porch)} · estimated ${fmt(e.estimated_internal_c, 1)} inside the box${
+            e.minutes_until_excursion_max !== null ? ` · ${cold ? "freezes" : "unsafe"} in ${fmtDuration(e.minutes_until_excursion_max)}` : ""
           }. We're handling it.`;
   } else if (missed) {
     tone = "crit";
@@ -63,7 +71,7 @@ export function StatusBanner({ state, household }: { state: State; household: Ho
       .sort((a, b) => ms(a.window_start) - ms(b.window_start))[0];
     const issues = state.findings.filter((f) => f.severity !== "info").length;
     head = issues ? "All clear right now" : "Everything expected so far has arrived";
-    sub = upcoming ? `Next: ${upcoming.title.toLowerCase()} at ${fmtTime(upcoming.window_start, tz)}.` : "Nothing else is scheduled today.";
+    sub = upcoming ? `Next: ${upcoming.title} at ${fmtTime(upcoming.window_start, tz)}.` : "Nothing else is scheduled today.";
     if (issues) sub = `${issues} earlier issue${issues > 1 ? "s" : ""} handled today. ${sub}`;
   }
 
@@ -76,15 +84,15 @@ export function StatusBanner({ state, household }: { state: State; household: Ho
   };
 
   return (
-    <section aria-live="polite" aria-label="Right now" className={cx("flex items-start gap-4 rounded-3xl border px-5 py-4 transition-colors duration-500 sm:items-center sm:px-6", styles[tone])}>
-      <span className="relative mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-surface/80 sm:mt-0">
+    <section aria-live="polite" aria-label="Right now" className={cx("flex items-start gap-4 rounded-3xl border px-5 py-4 transition-colors duration-500 sm:items-center sm:px-6 lg:py-3 xl:py-2.5", styles[tone])}>
+      <span className="relative mt-0.5 flex h-11 w-11 xl:h-10 xl:w-10 shrink-0 items-center justify-center rounded-2xl bg-surface/80 sm:mt-0">
         <Icon size={24} />
         {(tone === "warn" || tone === "crit") && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-current animate-pulse-ring" />}
       </span>
       <div className="min-w-0">
-        <p className="text-sm font-semibold uppercase tracking-[0.08em] opacity-90">Right now</p>
-        <p className="text-xl font-semibold leading-snug text-ink sm:text-2xl">{head}</p>
-        <p className="mt-0.5 text-ink-2">{sub}</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.08em] opacity-90 lg:sr-only">Right now</p>
+        <p key={head} className="animate-enter text-xl font-semibold leading-snug text-ink sm:text-2xl lg:text-[1.4rem] xl:text-[1.3rem]">{head}</p>
+        <p className="mt-0.5 text-ink-2 xl:text-[0.97rem]">{sub}</p>
       </div>
     </section>
   );

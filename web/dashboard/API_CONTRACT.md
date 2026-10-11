@@ -20,7 +20,7 @@ must allow origin `http://localhost:3000` (GET, POST, `Content-Type: application
 | GET | `/api/stream` | Server-Sent Events; each `data:` line is one JSON `LedgerRecord` |
 | GET | `/api/evidence/{path}` | `image/jpeg` proof frame (`path` = `Observation.evidence_path`) |
 | GET | `/api/evv.csv?date=YYYY-MM-DD` | `text/csv` download |
-| POST | `/api/demo/run` body `{ "scenario": "porch_heat" \| "late_short_visit" \| "full_day", "speed": number }` | `{ "ok": boolean }` |
+| POST | `/api/demo/run` body `{ "scenario": "porch_cold" \| "late_short_visit" \| "full_day", "speed": number }` (`porch_heat` = legacy alias of `porch_cold`) | `{ "ok": boolean }` |
 | POST | `/api/demo/reset` | `{ "ok": boolean }` |
 
 ## Types
@@ -40,7 +40,10 @@ State {
   deliveries: {
     expectation: Expectation, dropped: Observation|null, removed: Observation|null,
     estimate: { minutes_on_porch: number, ambient_c: number, estimated_internal_c: number,
-                minutes_until_excursion_max: number|null, status: "safe"|"at_risk"|"compromised" } | null
+                minutes_until_excursion_max: number|null,   // minutes until the RELEVANT limit (see direction)
+                status: "safe"|"at_risk"|"compromised",
+                direction?: "hot"|"cold"|null,              // cold = heading to freeze_c, hot = to excursion_max_c
+                unsafe_c?: number|null } | null             // 0.0 for cold, 30.0 for hot
   }[]
   findings: Finding[]
   actions: Action[]
@@ -51,7 +54,7 @@ LedgerRecord { id: string, kind: "expectation"|"observation"|"finding"|"action",
 Expectation {
   id, kind: "caregiver_visit"|"medication_delivery", title, window_start: ISO, window_end: ISO,
   caregiver?, agency?, planned_minutes?, visit_id?, carrier?, tracking?,
-  medication?: { name, store_min_c, store_max_c, excursion_max_c }
+  medication?: { name, store_min_c, store_max_c, excursion_max_c, freeze_c? /* 0.0 */ }
 }
 
 Observation {
@@ -86,6 +89,12 @@ These are not required, but the UI renders them when present:
 - `Action.target` should be a `people[].name` (e.g. `"Luis Ortega"`) so the UI can say "Called neighbor Luis".
 - `Action.data.channel`: `"sms" | "voice" | "push" | "email" | "agency_portal"` → verb ("Texted", "Called", …).
 - `Action.data.status`: `"no_answer" | "answered"`; `Action.data.reply`: string (e.g. `"On my way"`).
+- `Action.data.language`: `"es" | "en"` → small language tag on the action (messages to Rosa are Spanish).
+- `Action.data.channel` may also be `"telegram"` → "Messaged …".
+- Observations with `source: "simulated"` should have no `evidence_path`; the UI shows a "No camera frame"
+  panel (never an illustration) and labels `detail.note` as "Note:" instead of "Vision:".
+- If an estimate has no `direction` (older backend), the UI derives it: outside < `store_min_c` → cold,
+  outside > `store_max_c` → hot.
 
 ## Visit status (`lib/derive.ts#visitStatus`)
 
