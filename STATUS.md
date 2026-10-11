@@ -1,5 +1,20 @@
 # STATUS — bitácora de decisiones
 
+## Sesión 2 (11-oct tarde) — después de la revisión externa #1 (6.9/10)
+- ✅ Claude Haiku 4.5 / Sonnet 4.6 activos en Bedrock (Haiku 5.5 "not available for this account").
+- ✅ Mensajes bilingües (Rosa en español), caras pixeladas ANTES de Bedrock, solo se guarda el cuadro del evento, retención 30 días.
+- ✅ Visión con compuerta de movimiento (−38% a −60% llamadas). Modo ráfaga al tocar el timbre (presence en cada cuadro, 12 s). Poller del historial de Ring + snapshots.
+- ✅ PDF de exposición para farmacia. Pase de cuidadora solo con token de agencia.
+- ✅ Pipeline de footage propio listo (ingest + verificación de códigos al reproducir). Bug crítico corregido: visit_id debe ser [A-Z0-9-].
+- ✅ README raíz, arquitectura (5 diagramas Mermaid), LICENSE/NOTICE, CI, Makefile.
+- ✅ DynamoDB `doorledger-ledger` en vivo (mirror). AgentCore empaquetado y probado local; despliegue bloqueado por IAM → pasos para Brandon en deploy/agentcore/README.md.
+- ✅ +132 pruebas del motor → 239 passed; 4 bugs reales encontrados y corregidos.
+- Higiene: .claude/ y clips sin licencia (Vehicle/Motion) fuera de git; id de cuenta redactado. **Al publicar: historial limpio (orphan) porque commits viejos los contienen.**
+- Historia del demo: invierno/Chicago; clip de vehículo (primavera) retirado.
+
+### Pendientes de Brandon
+1. Grabar 4 escenas (docs/SHOT_LIST.md). 2. Permisos AgentCore (bootstrap CDK + BedrockAgentCoreFullAccess + inline). 3. Verificar número en SNS sandbox (SMS reales). 4. Aprobar publicación (GitHub, PyPI, Vercel). 5. Crédito exacto del clip CC BY.
+
 ## Gate G1 — ✅ VERDE (11-oct)
 S1, S2, S3, S5 pasaron; S4 ajustado (30–50 cm + código compacto + respaldo 6 dígitos); S6 pendiente de bot de Telegram (no bloquea: el dashboard muestra las acciones). Arquitectura congelada: Ring WHEP → Watcher (Nova 2 Lite + lector de códigos) → PorchTracker → Engine (reconcile determinista) → Responder (guardrails + Writer Bedrock) → Ledger → API/SSE → Dashboard; CareAgent (Strands) para Q&A y resumen.
 
