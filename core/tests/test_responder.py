@@ -71,8 +71,10 @@ AGENCY = "BrightPath Home Care"
 def test_at_risk_climbs_patient_neighbor_family():
     r, _ = make()
     f = finding(FindingKind.PACKAGE_AT_RISK)
-    steps = [r.handle(f, T0 + timedelta(minutes=i)) for i in range(4)]
+    # each rung waits LADDER_GAP after the previous message (rules path enforces the gap too)
+    steps = [r.handle(f, T0 + LADDER_GAP * i) for i in range(4)]
     assert [targets(s) for s in steps] == [[ROSA], [LUIS], [ANA], []]
+    assert r.handle(f, T0 + LADDER_GAP * 1 + timedelta(minutes=1)) == []  # too soon: no skip
     assert [s[0].data["purpose"] for s in steps[:3]] == ["porch_patient", "porch_helper",
                                                          "porch_family"]
     assert r.incidents[EXP].rung == 3 and r.incidents[EXP].messages == 3
@@ -101,7 +103,7 @@ def test_family_gets_porch_family_wording():
     r, rec = make()
     f = finding(FindingKind.PACKAGE_AT_RISK)
     for i in range(3):
-        r.handle(f, T0 + timedelta(minutes=i))
+        r.handle(f, T0 + LADDER_GAP * i)
     to_ana = dict(rec.sent)[ANA]
     assert "nobody nearby has brought it in yet" in to_ana
     assert "in the cold" in to_ana
@@ -234,7 +236,7 @@ def test_language_propagates_to_action_data_and_spanish_template():
     assert to_rosa.data["writer"] == "template"
     assert to_rosa.message.startswith("Hola Rosa")
     assert "está helando" in to_rosa.message and "(-9°C)" in to_rosa.message
-    to_luis = r.handle(f, T0)[0]
+    to_luis = r.handle(f, T0 + LADDER_GAP)[0]
     assert to_luis.data["language"] == "en"
     assert "Hola" not in to_luis.message
 

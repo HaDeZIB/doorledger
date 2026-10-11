@@ -1,0 +1,32 @@
+{
+ "0bd1d469fa2fa23118ab91c6f940b794d863309196d38b14c1d5202eed9de771": {
+  "confidence": 0.95,
+  "note": "snow on roof, package on step",
+  "package_visible": true,
+  "person_carrying_package": false,
+  "person_present": false,
+  "phone_code_digits": null,
+  "phone_screen_shown": false,
+  "vehicle_present": false
+ },
+ "33121e5974e775968f44a90d14546f94b44f9e88e1f1000aff857c21722ff15d": {
+  "confidence": 0.95,
+  "note": "Package on snowy doorstep, no people.",
+  "package_visible": true,
+  "person_carrying_package": false,
+  "person_present": false,
+  "phone_code_digits": null,
+  "phone_screen_shown": false,
+  "vehicle_present": false
+ },
+ "67f189e24b983f3d1f8fcaeeab8d9d60191bf2b1da3ea9a70a2bf6d10ff00eb3": {
+  "confidence": 0.9,
+  "note": "Package on porch, no people or vehicles.",
+  "package_visible": true,
+  "person_carrying_package": false,
+  "person_present": false,
+  "phone_code_digits": null,
+  "phone_screen_shown": false,
+  "vehicle_present": false
+ }
+}

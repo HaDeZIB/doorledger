@@ -59,3 +59,26 @@ class FaceRedactor:
                                interpolation=cv2.INTER_LINEAR)
             out[y:y + bh, x:x + bw] = cv2.resize(small, (bw, bh), interpolation=cv2.INTER_NEAREST)
         return out, len(boxes)
+
+
+def apply_privacy_zones(image: np.ndarray, zones: list[dict] | None) -> np.ndarray:
+    """Black out the device's Ring privacy zones BEFORE any analysis or storage.
+
+    Ring's UX guidance: video inside a customer's privacy zones must not be analyzed or stored.
+    Zones come from ``GET /v1/devices/{id}/configurations`` →
+    ``image_enhancements.privacy_zones`` (same shape as motion zones: normalized vertices).
+    """
+    if not zones:
+        return image
+    h, w = image.shape[:2]
+    out = image.copy()
+    for zone in zones:
+        pts = [(int(v["x"] * w), int(v["y"] * h)) for v in zone.get("vertices") or []]
+        if len(pts) >= 3:
+            cv2.fillPoly(out, [np.array(pts, dtype=np.int32)], (0, 0, 0))
+    return out
+
+
+def privacy_zones_from_configurations(configurations: dict | None) -> list[dict]:
+    cfg = configurations or {}
+    return list(((cfg.get("image_enhancements") or {}).get("privacy_zones")) or [])

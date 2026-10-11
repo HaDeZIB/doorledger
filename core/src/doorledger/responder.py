@@ -101,7 +101,8 @@ class TemplateWriter:
                     f"({amb:.0f}°C). Por favor métala a la casa y guárdela en el refrigerador.")
         if purpose == "porch_compromised":
             return (f"{patient}, su medicina estuvo afuera unos {int(d.get('minutes_on_porch', 0))} min "
-                    f"y puede que ya no sirva. No la use todavía: ya pedimos a la farmacia que la reponga.")
+                    f"y puede que ya no sirva. No la use todavía: preparamos una solicitud de reposición para "
+                    f"la farmacia y su familia ya está enterada.")
         if purpose == "porch_retrieved":
             return f"Listo, {patient}: su medicina ya está adentro. Guárdela en el refrigerador."
         return None
@@ -217,7 +218,7 @@ class Responder:
             if inc.rung == 0 and ladder:
                 inc.rung = 1
                 out.append(self._send("notify", ladder[0], finding, "porch_patient", inc, now))
-            elif inc.rung < len(ladder):
+            elif inc.rung < len(ladder) and (inc.last_at is None or now - inc.last_at >= LADDER_GAP):
                 person = ladder[inc.rung]
                 inc.rung += 1
                 purpose = "porch_family" if person.role == "family" else "porch_helper"

@@ -56,6 +56,27 @@ class LiveController:
 
         return AsyncRingClient(self.token)
 
+    async def _prepare_device(self, ring) -> str | None:
+        """Discover the device and load what governs what we may look at: privacy zones (never
+        analyzed or stored) and end-to-end encryption (E2EE/TAKE video is unreadable — skip)."""
+        from .privacy import privacy_zones_from_configurations
+
+        devices = await ring.devices()
+        device = next((d for d in devices if d.id == self.engine.device.get("id")), None) or (
+            devices[0] if devices else None)
+        if device is None:
+            return None
+        self.engine.device.update({
+            "id": device.id, "name": device.name, "online": device.online,
+            "source": "ring_playground",
+            "privacy_zones": privacy_zones_from_configurations(device.configurations),
+            "encrypted": bool(device.is_encrypted),
+        })
+        if device.is_encrypted:
+            log.warning("device %s has end-to-end encryption on; video analysis disabled", device.id)
+            return None
+        return device.id
+
     async def watch_once(self, reason: str, scene: str = "default", *, burst: bool = False) -> int:
         """One watch session: live WHEP if a token is configured, else recorded footage.
 
@@ -69,9 +90,9 @@ class LiveController:
             if self.token:
                 ring = await self._ring()
                 try:
-                    device_id = self.engine.device.get("id") or (await ring.devices())[0].id
-                    self.engine.device.update({"id": device_id, "online": True,
-                                               "source": "ring_playground"})
+                    device_id = await self._prepare_device(ring)
+                    if device_id is None:
+                        return 0
                     src = RingLiveSource(ring, device_id, self.engine.clock.now,
                                          fps=4.0 if burst else 1.0,
                                          max_seconds=12.0 if burst else SESSION_SECONDS)
@@ -129,8 +150,9 @@ class LiveController:
         started = datetime.now(timezone.utc)
         ring = await self._ring()
         try:
-            device_id = self.engine.device.get("id") or (await ring.devices())[0].id
-            self.engine.device.update({"id": device_id, "online": True, "source": "ring_playground"})
+            device_id = await self._prepare_device(ring)
+            if device_id is None:
+                return
             while self.windows_open():
                 try:
                     page = await ring.history(device_id)
@@ -143,6 +165,7 @@ class LiveController:
                         try:
                             snap = await ring.snapshot(device_id, at=e.start)
                             self.last_snapshot = snap.content
+                            await self._classify_snapshot(snap.content, e.start)
                         except Exception as exc:  # noqa: BLE001 — snapshots are best-effort
                             log.info("snapshot unavailable for %s: %s", e.id, exc)
                         await self.watch_once(f"ring_history:{e.event_type}",
@@ -152,6 +175,25 @@ class LiveController:
                 await asyncio.sleep(interval)
         finally:
             await ring.aclose()
+
+    async def _classify_snapshot(self, jpeg: bytes, at) -> None:
+        """Run the Ring snapshot taken at the event's start through the same perception path."""
+        import cv2
+        import numpy as np
+
+        from .domain import Source
+        from .watcher import Frame
+
+        if self.watcher is None or not jpeg:
+            return
+        image = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+        if image is None:
+            return
+
+        async def one():
+            yield Frame(self.engine.clock.now(), image, Source.RING_SNAPSHOT, at.timestamp())
+
+        await self.watcher.process(one())
 
     def start_watching(self) -> bool:
         """With a live token: poll Ring history (event-driven). Without: periodic replay sessions."""

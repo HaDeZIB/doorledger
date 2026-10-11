@@ -52,12 +52,17 @@ engine = build_engine()
 
 
 def build_watcher(eng: Engine):
-    if os.environ.get("DOORLEDGER_PERCEPTION", "bedrock") == "off":
+    """DOORLEDGER_PERCEPTION: bedrock (default; live Bedrock, results also recorded to the
+    vision cache) | cache (offline: replay Bedrock's recorded labels for the Ring frames) | off."""
+    mode = os.environ.get("DOORLEDGER_PERCEPTION", "bedrock")
+    if mode == "off":
         return None
-    from .vision import BedrockVision
+    from .vision import BedrockVision, CachingVision
     from .watcher import Watcher
 
-    return Watcher(eng, BedrockVision(), EVIDENCE_DIR)
+    cache = ROOT / "fixtures" / "ring_playground" / "vision_cache.json"
+    vision = CachingVision(cache, None if mode == "cache" else BedrockVision())
+    return Watcher(eng, vision, EVIDENCE_DIR)
 
 
 watcher = build_watcher(engine)

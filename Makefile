@@ -31,7 +31,7 @@ api: ## Run the FastAPI backend on :8787 (Bedrock vision + writer; needs AWS cre
 	$(UV) run $(ENV_FILE) uvicorn doorledger.api:app --port $(PORT)
 
 api-offline: ## Run the backend with no AWS and no network (template messages, scripted perception)
-	DOORLEDGER_PERCEPTION=off DOORLEDGER_WRITER=template \
+	DOORLEDGER_PERCEPTION=cache DOORLEDGER_WRITER=template \
 	  $(UV) run $(ENV_FILE) uvicorn doorledger.api:app --port $(PORT)
 
 dashboard: ## Run the Next.js dashboard on :3000 (uses the API if reachable, else mock data)

@@ -115,6 +115,7 @@ class Watcher:
         self.vision_calls = 0
         self.vision_skipped = 0
         self.frames_persisted = 0
+        self._numeric_attempts: list[float] = []
 
     def tracker(self, source: Source) -> PorchTracker:
         key = str(source)
@@ -146,6 +147,36 @@ class Watcher:
         if prev is None:
             return True
         return float(np.abs(thumb - prev).mean()) >= self.motion_threshold
+
+    MAX_NUMERIC_ATTEMPTS_PER_HOUR = 10
+
+    def _numeric_presence(self, frame: Frame, digits: str) -> list[Observation]:
+        """6-digit fallback code read by the vision model from the aide's phone (works from
+        further away than the QR). Rate-limited per door: a 6-digit space is small."""
+        import re
+        import time as _time
+
+        if not re.fullmatch(r"\d{6}", digits) or not self.engine.visit_secrets:
+            return []
+        now = _time.monotonic()
+        self._numeric_attempts = [t for t in self._numeric_attempts if now - t < 3600]
+        if len(self._numeric_attempts) >= self.MAX_NUMERIC_ATTEMPTS_PER_HOUR:
+            return []
+        self._numeric_attempts.append(now)
+        at_epoch = frame.captured_at if frame.captured_at is not None else frame.at.timestamp()
+        for visit_id, secret in self.engine.visit_secrets.items():
+            for role, kind in (("in", ObservationKind.PRESENCE_CHECK_IN),
+                               ("out", ObservationKind.PRESENCE_CHECK_OUT)):
+                res = presence.verify_numeric_code(digits, secret, role, at=at_epoch,
+                                                   visit_id=visit_id, used=self.used_codes)
+                if res.valid:
+                    return [Observation(kind, frame.at, frame.source, 0.9,
+                                        device_id=self.engine.device.get("id"),
+                                        visit_id=visit_id,
+                                        detail={"method": "signed_code_numeric", "skew": res.skew,
+                                                "proves": "a device showing this visit's current "
+                                                          "6-digit code was at the door"})]
+        return []
 
     def _presence(self, frame: Frame, evidence: str | None) -> list[Observation]:
         secrets = self.engine.visit_secrets
@@ -184,7 +215,13 @@ class Watcher:
         loop = asyncio.get_running_loop()
         every = presence_every or self.presence_every
         for_sub = 0
+        from .privacy import apply_privacy_zones
+
+        zones = self.engine.device.get("privacy_zones") or []
         async for frame in frames:
+            if zones:
+                frame = Frame(frame.at, apply_privacy_zones(frame.image, zones), frame.source,
+                              frame.captured_at)
             self.frames_seen += 1
             for_sub += 1
             jpeg: bytes | None = None
@@ -204,6 +241,9 @@ class Watcher:
                 jpeg = await loop.run_in_executor(None, self._redacted, frame)
                 label = await loop.run_in_executor(None, self.vision.classify, jpeg, frame.at, None)
             self.last_label = label
+            digits = (label.extra or {}).get("phone_code_digits")
+            if digits and self._reused == 0:
+                obs += self._numeric_presence(frame, str(digits))
             obs += self.tracker(frame.source).push(label)
             if obs:
                 if jpeg is None:

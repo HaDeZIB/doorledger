@@ -103,8 +103,13 @@ class FanOutNotifier:
         self.notifiers = [n for n in notifiers if getattr(n, "enabled", True)]
 
     def send(self, person: Person, message: str) -> bool:
-        results = [n.send(person, message) for n in self.notifiers]
-        return any(results)
+        """Delivered = at least one REAL channel (SMS/Telegram) succeeded; the console log
+        only counts when it is the sole channel."""
+        real = [n for n in self.notifiers if not isinstance(n, ConsoleNotifier)]
+        results = {id(n): n.send(person, message) for n in self.notifiers}
+        if real:
+            return any(results[id(n)] for n in real)
+        return any(results.values())
 
 
 def default_notifier() -> Notifier:

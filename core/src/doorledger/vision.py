@@ -8,6 +8,7 @@ visit — reconciliation stays deterministic.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 import os
 import re
 import time
@@ -25,6 +26,7 @@ Describe ONLY what is visible in the image. Answer with a single JSON object and
   "person_carrying_package": bool,  // a person is holding a parcel/box/delivery bag in their hands or arms (not a purse or backpack)
   "vehicle_present": bool,          // a car/van/truck visible in the driveway or street close to the house
   "phone_screen_shown": bool,       // the lit DISPLAY of a phone faces the camera (you can see the screen content). false if you only see the back/camera side of a phone
+  "phone_code_digits": string|null, // if a phone screen facing the camera shows a large 6-digit number, those 6 digits; else null
   "confidence": number,             // 0..1, your overall confidence
   "note": string                    // <= 12 words, plain description
 }
@@ -55,7 +57,8 @@ def label_from_json(data: dict[str, Any], at: datetime, evidence_path: str | Non
         confidence=float(data.get("confidence", 0.8)),
         note=data.get("note"),
         evidence_path=evidence_path,
-        extra={"phone_screen_shown": bool(data.get("phone_screen_shown"))},
+        extra={"phone_screen_shown": bool(data.get("phone_screen_shown")),
+               "phone_code_digits": data.get("phone_code_digits")},
     )
 
 
@@ -109,3 +112,42 @@ class ScriptedVision:
         data = self.labels[min(self.i, len(self.labels) - 1)]
         self.i += 1
         return label_from_json(data, at, evidence_path)
+
+
+class CachingVision:
+    """Record/replay wrapper around a real classifier, keyed by the SHA-256 of the exact JPEG.
+
+    * record: call the inner model (e.g. Bedrock) and store its JSON answer per frame;
+    * replay: answer from the cache so the offline demo runs real Ring frames through the
+      real pipeline with the labels Bedrock actually produced — no AWS credentials needed.
+    A replay miss returns an empty scene (and is counted), never an invented detection.
+    """
+
+    def __init__(self, cache_path: str | Path, inner: VisionClassifier | None = None) -> None:
+        self.path = Path(cache_path)
+        self.inner = inner
+        self.cache: dict[str, dict[str, Any]] = (
+            json.loads(self.path.read_text()) if self.path.exists() else {})
+        self.hits = self.misses = 0
+
+    def classify(self, image_jpeg: bytes, at: datetime, evidence_path: str | None = None) -> FrameLabel:
+        import hashlib
+
+        key = hashlib.sha256(image_jpeg).hexdigest()
+        if key in self.cache:
+            self.hits += 1
+            return label_from_json(self.cache[key], at, evidence_path)
+        self.misses += 1
+        if self.inner is None:
+            return label_from_json({"confidence": 0.0, "note": "not in vision cache"}, at,
+                                   evidence_path)
+        label = self.inner.classify(image_jpeg, at, evidence_path)
+        self.cache[key] = {
+            "package_visible": label.package_visible, "person_present": label.person_present,
+            "person_carrying_package": label.person_carrying_package,
+            "vehicle_present": label.vehicle_present, "confidence": label.confidence,
+            "note": label.note, **(label.extra or {}),
+        }
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self.cache, indent=1, sort_keys=True))
+        return label
