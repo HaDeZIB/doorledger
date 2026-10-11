@@ -27,3 +27,16 @@ fixtures/raw/
 
 # frames saved by the watcher at runtime
 fixtures/evidence/captured/
+
+# local tooling with absolute paths
+.claude/
+
+# Ring Playground Vehicle/Motion clips carry no redistribution license: capture locally with
+# `scripts/capture_live.py` (your own Playground token); only the CC BY 4.0 Package clip is committed
+fixtures/ring_playground/vehicle/
+fixtures/ring_playground/default/
+fixtures/evidence/vehicle.jpg
+fixtures/evidence/ring_snapshot.jpg
+
+# AgentCore CLI logs (contain account ids)
+**/.cli/logs/

@@ -93,7 +93,7 @@ def test_today_status_is_grounded(full_day):
     assert v["check_in"]["source"] == "simulated event"  # until own footage replaces it
     (d,) = s["deliveries"]
     assert d["dropped"]["time"] == "14:07" and d["brought_inside"]["time"] == "14:40"
-    assert d["dropped"]["source"].startswith("Ring doorbell")
+    assert d["dropped"]["source"] == "simulated event"  # no perception in offline replay
     assert d["exposure_estimate"]["minutes_on_porch"] == 33.0
     assert "estimate" in d["exposure_estimate"]["note"]
     assert d["exposure_estimate"]["assessment"] == "estimate stayed within tolerance; likely fine"
@@ -113,7 +113,8 @@ def test_timeline_filters_by_local_hour(full_day):
     assert all_day[0]["time"] == "09:16"
     assert afternoon and all(e["time"] >= "13:00" for e in afternoon)
     assert len(afternoon) < len(all_day)
-    assert any(e["what"] == "observed package_dropped" and e["source"].startswith("Ring")
+    # offline replay has no perception, so the drop is the labelled scripted fallback
+    assert any(e["what"] == "observed package_dropped" and e["source"] == "simulated event"
                for e in afternoon)
 
 

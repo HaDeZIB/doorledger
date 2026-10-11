@@ -92,11 +92,12 @@ SCENARIOS: dict[str, dict] = {
         "start": (13, 55), "end": (14, 55), "ambient_c": -9.0,
         "plan": {ExpectationKind.MEDICATION_DELIVERY},
         "steps": [
-            Step(14, 5, ObservationKind.VEHICLE_ARRIVED, Source.RING_LIVE, None,
-                 "evidence/vehicle.jpg", {"note": "vehicle in front of the house"},
+            # Fallback sources are SIMULATED: the real observation only comes from footage.
+            Step(14, 5, ObservationKind.VEHICLE_ARRIVED, Source.SIMULATED, None,
+                 None, {"note": "vehicle in front of the house"},
                  frames="vehicle", limit=5),
-            Step(14, 7, ObservationKind.PACKAGE_DROPPED, Source.RING_LIVE, None,
-                 "evidence/package.jpg", {"note": "parcel on the doorstep"}, frames="package"),
+            Step(14, 7, ObservationKind.PACKAGE_DROPPED, Source.SIMULATED, None,
+                 None, {"note": "parcel on the doorstep"}, frames="package"),
             Step(14, 40, ObservationKind.PACKAGE_REMOVED, Source.SIMULATED, None,
                  None, {"note": "neighbor picked it up"}, frames="own:pickup"),
         ],

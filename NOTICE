@@ -73,7 +73,7 @@ PyAV (BSD-3-Clause; wheels bundle FFmpeg under LGPL-2.1+), NumPy (BSD-3-Clause a
 OpenCV / opencv-python-headless (Apache-2.0; wheels bundle third-party
 components under their own licenses), segno (BSD-3-Clause), Pillow (MIT-CMU),
 boto3 / botocore (Apache-2.0), FastAPI (MIT), Uvicorn (BSD-3-Clause),
-Strands Agents SDK (Apache-2.0), pytest (MIT), respx (BSD-3-Clause),
+Strands Agents SDK (Apache-2.0), ReportLab (BSD), pytest (MIT), respx (BSD-3-Clause),
 ruff (MIT).
 
 JavaScript (see web/dashboard/package-lock.json): Next.js (MIT), React (MIT),
