@@ -73,6 +73,7 @@ class Person:
     phone: str | None = None
     telegram_chat_id: str | None = None
     escalation_order: int = 99
+    language: str = "en"  # messages are written in the recipient's language ("en", "es")
 
 
 @dataclass

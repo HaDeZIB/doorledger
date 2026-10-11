@@ -14,7 +14,7 @@ from __future__ import annotations
 import asyncio
 import glob
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import AsyncIterator, Callable
@@ -88,7 +88,8 @@ class RingLiveSource:
 class Watcher:
     def __init__(self, engine: Engine, vision: VisionClassifier, evidence_root: str | Path, *,
                  subdir: str = "captured", reader: PresenceReader | None = None,
-                 presence_every: int = 2, jpeg_quality: int = 85) -> None:
+                 presence_every: int = 2, jpeg_quality: int = 85, redact_faces: bool = True,
+                 motion_threshold: float = 2.5, max_reuse: int = 4) -> None:
         self.engine = engine
         self.vision = vision
         self.reader = reader or PresenceReader()
@@ -101,6 +102,18 @@ class Watcher:
         self.trackers: dict[str, PorchTracker] = {}
         self.frames_seen = 0
         self.last_label = None
+        # Privacy: pixelate faces in stored evidence. Cost: skip the vision call when the scene
+        # hasn't changed, re-using the last label (at most `max_reuse` frames in a row).
+        from .privacy import FaceRedactor
+
+        self.redactor = FaceRedactor() if redact_faces else None
+        self.faces_redacted = 0
+        self.motion_threshold = motion_threshold
+        self.max_reuse = max_reuse
+        self._last_thumb: np.ndarray | None = None
+        self._reused = 0
+        self.vision_calls = 0
+        self.vision_skipped = 0
 
     def tracker(self, source: Source) -> PorchTracker:
         key = str(source)
@@ -108,12 +121,26 @@ class Watcher:
             self.trackers[key] = PorchTracker(self.engine.device.get("id"), source)
         return self.trackers[key]
 
+    def _encode(self, image: np.ndarray) -> bytes:
+        ok, buf = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, self.jpeg_quality])
+        return buf.tobytes() if ok else b""
+
     def _save(self, frame: Frame) -> tuple[str, bytes]:
-        ok, buf = cv2.imencode(".jpg", frame.image, [cv2.IMWRITE_JPEG_QUALITY, self.jpeg_quality])
-        data = buf.tobytes() if ok else b""
+        """Write the evidence frame (faces pixelated) and return the original JPEG for vision."""
+        original = self._encode(frame.image)
+        redacted, n = self.redactor.redact(frame.image) if self.redactor else (frame.image, 0)
+        self.faces_redacted += n
         name = f"{frame.at.strftime('%Y%m%dT%H%M%S')}_{new_id('f')}.jpg"
-        (self.evidence_dir / name).write_bytes(data)
-        return f"evidence/{self.subdir}/{name}", data
+        (self.evidence_dir / name).write_bytes(self._encode(redacted) if n else original)
+        return f"evidence/{self.subdir}/{name}", original
+
+    def _changed(self, image: np.ndarray) -> bool:
+        """Cheap motion gate: mean absolute difference on a tiny grayscale thumbnail."""
+        thumb = cv2.cvtColor(cv2.resize(image, (64, 36)), cv2.COLOR_BGR2GRAY).astype(np.int16)
+        prev, self._last_thumb = self._last_thumb, thumb
+        if prev is None:
+            return True
+        return float(np.abs(thumb - prev).mean()) >= self.motion_threshold
 
     def _presence(self, frame: Frame, evidence: str) -> list[Observation]:
         secrets = self.engine.visit_secrets
@@ -147,7 +174,18 @@ class Watcher:
             obs: list[Observation] = []
             if self.frames_seen % self.presence_every == 0:
                 obs += await loop.run_in_executor(None, self._presence, frame, evidence)
-            label = await loop.run_in_executor(None, self.vision.classify, jpeg, frame.at, evidence)
+            if (self.last_label is not None and not self._changed(frame.image)
+                    and self._reused < self.max_reuse):
+                self._reused += 1
+                self.vision_skipped += 1
+                label = replace(self.last_label, at=frame.at, evidence_path=evidence)
+            else:
+                if self.last_label is None:
+                    self._changed(frame.image)  # prime the motion gate
+                self._reused = 0
+                self.vision_calls += 1
+                label = await loop.run_in_executor(None, self.vision.classify, jpeg, frame.at,
+                                                   evidence)
             self.last_label = label
             obs += self.tracker(frame.source).push(label)
             for o in obs:

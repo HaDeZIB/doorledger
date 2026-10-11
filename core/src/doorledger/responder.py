@@ -57,6 +57,10 @@ class TemplateWriter:
         d = finding.data
         cold = d.get("direction") == "cold"
         weather = "freezing" if cold else "warm"
+        if recipient.language == "es":
+            spanish = self._spanish(purpose, patient, d, cold)
+            if spanish:
+                return spanish
         if purpose == "porch_patient":
             return (f"Hi {patient}, your medication was left at the front door and it's {weather} "
                     f"outside ({d.get('ambient_c', 0):.0f}°C). Please bring it inside and put it in "
@@ -88,13 +92,30 @@ class TemplateWriter:
         return finding.summary
 
 
+    @staticmethod
+    def _spanish(purpose: str, patient: str, d: dict, cold: bool) -> str | None:
+        amb = d.get("ambient_c", 0)
+        if purpose == "porch_patient":
+            clima = "está helando" if cold else "hace mucho calor"
+            return (f"Hola {patient}, le dejaron su medicina en la puerta y afuera {clima} "
+                    f"({amb:.0f}°C). Por favor métala a la casa y guárdela en el refrigerador.")
+        if purpose == "porch_compromised":
+            return (f"{patient}, su medicina estuvo afuera unos {int(d.get('minutes_on_porch', 0))} min "
+                    f"y puede que ya no sirva. No la use todavía: ya pedimos a la farmacia que la reponga.")
+        if purpose == "porch_retrieved":
+            return f"Listo, {patient}: su medicina ya está adentro. Guárdela en el refrigerador."
+        return None
+
+
 class BedrockWriter:
     """Writes each message with an LLM; strictly grounded in the finding's numbers."""
 
     SYSTEM = (
         "You write SMS-length messages (max 300 characters) for DoorLedger, a home-care assistant "
         "that watches an older adult's front door. Be warm, calm and specific. Use ONLY the facts "
-        "provided; never invent times, temperatures or names. No emojis, no markdown. Plain English."
+        "provided; never invent times, temperatures or names. No emojis, no markdown. Write in the "
+        "language requested for the recipient; for Spanish use simple, respectful Mexican Spanish "
+        "with 'usted'."
     )
 
     def __init__(self, model_id: str | None = None, fallback: Writer | None = None) -> None:
@@ -113,6 +134,7 @@ class BedrockWriter:
         draft = self.fallback.write(finding, recipient, household, purpose)
         prompt = (
             f"Recipient: {recipient.name} (role: {recipient.role}).\n"
+            f"Write the message in: {'Spanish' if recipient.language == 'es' else 'English'}.\n"
             f"Patient: {household.patient.name}, {household.patient.age}.\n"
             f"Situation ({finding.kind}, {finding.severity}): {finding.summary}\n"
             f"Facts: {finding.data}\n"
@@ -165,7 +187,9 @@ class Responder:
         return Action(kind=kind, target=person.name, message=message, at=now,
                       finding_id=finding.id, delivered=delivered,
                       data={"channel": getattr(self.notifier, "channel", "app"),
-                            "purpose": purpose, "role": person.role})
+                            "purpose": purpose, "role": person.role,
+                            "language": person.language,
+                            "writer": getattr(self.writer, "last_model", "template")})
 
     # -- entry points --------------------------------------------------------------
 
