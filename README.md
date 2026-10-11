@@ -380,8 +380,10 @@ Ring frames (H.264, IR, watermark, auto-exposure) still need validation with own
 - **Nova Pro:** 4 family questions and the daily summary each made one tool call, cited times
   and sources, and correctly said "I don't know" for data that wasn't in the ledger. Across 6
   `handle()` runs, no guardrail was bypassed.
-- **Claude Haiku 4.5** (AgentCore entrypoint, run locally): grounded answers that cite tools,
-  in 2.7 s per question and 4.3 s per summary.
+- **Claude Haiku 4.5:** grounded answers that cite tools. Run locally under the AgentCore
+  SDK, it took 2.7 s per question and 4.3 s per summary. On the deployed AgentCore runtime,
+  `/api/ask` took about 7.6 s round trip on a cold-ish session; warm latency is not measured
+  yet.
 
 ## Privacy and safety
 
@@ -439,8 +441,9 @@ Ring frames (H.264, IR, watermark, auto-exposure) still need validation with own
 - **No API authentication.** Apart from pass issuing (admin token) and webhooks (HMAC), the
   demo API has **no authentication**. `/api/ask`, `/api/demo/run` and `/api/live/watch` spend
   Bedrock credit and are meant for localhost only.
-- **AWS:** the Lambda webhook
-  receiver is design only. SMS goes only to the sandbox-verified demo phone.
+- **AWS gaps.** The Lambda webhook receiver is design only. SMS goes only to the
+  sandbox-verified demo phone. The AgentCore runtime is read-only by design, so guarded actions
+  still run in the API process.
 - **Unvalidated business.** Pricing is a hypothesis with no customer interviews yet
   ([docs/BUSINESS.md](docs/BUSINESS.md)).
 

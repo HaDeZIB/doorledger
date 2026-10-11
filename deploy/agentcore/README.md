@@ -45,7 +45,7 @@ Payload contract (`POST /invocations`):
 
 Response: `{"answer"|"summary", "tool_calls", "model", "latency_ms", "usage", "runtime": "agentcore", "session_id", "handler_ms", "snapshot_now"}`.
 
-## Status (11 Oct 2026): built and tested locally, cloud deploy blocked by IAM
+## Status: DEPLOYED (11 Oct 2026, after the IAM grants below); the history of the first, blocked attempt is kept for the friction log
 
 | Step | Result |
 |---|---|

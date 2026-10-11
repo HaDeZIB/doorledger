@@ -1,10 +1,12 @@
 """Privacy filter for evidence frames.
 
-DoorLedger keeps a frame only to prove that something happened at the door (a package was
-left, an aide checked in). Faces are not needed for that proof, so every frame is passed
-through an on-device face detector (OpenCV YuNet, ~230 KB) and faces are pixelated before
-the JPEG is written. Raw frames never leave the process; the vision model sees the original
-frame in memory only to classify the scene.
+Order of operations for every frame (see watcher.Watcher.process):
+1. the device's Ring privacy zones are blacked out (never analyzed or stored);
+2. faces are pixelated on-device (OpenCV YuNet, ~230 KB) — this redacted JPEG is the only
+   thing sent to Bedrock and the only thing ever written to disk;
+3. a frame is stored only when it backs a confirmed observation, and expires after the
+   retention window. The un-redacted frame stays in memory, used only by the on-device
+   presence-code reader. YuNet can miss faces (fails open); that limitation is documented.
 """
 
 from __future__ import annotations

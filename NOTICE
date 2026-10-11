@@ -16,9 +16,8 @@ Third-party content included in this repository
 -------------------------------------------------------------------------------
 
 1. Ring Developer Playground footage
-   Paths: fixtures/ring_playground/**, fixtures/evidence/package.jpg,
-          fixtures/evidence/vehicle.jpg, fixtures/evidence/ring_snapshot.jpg,
-          fixtures/playground/** (recorded API responses)
+   Paths: fixtures/ring_playground/package/**, fixtures/ring_playground/vision_cache.json,
+          fixtures/evidence/package.jpg, fixtures/playground/** (recorded API responses)
 
    Frames and API responses captured on 2026-10-11 from the Ring Developer
    Playground (simulated live view over WHEP, snapshots and REST responses)
@@ -40,9 +39,8 @@ Third-party content included in this repository
      saved as JPEG.
 
    The "Vehicle" and "Motion" (bird feeder) scenes carry no license
-   statement in the Playground. They remain the property of their
-   respective owners and are NOT covered by this repository's Apache-2.0
-   license.
+   statement in the Playground, so they are NOT included in this repository
+   (capture them locally with scripts/capture_live.py and your own token).
 
 2. YuNet face detection model
    Path: core/src/doorledger/models/face_detection_yunet_2023mar.onnx
