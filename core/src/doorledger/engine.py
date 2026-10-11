@@ -40,7 +40,7 @@ class Engine:
         self.expectations: dict[str, Expectation] = {}
         self.observations: list[Observation] = []
         self.visit_secrets: dict[str, bytes] = {}  # visit_id -> presence-code secret
-        self._seen: set[tuple[str | None, str]] = set()
+        self._seen: set[tuple[str | None, str, str]] = set()
         self._lock = threading.RLock()
         self.last: Reconciliation | None = None
 
@@ -75,7 +75,9 @@ class Engine:
             self.last = r
             new: list[Finding] = []
             for f in r.findings:
-                key = (f.expectation_id, str(f.kind))
+                # Severity is part of the key so "late, not here yet" (warning) and
+                # "arrived 22 min late" (info) are both recorded on the timeline.
+                key = (f.expectation_id, str(f.kind), str(f.severity))
                 if key in self._seen:
                     continue
                 self._seen.add(key)

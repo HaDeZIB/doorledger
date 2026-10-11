@@ -146,7 +146,7 @@ def evidence(path: str) -> FileResponse:
 @app.get("/api/evv.csv")
 def evv_csv(date: str | None = None) -> PlainTextResponse:
     r = reconcile(list(engine.expectations.values()), engine.observations, engine.clock.now(),
-                  engine.ambient)
+                  engine.ambient, in_sun=engine.household.porch_in_sun)
     return PlainTextResponse(evv.to_csv(r, engine.household), media_type="text/csv",
                              headers={"Content-Disposition": "attachment; filename=evv.csv"})
 
@@ -170,3 +170,40 @@ def demo_reset() -> dict[str, Any]:
     runner.stop()
     engine.reset()
     return {"ok": True}
+
+
+# -- CareAgent (Strands on Bedrock): family Q&A + end-of-day summary --------------------------
+# Read-only tools only: a question typed into the family app can never send a message.
+
+_care_agent = None
+
+
+def _agent():
+    global _care_agent
+    if _care_agent is None:
+        from .agent import CareAgent
+
+        _care_agent = CareAgent(engine)
+    return _care_agent
+
+
+class AskBody(BaseModel):
+    question: str
+
+
+@app.post("/api/ask")
+def ask(body: AskBody) -> dict[str, Any]:
+    if not body.question.strip():
+        raise HTTPException(400, "question is empty")
+    try:
+        return _agent().ask(body.question).to_api("answer")
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)[:300]) from None
+
+
+@app.get("/api/summary")
+def summary() -> dict[str, Any]:
+    try:
+        return _agent().daily_summary().to_api("summary")
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)[:300]) from None

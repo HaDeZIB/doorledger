@@ -15,7 +15,7 @@
 | S2 WHEP servidor | ✅ | aiortc → H264 1280x720, ~4 fps efectivos. Escena se elige en la UI del Playground (Package/Vehicle/Motion) y aplica también a sesiones del servidor. 500 si se abre otra sesión antes de que cierre la anterior → reintento con espera de 20 s. MediaRecorder MP4 no finaliza (moov) → usamos frames + cv2.VideoWriter. Clip de paquete: "Thief stealing our package" (YouTube, CC BY 4.0) → ATRIBUIR en video y README. |
 | S3 Bedrock | ✅ | Nova 2 Lite + prompt v2: 54/54 en set sintético (eval/vision) y **10/10 en cuadros reales del Ring Playground** (paquete, vehículo, pájaros). ~$0.37/1k frames, p50 1.5 s. Claude bloqueado hasta enviar formulario de Anthropic. Gasto del spike: ~$2.2. |
 | S4 Código de presencia | 🟡 AJUSTADO | Sintético: 100% a 30–50 cm, 0% a 1 m (QR del teléfono <2 px/módulo). Decisión: instrucción a la cuidadora "30–50 cm, 2–3 s quieta", código compacto de 25 dígitos (QR mínimo, EC M), leer cada 2–3 frames, mantener código de 6 dígitos como respaldo leído por visión. Falta validar con footage real (IR nocturno, watermark). |
-| S5 Strands | pendiente | |
+| S5 Strands | ✅ | `agent.py` (Strands 1.59 + BedrockModel). Q&A familiar y resumen diario con herramientas de solo lectura; `notify` con guardrails en código. Claude Haiku 4.5 → fallback Nova Pro (Nova 2 Lite no alcanza para agente). ~$0.003/pregunta, ~2 s. `handle()` agéntico existe pero opt-in; reglas siguen por defecto. |
 | S6 Notificaciones | pendiente | |
 
 ### Decisiones
