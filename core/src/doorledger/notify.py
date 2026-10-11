@@ -61,6 +61,41 @@ class TelegramNotifier:
             return False
 
 
+class SNSNotifier:
+    """Real SMS through Amazon SNS. For the demo every household member maps to one verified
+    phone (SNS sandbox), and the message is prefixed with who it was for."""
+
+    channel = "sms"
+
+    def __init__(self, phone: str | None = None, region: str | None = None) -> None:
+        self.phone = phone or os.environ.get("DOORLEDGER_SMS_TO", "")
+        self.region = region or os.environ.get("AWS_REGION", "us-east-1")
+        self._client = None
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.phone)
+
+    def send(self, person: Person, message: str) -> bool:
+        if not self.enabled:
+            return False
+        try:
+            if self._client is None:
+                import boto3
+
+                self._client = boto3.client("sns", region_name=self.region)
+            self._client.publish(
+                PhoneNumber=person.phone or self.phone,
+                Message=f"DoorLedger → {person.name}: {message}"[:600],
+                MessageAttributes={"AWS.SNS.SMS.SMSType": {"DataType": "String",
+                                                          "StringValue": "Transactional"}},
+            )
+            return True
+        except Exception as exc:  # noqa: BLE001 - a failed SMS must not break the engine
+            log.warning("sns send failed: %s", exc)
+            return False
+
+
 class FanOutNotifier:
     channel = "app"
 
@@ -73,5 +108,9 @@ class FanOutNotifier:
 
 
 def default_notifier() -> Notifier:
-    tg = TelegramNotifier()
-    return FanOutNotifier(ConsoleNotifier(), tg) if tg.enabled else ConsoleNotifier()
+    extra = [n for n in (SNSNotifier(), TelegramNotifier()) if n.enabled]
+    if not extra:
+        return ConsoleNotifier()
+    fan = FanOutNotifier(ConsoleNotifier(), *extra)
+    fan.channel = extra[0].channel  # shown on the dashboard ("sms" when SNS is on)
+    return fan
