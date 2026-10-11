@@ -1,0 +1,741 @@
+[
+  {
+    "id": "empty_01",
+    "file": "empty_01.jpg",
+    "class": "empty_porch",
+    "lighting": "day",
+    "prompt": "daylight, empty concrete porch with a doormat, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "empty_02",
+    "file": "empty_02.jpg",
+    "class": "empty_porch",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, empty wooden porch, front walkway, lawn, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "empty_03",
+    "file": "empty_03.jpg",
+    "class": "empty_porch",
+    "lighting": "day",
+    "prompt": "daylight, empty front porch steps and front yard with sidewalk, no cars, no people",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "box_01",
+    "file": "box_01.jpg",
+    "class": "box_on_mat",
+    "lighting": "day",
+    "prompt": "daylight, a small brown cardboard shipping box sitting on the doormat, nobody there",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "box_02",
+    "file": "box_02.jpg",
+    "class": "box_on_mat",
+    "lighting": "day",
+    "prompt": "daylight, a small taped cardboard parcel left on the front doorstep next to the door, nobody there",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "box_03",
+    "file": "box_03.jpg",
+    "class": "empty_porch",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, one small cardboard box on the doormat, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "no box was generated; only a small round puck on the mat"
+    ]
+  },
+  {
+    "id": "box_04",
+    "file": "box_04.jpg",
+    "class": "empty_porch",
+    "lighting": "day",
+    "prompt": "daylight, a medium cardboard box on the porch floor near the door, front yard visible, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "no box was generated; empty doormat"
+    ]
+  },
+  {
+    "id": "rx_01",
+    "file": "rx_01.jpg",
+    "class": "pharmacy_bag",
+    "lighting": "day",
+    "prompt": "daylight, a white paper pharmacy prescription bag stapled shut resting on the doormat, nobody there",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "rx_02",
+    "file": "rx_02.jpg",
+    "class": "pharmacy_bag",
+    "lighting": "day",
+    "prompt": "daylight, a silver insulated cooler mailer pouch (medication cold-chain shipping bag) lying on the doorstep, nobody there",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "rx_03",
+    "file": "rx_03.jpg",
+    "class": "pharmacy_bag",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, a small white styrofoam insulated cooler box for medicine on the porch floor by the door, nobody there",
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "ambiguous": [
+      "package_visible"
+    ],
+    "fix_notes": [
+      "ambiguous: white cube on porch: insulated cooler box or a small appliance/bin"
+    ]
+  },
+  {
+    "id": "rx_04",
+    "file": "rx_04.jpg",
+    "class": "hard_negative",
+    "lighting": "day",
+    "prompt": "daylight, a padded plastic pharmacy mailer envelope on the doormat, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "no mailer generated; a white camera-like puck on a round mat"
+    ]
+  },
+  {
+    "id": "carry_01",
+    "file": "carry_01.jpg",
+    "class": "courier_approaching",
+    "lighting": "day",
+    "prompt": "daylight, a delivery driver in a uniform walking up the front walkway toward the door carrying a cardboard box in both hands",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "carry_02",
+    "file": "carry_02.jpg",
+    "class": "courier_approaching",
+    "lighting": "day",
+    "prompt": "daylight, a courier holding a small parcel approaching the front door on the porch steps",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "carry_03",
+    "file": "carry_03.jpg",
+    "class": "courier_approaching",
+    "lighting": "day",
+    "prompt": "daylight, a delivery man carrying a box walking from the street up the driveway toward the house",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "carry_04",
+    "file": "carry_04.jpg",
+    "class": "courier_approaching",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, a delivery worker with a cardboard package under one arm stepping onto the porch",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "place_01",
+    "file": "place_01.jpg",
+    "class": "courier_placing",
+    "lighting": "day",
+    "prompt": "daylight, a delivery driver bending down placing a cardboard box onto the doormat",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "box still held above the mat, not resting on the floor"
+    ]
+  },
+  {
+    "id": "place_02",
+    "file": "place_02.jpg",
+    "class": "courier_placing",
+    "lighting": "day",
+    "prompt": "daylight, a courier crouching and setting a parcel down on the porch floor next to the door",
+    "labels": {
+      "package_visible": true,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "ambiguous": [
+      "person_carrying_package"
+    ],
+    "fix_notes": [
+      "ambiguous: courier crouching with hands still on a box that rests on the mat"
+    ]
+  },
+  {
+    "id": "place_03",
+    "file": "place_03.jpg",
+    "class": "courier_approaching",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, a delivery person kneeling on the porch putting a small box down on the doorstep",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "person standing in doorway holding a small box; nothing on the floor"
+    ]
+  },
+  {
+    "id": "pickup_01",
+    "file": "pickup_01.jpg",
+    "class": "elder_pickup",
+    "lighting": "day",
+    "prompt": "daylight, an elderly woman with gray hair bending to pick up a cardboard box from the doormat",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "parcel already lifted, held at waist; nothing on the floor"
+    ]
+  },
+  {
+    "id": "pickup_02",
+    "file": "pickup_02.jpg",
+    "class": "person_at_door",
+    "lighting": "day",
+    "prompt": "daylight, an old man in a cardigan standing in the open doorway holding a small parcel he just picked up from the porch",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "elderly man is empty-handed in the doorway"
+    ]
+  },
+  {
+    "id": "pickup_03",
+    "file": "pickup_03.jpg",
+    "class": "elder_pickup",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, an elderly woman reaching down for a white pharmacy bag on the doorstep",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "elderly woman carrying two white bags; nothing on the floor"
+    ]
+  },
+  {
+    "id": "phone_01",
+    "file": "phone_01.jpg",
+    "class": "caregiver_phone_back",
+    "lighting": "day",
+    "prompt": "daylight, close up, a home caregiver nurse in blue scrubs standing right in front of the doorbell holding a smartphone with its bright screen facing the camera",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "phone held with its BACK toward the camera"
+    ]
+  },
+  {
+    "id": "phone_02",
+    "file": "phone_02.jpg",
+    "class": "caregiver_phone_back",
+    "lighting": "day",
+    "prompt": "daylight, a woman in teal medical scrubs at the front door holding up her phone screen toward the doorbell camera at close range",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "two phones, both with their BACK toward the camera"
+    ]
+  },
+  {
+    "id": "phone_03",
+    "file": "phone_03.jpg",
+    "class": "caregiver_phone_back",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, a caregiver in scrubs holding a glowing smartphone screen up to the doorbell camera, very close",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "phone held with its BACK toward the camera"
+    ]
+  },
+  {
+    "id": "phone_04",
+    "file": "phone_04.jpg",
+    "class": "caregiver_phone_back",
+    "lighting": "day",
+    "prompt": "daylight, a male nurse in navy scrubs on the porch showing a phone screen to the camera with his arm extended",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "phone held landscape with its BACK toward the camera"
+    ]
+  },
+  {
+    "id": "car_01",
+    "file": "car_01.jpg",
+    "class": "vehicle",
+    "lighting": "day",
+    "prompt": "daylight, a silver sedan parked in the driveway in front of the house, empty porch, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": true,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "car_02",
+    "file": "car_02.jpg",
+    "class": "vehicle",
+    "lighting": "day",
+    "prompt": "daylight, a white delivery van parked at the curb in front of the house, empty porch, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": true,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "car_03",
+    "file": "car_03.jpg",
+    "class": "vehicle",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, an SUV parked in the driveway seen past the porch railing, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": true,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "away_01",
+    "file": "away_01.jpg",
+    "class": "person_at_door",
+    "lighting": "day",
+    "prompt": "daylight, a delivery driver seen from behind walking away from the house down the front walkway, empty handed",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "actually walking TOWARD the door (back to camera), empty-handed"
+    ]
+  },
+  {
+    "id": "away_02",
+    "file": "away_02.jpg",
+    "class": "person_leaving",
+    "lighting": "day",
+    "prompt": "daylight, a person seen from behind walking away down the driveway toward the street, empty handed",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "ambiguous": [
+      "person_carrying_package"
+    ],
+    "fix_notes": [
+      "ambiguous: person carries a dark handbag/duffel, not clearly a parcel"
+    ]
+  },
+  {
+    "id": "away_03",
+    "file": "away_03.jpg",
+    "class": "person_at_door",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, a woman seen from behind leaving the porch and walking down the steps, empty handed",
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    },
+    "fix_notes": [
+      "actually walking TOWARD the door at dusk (back to camera)"
+    ]
+  },
+  {
+    "id": "neg_plant",
+    "file": "neg_plant.jpg",
+    "class": "hard_negative",
+    "lighting": "day",
+    "prompt": "daylight, a large terracotta potted plant beside the front door on the porch, nobody there, no boxes",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "neg_mat",
+    "file": "neg_mat.jpg",
+    "class": "hard_negative",
+    "lighting": "day",
+    "prompt": "daylight, a brown coir doormat on the porch, top-down, nobody there, no boxes",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "neg_bin",
+    "file": "neg_bin.jpg",
+    "class": "hard_negative",
+    "lighting": "day",
+    "prompt": "daylight, a blue recycling bin and a trash can at the side of the porch, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "neg_shadow",
+    "file": "neg_shadow.jpg",
+    "class": "hard_negative",
+    "lighting": "day",
+    "prompt": "daylight, harsh afternoon sun casting long rectangular shadows of the porch railing across the empty porch floor, nobody there",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "neg_dog",
+    "file": "neg_dog.jpg",
+    "class": "hard_negative",
+    "lighting": "day",
+    "prompt": "daylight, a golden retriever dog sitting on the doormat, no people, no boxes",
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "phone_01_screen",
+    "file": "phone_01_screen.jpg",
+    "class": "caregiver_phone_screen",
+    "lighting": "day",
+    "prompt": "daylight, close up, a home caregiver nurse in blue scrubs standing right in front of the doorbell holding a smartphone with its bright screen facing the camera [PIL composite: lit phone screen with presence code]",
+    "derived_from": "phone_01",
+    "composite": true,
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": true
+    },
+    "fix_notes": [
+      "phone held with its BACK toward the camera"
+    ]
+  },
+  {
+    "id": "phone_02_screen",
+    "file": "phone_02_screen.jpg",
+    "class": "caregiver_phone_screen",
+    "lighting": "day",
+    "prompt": "daylight, a woman in teal medical scrubs at the front door holding up her phone screen toward the doorbell camera at close range [PIL composite: lit phone screen with presence code]",
+    "derived_from": "phone_02",
+    "composite": true,
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": true
+    },
+    "fix_notes": [
+      "two phones, both with their BACK toward the camera"
+    ]
+  },
+  {
+    "id": "phone_03_screen",
+    "file": "phone_03_screen.jpg",
+    "class": "caregiver_phone_screen",
+    "lighting": "dusk",
+    "prompt": "dusk lighting, low light, warm porch light on, a caregiver in scrubs holding a glowing smartphone screen up to the doorbell camera, very close [PIL composite: lit phone screen with presence code]",
+    "derived_from": "phone_03",
+    "composite": true,
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": true
+    },
+    "fix_notes": [
+      "phone held with its BACK toward the camera"
+    ]
+  },
+  {
+    "id": "phone_04_screen",
+    "file": "phone_04_screen.jpg",
+    "class": "caregiver_phone_screen",
+    "lighting": "day",
+    "prompt": "daylight, a male nurse in navy scrubs on the porch showing a phone screen to the camera with his arm extended [PIL composite: lit phone screen with presence code]",
+    "derived_from": "phone_04",
+    "composite": true,
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": true
+    },
+    "fix_notes": [
+      "phone held landscape with its BACK toward the camera"
+    ]
+  },
+  {
+    "id": "empty_01_ir",
+    "file": "empty_01_ir.jpg",
+    "class": "empty_porch",
+    "lighting": "night_ir",
+    "prompt": "daylight, empty concrete porch with a doormat, nobody there",
+    "derived_from": "empty_01",
+    "composite": false,
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "box_01_ir",
+    "file": "box_01_ir.jpg",
+    "class": "box_on_mat",
+    "lighting": "night_ir",
+    "prompt": "daylight, a small brown cardboard shipping box sitting on the doormat, nobody there",
+    "derived_from": "box_01",
+    "composite": false,
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "rx_02_ir",
+    "file": "rx_02_ir.jpg",
+    "class": "pharmacy_bag",
+    "lighting": "night_ir",
+    "prompt": "daylight, a silver insulated cooler mailer pouch (medication cold-chain shipping bag) lying on the doorstep, nobody there",
+    "derived_from": "rx_02",
+    "composite": false,
+    "labels": {
+      "package_visible": true,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "carry_01_ir",
+    "file": "carry_01_ir.jpg",
+    "class": "courier_approaching",
+    "lighting": "night_ir",
+    "prompt": "daylight, a delivery driver in a uniform walking up the front walkway toward the door carrying a cardboard box in both hands",
+    "derived_from": "carry_01",
+    "composite": false,
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": true,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  },
+  {
+    "id": "phone_01_screen_ir",
+    "file": "phone_01_screen_ir.jpg",
+    "class": "caregiver_phone_screen",
+    "lighting": "night_ir",
+    "prompt": "daylight, close up, a home caregiver nurse in blue scrubs standing right in front of the doorbell holding a smartphone with its bright screen facing the camera [PIL composite: lit phone screen with presence code]",
+    "derived_from": "phone_01_screen",
+    "composite": true,
+    "labels": {
+      "package_visible": false,
+      "person_present": true,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": true
+    },
+    "fix_notes": [
+      "phone held with its BACK toward the camera"
+    ]
+  },
+  {
+    "id": "neg_dog_ir",
+    "file": "neg_dog_ir.jpg",
+    "class": "hard_negative",
+    "lighting": "night_ir",
+    "prompt": "daylight, a golden retriever dog sitting on the doormat, no people, no boxes",
+    "derived_from": "neg_dog",
+    "composite": false,
+    "labels": {
+      "package_visible": false,
+      "person_present": false,
+      "person_carrying_package": false,
+      "vehicle_present": false,
+      "phone_screen_shown": false
+    }
+  }
+]

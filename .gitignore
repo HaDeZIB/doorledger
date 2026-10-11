@@ -1,0 +1,26 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# local reference copies of third-party docs (not ours to redistribute)
+.ref/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+*.egg-info/
+
+# node
+node_modules/
+.next/
+
+# raw captures (large); curated fixtures are committed explicitly
+fixtures/raw/
+*.sqlite3
+
+.DS_Store
