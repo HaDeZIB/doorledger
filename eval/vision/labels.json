@@ -470,10 +470,11 @@
       "phone_screen_shown": false
     },
     "ambiguous": [
-      "person_carrying_package"
+      "person_carrying_package",
+      "vehicle_present"
     ],
     "fix_notes": [
-      "ambiguous: person carries a dark handbag/duffel, not clearly a parcel"
+      "ambiguous: person carries a dark handbag/duffel (not clearly a parcel); cars parked in a driveway ACROSS the street (missed in first labeling pass, flagged by the models)"
     ]
   },
   {
@@ -547,7 +548,13 @@
       "person_carrying_package": false,
       "vehicle_present": false,
       "phone_screen_shown": false
-    }
+    },
+    "ambiguous": [
+      "vehicle_present"
+    ],
+    "fix_notes": [
+      "ambiguous: tiny cars parked far down the street at the top edge; not 'close to the house' but visible (missed in first labeling pass, flagged by Nova 2 Lite)"
+    ]
   },
   {
     "id": "neg_dog",

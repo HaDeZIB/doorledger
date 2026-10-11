@@ -1,0 +1,927 @@
+{
+ "nova-lite": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 0.9333333333333333,
+   "prec": 0.7,
+   "rec": 1.0,
+   "tp": 7,
+   "fp": 3,
+   "fn": 0,
+   "tn": 35
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 0.9130434782608695,
+   "prec": 0.5555555555555556,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 4,
+   "fn": 0,
+   "tn": 37
+  },
+  "lat_p50": 1370.0,
+  "lat_p95": 1872.1,
+  "in_tok": 2733.304347826087,
+  "out_tok": 71.26086956521739,
+  "usd_per_1k": 0.18110086956521737,
+  "mean_acc": 0.9692753623188406,
+  "errors": [
+   {
+    "id": "place_01",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Person holding a package in front of the door"
+   },
+   {
+    "id": "place_03",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Person holding a package at the door"
+   },
+   {
+    "id": "phone_01",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Person in blue scrubs holding a phone"
+   },
+   {
+    "id": "phone_02",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Person in scrubs taking a selfie with phone"
+   },
+   {
+    "id": "phone_03",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "A woman is standing in front of a door, holding a phone."
+   },
+   {
+    "id": "phone_04",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Person holding phone, smiling, wearing scrubs"
+   },
+   {
+    "id": "carry_01_ir",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Person carrying package on porch"
+   }
+  ]
+ },
+ "nova-2-lite": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 7,
+   "fp": 0,
+   "fn": 0,
+   "tn": 38
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 0.9565217391304348,
+   "prec": 0.7142857142857143,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 2,
+   "fn": 0,
+   "tn": 39
+  },
+  "lat_p50": 1450.5,
+  "lat_p95": 2003.9,
+  "in_tok": 456,
+  "out_tok": 69.34782608695652,
+  "usd_per_1k": 0.3411865217391304,
+  "mean_acc": 0.991304347826087,
+  "errors": [
+   {
+    "id": "phone_01",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse holding phone at front door"
+   },
+   {
+    "id": "phone_02",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse smiling, holding phone to camera"
+   }
+  ]
+ },
+ "nova-pro": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 0.9777777777777777,
+   "prec": 1.0,
+   "rec": 0.8571428571428571,
+   "tp": 6,
+   "fp": 0,
+   "fn": 1,
+   "tn": 38
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 0.9130434782608695,
+   "prec": 0.5555555555555556,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 4,
+   "fn": 0,
+   "tn": 37
+  },
+  "lat_p50": 1471.8,
+  "lat_p95": 1688.8,
+  "in_tok": 2733.304347826087,
+  "out_tok": 69.02173913043478,
+  "usd_per_1k": 2.4075130434782612,
+  "mean_acc": 0.9781642512077294,
+  "errors": [
+   {
+    "id": "place_02",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Person holding package in front of door."
+   },
+   {
+    "id": "phone_01",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse holding phone, smiling at camera."
+   },
+   {
+    "id": "phone_02",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse holding two phones, smiling."
+   },
+   {
+    "id": "phone_03",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse holding phone, smiling at camera."
+   },
+   {
+    "id": "phone_04",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Person holding phone, smiling at camera."
+   }
+  ]
+ },
+ "nova-lite@768": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 0.9777777777777777,
+   "prec": 0.875,
+   "rec": 1.0,
+   "tp": 7,
+   "fp": 1,
+   "fn": 0,
+   "tn": 37
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 0.9772727272727273,
+   "prec": 1.0,
+   "rec": 0.8888888888888888,
+   "tp": 8,
+   "fp": 0,
+   "fn": 1,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 0.9130434782608695,
+   "prec": 0.5555555555555556,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 4,
+   "fn": 0,
+   "tn": 37
+  },
+  "lat_p50": 1109.6,
+  "lat_p95": 1479.9,
+  "in_tok": 1424.7826086956522,
+  "out_tok": 71.3913043478261,
+  "usd_per_1k": 0.10262086956521739,
+  "mean_acc": 0.9736187966622749,
+  "errors": [
+   {
+    "id": "place_03",
+    "wrong": [
+     "package_visible",
+     "person_carrying_package"
+    ],
+    "note": "Person holding package, no vehicle"
+   },
+   {
+    "id": "phone_01",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Person holds phone, showing screen to camera"
+   },
+   {
+    "id": "phone_02",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "A woman is taking a selfie with her phone."
+   },
+   {
+    "id": "phone_03",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "A woman is standing at the door, holding a phone"
+   },
+   {
+    "id": "phone_04",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Person holding phone screen, no package visible"
+   }
+  ]
+ },
+ "nova-pro+v2": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 0.9777777777777777,
+   "prec": 1.0,
+   "rec": 0.8571428571428571,
+   "tp": 6,
+   "fp": 0,
+   "fn": 1,
+   "tn": 38
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 0.9565217391304348,
+   "prec": 0.7142857142857143,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 2,
+   "fn": 0,
+   "tn": 39
+  },
+  "lat_p50": 1425.9,
+  "lat_p95": 1971.3,
+  "in_tok": 2819.304347826087,
+  "out_tok": 68.95652173913044,
+  "usd_per_1k": 2.4761043478260873,
+  "mean_acc": 0.9868599033816425,
+  "errors": [
+   {
+    "id": "place_02",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Delivery person with package."
+   },
+   {
+    "id": "phone_02",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse holding two phones, smiling."
+   },
+   {
+    "id": "phone_03",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse with phone in doorway."
+   }
+  ]
+ },
+ "nova-lite#rep2": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 0.9333333333333333,
+   "prec": 0.7,
+   "rec": 1.0,
+   "tp": 7,
+   "fp": 3,
+   "fn": 0,
+   "tn": 35
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 0.9130434782608695,
+   "prec": 0.5555555555555556,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 4,
+   "fn": 0,
+   "tn": 37
+  },
+  "lat_p50": 1363.7,
+  "lat_p95": 1988.6,
+  "in_tok": 2733.304347826087,
+  "out_tok": 71.04347826086956,
+  "usd_per_1k": 0.18104869565217388,
+  "mean_acc": 0.9692753623188406,
+  "errors": [
+   {
+    "id": "place_01",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Person holding a package in front of the door"
+   },
+   {
+    "id": "place_03",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Person holding a package at the door"
+   },
+   {
+    "id": "phone_01",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Person in blue scrubs holding a phone"
+   },
+   {
+    "id": "phone_02",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Person in scrubs taking a selfie with phone"
+   },
+   {
+    "id": "phone_03",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "A woman in scrubs holds a phone"
+   },
+   {
+    "id": "phone_04",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Person holding phone, smiling, wearing scrubs"
+   },
+   {
+    "id": "carry_01_ir",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Person carrying package on porch"
+   }
+  ]
+ },
+ "nova-2-lite+v2": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 7,
+   "fp": 0,
+   "fn": 0,
+   "tn": 38
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "lat_p50": 1464.0,
+  "lat_p95": 2806.0,
+  "in_tok": 537,
+  "out_tok": 69.8913043478261,
+  "usd_per_1k": 0.3694110869565218,
+  "mean_acc": 1.0,
+  "errors": []
+ },
+ "nova-2-lite@768": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 0.9777777777777777,
+   "prec": 0.875,
+   "rec": 1.0,
+   "tp": 7,
+   "fp": 1,
+   "fn": 0,
+   "tn": 37
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 0.9565217391304348,
+   "prec": 0.7142857142857143,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 2,
+   "fn": 0,
+   "tn": 39
+  },
+  "lat_p50": 958.0999999999999,
+  "lat_p95": 2186.4,
+  "in_tok": 456,
+  "out_tok": 69.54347826086956,
+  "usd_per_1k": 0.34172456521739136,
+  "mean_acc": 0.9868599033816425,
+  "errors": [
+   {
+    "id": "box_04",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Package on doormat, no people."
+   },
+   {
+    "id": "phone_02",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse smiling, holding phone to camera."
+   },
+   {
+    "id": "phone_04",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "man in scrubs holding phone at door"
+   }
+  ]
+ },
+ "nova-2-lite#rep2": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 7,
+   "fp": 0,
+   "fn": 0,
+   "tn": 38
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 0.9347826086956522,
+   "prec": 0.625,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 3,
+   "fn": 0,
+   "tn": 38
+  },
+  "lat_p50": 1427.4,
+  "lat_p95": 2749.4,
+  "in_tok": 456,
+  "out_tok": 69.28260869565217,
+  "usd_per_1k": 0.3410071739130435,
+  "mean_acc": 0.9869565217391304,
+  "errors": [
+   {
+    "id": "phone_01",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse holding phone at front door"
+   },
+   {
+    "id": "phone_02",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "nurse holding phone, no package"
+   },
+   {
+    "id": "phone_04",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Nurse holding phone at front door"
+   }
+  ]
+ },
+ "nova-2-lite@768+v2": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 0.9777777777777777,
+   "prec": 0.875,
+   "rec": 1.0,
+   "tp": 7,
+   "fp": 1,
+   "fn": 0,
+   "tn": 37
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 5,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "lat_p50": 912.5,
+  "lat_p95": 1168.6,
+  "in_tok": 537,
+  "out_tok": 69.8695652173913,
+  "usd_per_1k": 0.36935130434782604,
+  "mean_acc": 0.9955555555555555,
+  "errors": [
+   {
+    "id": "box_04",
+    "wrong": [
+     "package_visible"
+    ],
+    "note": "Package on doormat, no people or vehicles."
+   }
+  ]
+ },
+ "nova-lite@768+v2": {
+  "n": 46,
+  "parse_fail": 0,
+  "api_fail": 0,
+  "package_visible": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 7,
+   "fp": 0,
+   "fn": 0,
+   "tn": 38
+  },
+  "person_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 23,
+   "fp": 0,
+   "fn": 0,
+   "tn": 23
+  },
+  "person_carrying_package": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 35
+  },
+  "vehicle_present": {
+   "acc": 1.0,
+   "prec": 1.0,
+   "rec": 1.0,
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "tn": 41
+  },
+  "phone_screen_shown": {
+   "acc": 0.8913043478260869,
+   "prec": 0.5,
+   "rec": 0.8,
+   "tp": 4,
+   "fp": 4,
+   "fn": 1,
+   "tn": 37
+  },
+  "lat_p50": 1110.35,
+  "lat_p95": 2122.6,
+  "in_tok": 1510.7826086956522,
+  "out_tok": 71.04347826086956,
+  "usd_per_1k": 0.10769739130434781,
+  "mean_acc": 0.9782608695652174,
+  "errors": [
+   {
+    "id": "phone_01",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "A woman in scrubs holds a phone"
+   },
+   {
+    "id": "phone_02",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "A woman in scrubs holds two phones"
+   },
+   {
+    "id": "phone_03",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "A woman stands at the door, smiling, holding a phone"
+   },
+   {
+    "id": "phone_04",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "Man in scrubs holds phone, smiling"
+   },
+   {
+    "id": "phone_01_screen_ir",
+    "wrong": [
+     "phone_screen_shown"
+    ],
+    "note": "A woman in scrubs holds a phone with a QR code"
+   }
+  ]
+ }
+}

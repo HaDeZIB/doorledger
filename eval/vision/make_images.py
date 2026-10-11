@@ -100,6 +100,15 @@ SCENES = [
     ("neg_bin", "hard_negative", "1:1", f"{DAY}, a blue recycling bin and a trash can at the side of the porch, nobody there", L()),
     ("neg_shadow", "hard_negative", "1:1", f"{DAY}, harsh afternoon sun casting long rectangular shadows of the porch railing across the empty porch floor, nobody there", L()),
     ("neg_dog", "hard_negative", "1:1", f"{DAY}, a golden retriever dog sitting on the doormat, no people, no boxes", L()),
+    # Round 2 (added after label fixes left only 7 package positives): more parcels at rest.
+    ("pkg_05", "box_on_mat", "1:1", f"{DAY}, a brown cardboard box sitting on the porch floor right in front of the door, nobody there", L(package_visible=True)),
+    ("pkg_06", "box_on_mat", "1:1", f"{DAY}, two cardboard boxes stacked on the doorstep, nobody there", L(package_visible=True)),
+    ("pkg_07", "pharmacy_bag", "1:1", f"{DAY}, a yellow padded envelope mailer lying flat on the doormat, nobody there", L(package_visible=True)),
+    ("pkg_08", "pharmacy_bag", "1:1", f"{DUSK}, a white plastic poly mailer bag lying on the doorstep, nobody there", L(package_visible=True)),
+    ("pkg_09", "box_and_person", "1:1", f"{DAY}, a cardboard box left on the doormat in the foreground, and a delivery driver in the background walking away down the front path", L(package_visible=True, person_present=True)),
+    ("pkg_10", "box_on_mat", "16:9", f"{DAY}, a cardboard box on the porch steps, wide view of the front yard and sidewalk, nobody there", L(package_visible=True)),
+    ("pkg_11", "pharmacy_bag", "1:1", f"{DUSK}, a silver insulated cooler bag on the porch floor beside a potted plant, nobody there", L(package_visible=True)),
+    ("pkg_12", "box_on_mat", "1:1", f"{DAY}, a large cardboard box leaning against the closed front door, nobody there", L(package_visible=True)),
 ]
 
 # Stable Image Core never rendered a phone with its SCREEN toward the camera (all 4 caregiver
@@ -138,7 +147,11 @@ LABEL_FIXES: dict[str, tuple[dict, str, str | None]] = {
 # Fields a careful human could reasonably label either way: not scored for that item.
 AMBIGUOUS: dict[str, tuple[list[str], str]] = {
     "rx_03": (["package_visible"], "white cube on porch: insulated cooler box or a small appliance/bin"),
-    "away_02": (["person_carrying_package"], "person carries a dark handbag/duffel, not clearly a parcel"),
+    "away_02": (["person_carrying_package", "vehicle_present"],
+                "person carries a dark handbag/duffel (not clearly a parcel); cars parked in a driveway "
+                "ACROSS the street (missed in first labeling pass, flagged by the models)"),
+    "neg_shadow": (["vehicle_present"], "tiny cars parked far down the street at the top edge; not 'close to the house' "
+                   "but visible (missed in first labeling pass, flagged by Nova 2 Lite)"),
     "place_02": (["person_carrying_package"], "courier crouching with hands still on a box that rests on the mat"),
 }
 EXCLUDE: dict[str, str] = {}

@@ -29,3 +29,18 @@ Format per entry: task · steps · expected vs. actual · severity · workaround
 - **Actual:** Docs say "There is no official Ring Partner SDK". Every partner re-implements JSON:API parsing, the 303 pre-signed media flow, WHEP, HMAC verification.
 - **Workaround:** Published `ringpartner` (Python, Apache-2.0).
 - **Suggestion:** Ship minimal official SDKs (TS/Python) or endorse a community one.
+
+## F5 — Playground scene selection is invisible to API clients
+- **Actual:** Package/Vehicle/Motion are chosen by clicking buttons in the Playground web UI; a server-side WHEP session then streams whatever scene was last picked. Nothing in the API (no parameter, no endpoint) selects a scene, and nothing documents that the UI choice is global per account.
+- **Severity:** Medium. **Workaround:** click the scene in the UI, then open our own session.
+- **Suggestion:** `POST .../whep/sessions?simulated_event=package` in the Playground, or document the behaviour.
+
+## F6 — Opening a second WHEP session too soon returns HTTP 500
+- **Actual:** Re-opening a live view within ~20–40 s of a previous one returns `500 Internal server error` with no hint. **Workaround:** retry after 20 s.
+- **Suggestion:** Return 409/429 with `Retry-After` and say a session is still active.
+
+## F7 — Snapshot `latest_in_range` returns 403 "time range not within authorized boundaries"
+- **Actual:** A range covering the last 10 minutes is rejected; `at_timestamp` equal to a history event's `start` works. **Suggestion:** Explain the authorized window in the error detail (consent time? event-bounded?).
+
+## F8 — Developer registration breaks with browser extensions
+- **Actual (follow-up to F1):** The 404 on `/settings/console/registration` disappeared in an incognito window (no extensions). **Suggestion:** Detect a failed script load and show "disable extensions" instead of a 404.
