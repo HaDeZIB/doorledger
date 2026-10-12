@@ -202,6 +202,7 @@ const DL = (() => {
 /* END DL-PRESENCE */
 
 /* BEGIN DL-QR  -- minimal QR encoder (ISO/IEC 18004), versions 1-10, modes numeric/alnum/byte */
+/* Follows Project Nayuki's QR Code generator library (MIT, Copyright (c) Project Nayuki); see NOTICE. */
 const QR = (() => {
   const EC = { L: 0, M: 1, Q: 2, H: 3 };
   const FORMAT_BITS = { L: 1, M: 0, Q: 3, H: 2 };
