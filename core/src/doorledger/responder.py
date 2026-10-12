@@ -23,7 +23,7 @@ from typing import Protocol
 
 from .domain import Action, Finding, FindingKind, Person
 from .household import Household
-from .notify import Notifier
+from .notify import Notifier, channel_fields
 
 log = logging.getLogger("doorledger.responder")
 
@@ -187,7 +187,7 @@ class Responder:
             incident.last_at = now
         return Action(kind=kind, target=person.name, message=message, at=now,
                       finding_id=finding.id, delivered=delivered,
-                      data={"channel": getattr(self.notifier, "channel", "app"),
+                      data={**channel_fields(person, self.notifier),
                             "purpose": purpose, "role": person.role,
                             "language": person.language,
                             "writer": getattr(self.writer, "last_model", "template")})

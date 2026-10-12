@@ -74,6 +74,9 @@ class Person:
     telegram_chat_id: str | None = None
     escalation_order: int = 99
     language: str = "en"  # messages are written in the recipient's language ("en", "es")
+    # How the household chose to reach this person: "sms", "push" (family app), "agency_portal".
+    # Rosa (81) uses no apps, so she is texted. None = whatever the notifier is.
+    channel: str | None = None
 
 
 @dataclass

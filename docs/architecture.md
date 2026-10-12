@@ -127,9 +127,12 @@ that one source.
 
 1. **Expectation-guided sensing.** The Watcher does not watch the door all day. It looks only
    while care is expected (±30 min around a window) or when Ring reports an event. With a live
-   token, `LiveController` polls Ring history every 15 s during care windows. For each new
-   event it classifies the snapshot taken at the event's start (source `ring_snapshot`), then
-   opens a short live view (25 s at 1 fps). A doorbell press (`ding` in history, or a
+   token, `LiveController` polls Ring history every 15 s during care windows, filtered with
+   `event_types=ding,on_demand,motion.human,motion.vehicle` (animals and unclassified motion
+   never open a session; our own live views, which Ring also logs as `on_demand`, are skipped).
+   Each new event is written to the ledger as a `ring_event` record (shown on the dashboard
+   timeline with a "Ring history" badge). It then classifies the snapshot taken at the event's
+   start (source `ring_snapshot`) and opens a short live view (25 s at 1 fps). A doorbell press (`ding` in history, or a
    `button_press` webhook) switches to **burst mode**: 4 fps for about 12 s, with the code
    reader on every frame. Without a token, the same code runs on recorded Playground frames. A
    motion gate reuses the last label for unchanged frames, which cut vision calls by 38–60% in
@@ -170,7 +173,10 @@ that one source.
    (`make api-offline`), `CachingVision` answers with the labels Bedrock produced for those exact
    frames (`fixtures/ring_playground/vision_cache.json`). The offline demo therefore runs the
    real pipeline on real Ring footage with no AWS credentials. A cache miss returns an empty
-   scene, never an invented detection.
+   scene, never an invented detection. Every observation carries the provenance of its label in
+   `detail` (`vision_model`, `vision_ms`, `vision_cached`, `vision_reused`), and the evidence
+   card shows it ("Nova 2 Lite · 1.2 s", or "… · recorded" for a cache replay). Cache entries
+   recorded before this field existed carry no model or latency, so none is shown.
 
 ### Webhook path
 
@@ -283,7 +289,7 @@ sequenceDiagram
     R->>Agency: "Maria has not checked in yet"
     Maria->>P: open "Check-in"
     P-->>Maria: QR = compact code (visit, 15-s step, role=in, MAC)<br/>+ 6-digit backup code (read by vision, rate-limited)
-    Maria->>Ring: holds phone 30–50 cm from the lens for 2–3 s
+    Maria->>Ring: presses the doorbell (burst mode), then holds the phone<br/>30–50 cm from the lens for 2–3 s
     Ring->>W: frames
     W->>W: decode QR (every 2nd frame; every frame in burst mode after a doorbell press)
     W->>E: verify MAC, step within tolerance, role, not replayed

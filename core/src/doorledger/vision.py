@@ -136,7 +136,14 @@ class CachingVision:
         key = hashlib.sha256(image_jpeg).hexdigest()
         if key in self.cache and self.inner is None:  # replay mode only; live mode always calls
             self.hits += 1
-            return label_from_json(self.cache[key], at, evidence_path)
+            entry = self.cache[key]
+            label = label_from_json(entry, at, evidence_path)
+            # Model and latency only if they were recorded with this label (older entries have
+            # neither); ``vision_cached`` marks the label as a replay, not a live call.
+            recorded = {k: entry[k] for k in ("vision_model", "vision_ms")
+                        if entry.get(k) is not None}
+            label.extra = {**label.extra, **recorded, "vision_cached": True}
+            return label
         self.misses += 1
         if self.inner is None:
             return label_from_json({"confidence": 0.0, "note": "not in vision cache"}, at,

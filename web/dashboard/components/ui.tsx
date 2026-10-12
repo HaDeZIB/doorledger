@@ -1,4 +1,4 @@
-import type { ObservationSource, Severity } from "@/lib/types";
+import type { EventSource, Severity } from "@/lib/types";
 import { SOURCE_LABEL, type VisitStatusKey } from "@/lib/derive";
 import { IconAlert, IconBolt, IconCamera, IconCheck, IconFilm, IconFlask, IconInfo, IconUrgent } from "./icons";
 
@@ -53,24 +53,26 @@ export function CardHeader({
   );
 }
 
-const SOURCE_STYLE: Record<ObservationSource, string> = {
+const SOURCE_STYLE: Record<EventSource, string> = {
   ring_live_view: "bg-brand-soft text-brand-strong border-brand/25",
   ring_snapshot: "bg-info-soft text-info border-info/25",
   ring_webhook: "bg-[#efeaf8] text-[#4f3a8a] border-[#4f3a8a]/20",
+  ring_history: "bg-[#efeaf8] text-[#4f3a8a] border-[#4f3a8a]/20",
   own_footage: "bg-[#efeee9] text-ink-2 border-line-strong",
   simulated: "bg-warn-soft text-warn border-warn/30 border-dashed",
 };
 
-const SOURCE_ICON: Record<ObservationSource, React.ComponentType<{ size?: number }>> = {
+const SOURCE_ICON: Record<EventSource, React.ComponentType<{ size?: number }>> = {
   ring_live_view: IconCamera,
   ring_snapshot: IconCamera,
   ring_webhook: IconBolt,
+  ring_history: IconBolt,
   own_footage: IconFilm,
   simulated: IconFlask,
 };
 
 /** Provenance badge — every observation shows where it came from. */
-export function SourceBadge({ source, className }: { source: ObservationSource; className?: string }) {
+export function SourceBadge({ source, className }: { source: EventSource; className?: string }) {
   const Icon = SOURCE_ICON[source];
   return (
     <span

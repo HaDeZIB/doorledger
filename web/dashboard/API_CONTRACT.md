@@ -29,7 +29,8 @@ must allow origin `http://localhost:3000` (GET, POST, `Content-Type: application
 Household {
   id: string
   patient: { name: string, age: number, address: string, timezone: string }
-  people: { name: string, role: "patient"|"family"|"neighbor"|"agency"|"caregiver", escalation_order: number }[]
+  people: { name: string, role: "patient"|"family"|"neighbor"|"agency"|"caregiver", escalation_order: number,
+            language?: "en"|"es", channel?: "sms"|"push"|"agency_portal"|null }[]
   device: { id: string, name: string, online: boolean|null, source: "ring_playground"|"ring_api"|"replay" }
   ambient: { celsius: number, source: "open-meteo"|"override"|"fallback" }
 }
@@ -49,7 +50,12 @@ State {
   actions: Action[]
 }
 
-LedgerRecord { id: string, kind: "expectation"|"observation"|"finding"|"action", subtype: string, at: ISO, ref: string|null, body: object }
+LedgerRecord { id: string, kind: "expectation"|"observation"|"finding"|"action"|"ring_event", subtype: string, at: ISO, ref: string|null, body: object }
+
+RingEvent /* body of a ring_event record: a Ring history row the live poller acted on (live token only) */ {
+  id, event_type: "ding"|"on_demand"|"motion"|string, at: ISO, end: ISO|null, device_id,
+  source: "ring_history", action: "watch"|"burst watch"
+}
 
 Expectation {
   id, kind: "caregiver_visit"|"medication_delivery", title, window_start: ISO, window_end: ISO,
@@ -88,6 +94,14 @@ These are not required, but the UI renders them when present:
 - `Observation.detail.in_sun` (bool) on `package_dropped`.
 - `Action.target` should be a `people[].name` (e.g. `"Luis Ortega"`) so the UI can say "Called neighbor Luis".
 - `Action.data.channel`: `"sms" | "voice" | "push" | "email" | "agency_portal"` → verb ("Texted", "Called", …).
+  It is the household's channel for that person (`people[].channel`; Rosa uses no app, so `"sms"`).
+- `Action.data.via`: what actually carried the message in this run: `"sms"` (Amazon SNS), `"telegram"`,
+  or `"app"` (console only, nothing was sent). When it differs from `channel` the UI explains it, and
+  `via: "app"` shows "Demo only" instead of "Delivered".
+- `Observation.detail.vision_model` / `vision_ms`: Bedrock model id and latency of the vision call that
+  labelled the frame → "Nova 2 Lite · 1.2 s" on the evidence card. `vision_cached: true` = replayed from
+  the recorded vision cache ("recorded"); `vision_reused: true` = unchanged frame reused the last label.
+  Absent fields are never filled in by the UI.
 - `Action.data.status`: `"no_answer" | "answered"`; `Action.data.reply`: string (e.g. `"On my way"`).
 - `Action.data.language`: `"es" | "en"` → small language tag on the action (messages to Rosa are Spanish).
 - `Action.data.channel` may also be `"telegram"` → "Messaged …".

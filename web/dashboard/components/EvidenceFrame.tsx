@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Observation } from "@/lib/types";
 import { fmtTime, fmtTimeSec } from "@/lib/time";
-import { OBS_LABEL, visionNote } from "@/lib/derive";
+import { OBS_LABEL, visionMeta, visionNote } from "@/lib/derive";
 import { IconFlask } from "./icons";
 import { SourceBadge, cx } from "./ui";
 
@@ -48,6 +48,8 @@ export function EvidenceFrame({
   const o = shown?.obs ?? drawn?.obs ?? obs;
   const none = !shown && !drawn;
   const note = visionNote(o);
+  // model + latency of the vision call behind this frame, only when the backend recorded them
+  const meta = shown && o.source !== "simulated" ? visionMeta(o) : null;
   const caption = shown && typeof o.detail.caption === "string" ? o.detail.caption : null;
   const captionShort = caption && typeof o.detail.caption_short === "string" ? o.detail.caption_short : caption;
   // e.g. "Ring doorbell frame at 2:07 PM: package on snowy doorstep"
@@ -87,7 +89,13 @@ export function EvidenceFrame({
               o !== obs ? (
                 <span className="text-[0.68rem] font-medium text-white">{OBS_SHORT[o.kind] ?? "earlier frame"}</span>
               ) : (
-                caption && wideOverlay && !compact && <span className="hidden min-w-0 truncate text-[0.62rem] font-medium text-white xl:block">{captionShort}</span>
+                wideOverlay &&
+                !compact &&
+                (caption || meta) && (
+                  <span className="hidden min-w-0 truncate text-[0.62rem] font-medium text-white xl:block" title={meta?.title}>
+                    {[captionShort, meta?.text].filter(Boolean).join(" · ")}
+                  </span>
+                )
               )
             ) : (
               <span className="text-[0.68rem] font-medium text-white">{o !== obs ? `${OBS_SHORT[o.kind] ?? "earlier frame"} · ` : ""}illustration</span>
@@ -100,6 +108,11 @@ export function EvidenceFrame({
           <span className="flex flex-wrap items-center gap-2">
             <SourceBadge source={o.source} />
             {o.source !== "simulated" && <span className="tabular">{Math.round(o.confidence * 100)}% confidence</span>}
+            {meta && (
+              <span className="tabular text-[0.8rem] text-ink-3" title={meta.title}>
+                {meta.text}
+              </span>
+            )}
             {none && <span className="tabular text-ink-3">{fmtTimeSec(o.at, tz)}</span>}
           </span>
           {caption && <span className="mt-1 block text-[0.8rem] text-ink-3">{caption}</span>}

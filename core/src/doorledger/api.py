@@ -174,6 +174,7 @@ async def demo_run(body: DemoRun) -> dict[str, Any]:
         await runner.start(body.scenario, body.speed)
     except KeyError:
         raise HTTPException(400, f"unknown scenario {body.scenario}") from None
+    _warm_agentcore(f"scenario:{body.scenario}")  # background; never blocks or fails the run
     return {"ok": True, "scenario": body.scenario}
 
 
@@ -203,6 +204,11 @@ class AskBody(BaseModel):
     question: str
 
 
+# Bedrock errors can quote ARNs and the AWS account id ("User: arn:aws:iam::<account>:user/...
+# is not authorized"): the browser gets a fixed sentence, the server log gets the details.
+_AGENT_UNAVAILABLE = "No Bedrock model is available for the assistant right now."
+
+
 @app.post("/api/ask")
 def ask(body: AskBody) -> dict[str, Any]:
     if not body.question.strip():
@@ -210,7 +216,8 @@ def ask(body: AskBody) -> dict[str, Any]:
     try:
         return _agent().ask(body.question).to_api("answer")
     except RuntimeError as exc:
-        raise HTTPException(503, str(exc)[:300]) from None
+        log.warning("agent ask failed: %s", str(exc)[:300])
+        raise HTTPException(503, _AGENT_UNAVAILABLE) from None
 
 
 @app.get("/api/summary")
@@ -218,7 +225,8 @@ def summary() -> dict[str, Any]:
     try:
         return _agent().daily_summary().to_api("summary")
     except RuntimeError as exc:
-        raise HTTPException(503, str(exc)[:300]) from None
+        log.warning("agent summary failed: %s", str(exc)[:300])
+        raise HTTPException(503, _AGENT_UNAVAILABLE) from None
 
 
 # --- Ring webhooks, live watching, Caregiver Pass ------------------------------------------
@@ -303,10 +311,22 @@ if os.environ.get("DOORLEDGER_DYNAMO") == "1":
 
 
 _agentcore_agent = None
+
+
+def _warm_agentcore(reason: str) -> None:
+    """Ping the AgentCore runtime in the background so the first Ask on camera is warm."""
+    if _agentcore_agent is not None:
+        _agentcore_agent.warm_up(reason)
+
+
 if os.environ.get("DOORLEDGER_AGENTCORE_ARN"):
-    from .aws.agentcore import AgentCoreCareAgent
+    from .aws.agentcore import AgentCoreCareAgent, public_error
 
     _agentcore_agent = AgentCoreCareAgent(engine)
+
+    @app.on_event("startup")
+    def _warm_agentcore_on_startup() -> None:
+        _warm_agentcore("startup")
 
     def _replace_route(path: str, method: str) -> None:
         app.router.routes[:] = [r for r in app.router.routes
@@ -330,7 +350,7 @@ if os.environ.get("DOORLEDGER_AGENTCORE_ARN"):
         except Exception as exc:  # noqa: BLE001 — fall back to the in-process agent
             log.warning("AgentCore ask failed, using local agent: %s", str(exc)[:200])
             out = _local_fallback(ask, body)
-            out["agentcore_error"] = str(exc)[:200]
+            out["agentcore_error"] = public_error(exc)  # never the raw text (ARNs, account id)
             return out
 
     @app.get("/api/summary")
@@ -340,7 +360,7 @@ if os.environ.get("DOORLEDGER_AGENTCORE_ARN"):
         except Exception as exc:  # noqa: BLE001
             log.warning("AgentCore summary failed, using local agent: %s", str(exc)[:200])
             out = _local_fallback(summary)
-            out["agentcore_error"] = str(exc)[:200]
+            out["agentcore_error"] = public_error(exc)
             return out
 
 

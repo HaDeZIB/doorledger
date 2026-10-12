@@ -15,6 +15,17 @@ from typing import Any
 from .domain import Observation, ObservationKind, Source
 
 
+# Provenance of a label, copied from FrameLabel.extra into Observation.detail so the dashboard
+# can show e.g. "Nova 2 Lite · 1.2 s" on the evidence card: model id, latency of the call (ms),
+# replayed from the recorded cache, or reused by the motion gate for an unchanged frame.
+VISION_DETAIL_KEYS = ("vision_model", "vision_ms", "vision_cached", "vision_reused")
+
+
+def vision_detail(extra: dict[str, Any] | None) -> dict[str, Any]:
+    """The label-provenance fields of ``FrameLabel.extra`` (absent ones are left out)."""
+    return {k: extra[k] for k in VISION_DETAIL_KEYS if extra and extra.get(k) is not None}
+
+
 @dataclass
 class FrameLabel:
     """What a vision model reported for one frame (see vision.py for the JSON contract)."""
@@ -89,7 +100,8 @@ class PorchTracker:
                 confidence=label.confidence,
                 device_id=self.device_id,
                 evidence_path=label.evidence_path or self._last_evidence,
-                detail={k: v for k, v in detail.items() if v is not None},
+                detail={**{k: v for k, v in detail.items() if v is not None},
+                        **vision_detail(label.extra)},
             )
 
         flip = self.person.push(label.person_present)

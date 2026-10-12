@@ -227,3 +227,67 @@ async def test_replay_source_steps_and_stamps(tmp_path):
     assert [f.at for f in got] == [AT + timedelta(seconds=i) for i in range(3)]
     assert [f.captured_at for f in got] == pytest.approx([T_EPOCH, T_EPOCH + 1, T_EPOCH + 2])
     assert got[0].image.shape == (360, 640, 3)
+
+
+# ------------------------------------------------------------------ vision provenance
+
+
+class TimedModel(ScriptedVision):
+    """A classifier with a model id, like BedrockVision (no network)."""
+
+    model_id = "us.amazon.nova-2-lite-v1:0"
+
+
+def _changing(n: int) -> list[np.ndarray]:
+    return [plain(0 if i % 2 else 255) for i in range(n)]
+
+
+async def test_live_model_and_latency_reach_observation_detail(tmp_path):
+    from doorledger.vision import CachingVision
+
+    vision = CachingVision(tmp_path / "cache.json", TimedModel([PACKAGE]))
+    w = make_watcher(make_engine(), vision, tmp_path)
+    found = await w.process(stream(_changing(3)))
+    drop = next(o for o in found if o.kind == ObservationKind.PACKAGE_DROPPED)
+    assert drop.detail["vision_model"] == "us.amazon.nova-2-lite-v1:0"
+    assert isinstance(drop.detail["vision_ms"], int)
+    assert "vision_cached" not in drop.detail
+
+
+async def test_replay_shows_only_what_was_recorded(tmp_path):
+    """Cache mode: model + latency only when the cache entry recorded them; never invented."""
+    import hashlib
+    import json
+
+    from doorledger.vision import CachingVision
+
+    w0 = make_watcher(make_engine(), ScriptedVision([NOTHING]), tmp_path)
+    frames = _changing(3)
+    keys = [hashlib.sha256(w0._redacted(Frame(AT, f, Source.RING_LIVE))).hexdigest()
+            for f in frames]
+    recorded = {**PACKAGE, "vision_model": "us.amazon.nova-2-lite-v1:0", "vision_ms": 1234}
+    for entries, expect in (({k: recorded for k in keys}, {"vision_model", "vision_ms"}),
+                            ({k: PACKAGE for k in keys}, set())):
+        path = tmp_path / f"cache{len(expect)}.json"
+        path.write_text(json.dumps(entries))
+        w = make_watcher(make_engine(), CachingVision(path), tmp_path)
+        drop = next(o for o in await w.process(stream(frames))
+                    if o.kind == ObservationKind.PACKAGE_DROPPED)
+        assert drop.detail["vision_cached"] is True
+        assert {"vision_model", "vision_ms"} & drop.detail.keys() == expect
+        if expect:
+            assert drop.detail["vision_ms"] == 1234
+
+
+async def test_scripted_vision_adds_no_model_or_latency(tmp_path):
+    w = make_watcher(make_engine(), ScriptedVision([PACKAGE]), tmp_path)
+    drop = next(o for o in await w.process(stream(_changing(3)))
+                if o.kind == ObservationKind.PACKAGE_DROPPED)
+    assert not {"vision_model", "vision_ms", "vision_cached"} & drop.detail.keys()
+
+
+async def test_reused_label_is_flagged(tmp_path):
+    w = make_watcher(make_engine(), ScriptedVision([PACKAGE]), tmp_path)
+    found = await w.process(stream([plain()] * 3))  # frames 2-3 reuse frame 1's label
+    drop = next(o for o in found if o.kind == ObservationKind.PACKAGE_DROPPED)
+    assert drop.detail["vision_reused"] is True

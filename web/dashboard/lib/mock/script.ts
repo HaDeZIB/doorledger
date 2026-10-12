@@ -73,10 +73,11 @@ export function mockHousehold(): Household {
       timezone: MOCK_TZ,
     },
     people: [
-      { name: "Rosa Martínez", role: "patient", escalation_order: 1 },
-      { name: "Luis Ortega", role: "neighbor", escalation_order: 2 },
-      { name: "Ana Martínez", role: "family", escalation_order: 3 },
-      { name: "BrightPath Home Care", role: "agency", escalation_order: 10 },
+      // channels mirror core/src/doorledger/household.py: Rosa uses no app, so she gets SMS
+      { name: "Rosa Martínez", role: "patient", escalation_order: 1, language: "es", channel: "sms" },
+      { name: "Luis Ortega", role: "neighbor", escalation_order: 2, channel: "sms" },
+      { name: "Ana Martínez", role: "family", escalation_order: 3, channel: "push" },
+      { name: "BrightPath Home Care", role: "agency", escalation_order: 10, channel: "agency_portal" },
       { name: "Maria Gómez", role: "caregiver", escalation_order: 20 },
     ],
     device: { id: "ring_dev_frontdoor_01", name: "Front Door", online: true, source: "replay" },

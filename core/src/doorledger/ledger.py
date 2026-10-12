@@ -19,7 +19,7 @@ _SCHEMA = """
 CREATE TABLE IF NOT EXISTS records (
     id TEXT PRIMARY KEY,
     household TEXT NOT NULL,
-    kind TEXT NOT NULL,         -- expectation | observation | finding | action
+    kind TEXT NOT NULL,         -- expectation | observation | finding | action | ring_event
     subtype TEXT NOT NULL,
     at TEXT NOT NULL,
     ref TEXT,                   -- expectation id this record relates to
@@ -70,6 +70,11 @@ class Ledger:
 
     def add_action(self, a: Action, ref: str | None = None) -> None:
         self._put("action", a.kind, a.id, a.at, ref, a.to_dict())
+
+    def add_ring_event(self, body: dict[str, Any], at: datetime) -> None:
+        """A Ring history row the live poller acted on (``ding``, ``on_demand``, ``motion``)."""
+        self._put("ring_event", str(body.get("event_type", "unknown")), f"ring_{body['id']}", at,
+                  None, body)
 
     def records(self, kinds: Iterable[str] | None = None, since: datetime | None = None,
                 ref: str | None = None) -> list[dict[str, Any]]:

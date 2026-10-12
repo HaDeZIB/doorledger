@@ -6,6 +6,7 @@ import {
   actionDeliveryLabel,
   actionHeadline,
   actionLanguage,
+  actionViaNote,
   actionsForFindings,
   escalationChain,
   findingsFor,
@@ -463,6 +464,7 @@ function Escalation({ household, actions, tz, done }: { household: Household; ac
                       return (
                         <li
                           key={a.id}
+                          title={actionViaNote(a) ?? undefined}
                           className={cx(
                             "flex flex-wrap items-center gap-x-1.5 text-sm text-ink-2 xl:text-[0.82rem]",
                             k < mine.length - 1 && "xl:hidden", // wide screens: latest message only

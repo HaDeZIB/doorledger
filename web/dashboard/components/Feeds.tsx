@@ -1,7 +1,7 @@
 "use client";
 
 import type { Action, Household, Observation, State } from "@/lib/types";
-import { LANGUAGE_NAME, actionDeliveryLabel, actionHeadline, actionLanguage, findingLabel, latestFindings } from "@/lib/derive";
+import { LANGUAGE_NAME, actionDeliveryLabel, actionHeadline, actionLanguage, actionViaNote, findingLabel, latestFindings } from "@/lib/derive";
 import { useArrivals } from "@/lib/useArrivals";
 import { fmtTime, ms } from "@/lib/time";
 import { IconBell, IconBuilding, IconLedger, IconMail, IconMessage, IconPhone, IconUser } from "./icons";
@@ -90,6 +90,7 @@ function ActionRow({ a, household, tz, fresh }: { a: Action; household: Househol
   const Icon = a.kind === "export_evv" ? IconLedger : (CHANNEL_ICON[channel] ?? IconUser);
   const dl = actionDeliveryLabel(a);
   const lang = actionLanguage(a);
+  const via = actionViaNote(a);
   return (
     <li className={cx("flex gap-3 rounded-2xl border border-line px-3 py-3", fresh ? "animate-arrive" : "animate-enter")}>
       <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-strong">
@@ -115,6 +116,7 @@ function ActionRow({ a, household, tz, fresh }: { a: Action; household: Househol
           <span className={cx("h-2 w-2 rounded-full", dl.tone === "ok" ? "bg-ok-bar" : dl.tone === "warn" ? "bg-warn-bar" : "bg-ink-3")} aria-hidden />
           {dl.text}
         </p>
+        {via && <p className="mt-0.5 text-[0.8rem] text-ink-3">{via}</p>}
       </div>
     </li>
   );

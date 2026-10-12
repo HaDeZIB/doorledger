@@ -46,7 +46,7 @@ class Household:
             "id": self.id,
             "patient": asdict(self.patient),
             "people": [{"name": p.name, "role": p.role, "escalation_order": p.escalation_order,
-                        "language": p.language} for p in self.people],
+                        "language": p.language, "channel": p.channel} for p in self.people],
         }
 
     @classmethod
@@ -66,10 +66,11 @@ def demo_household() -> Household:
         id="hh_rosa",
         patient=Patient("Rosa Martínez", 81, "Chicago, IL", "America/Chicago"),
         people=[
-            Person("Rosa Martínez", "patient", escalation_order=1, language="es"),
-            Person("Luis (neighbor)", "neighbor", escalation_order=2),
-            Person("Ana Martínez (daughter)", "family", escalation_order=3),
-            Person("BrightPath Home Care", "agency", escalation_order=10),
-            Person("Maria (BrightPath)", "caregiver", escalation_order=20),
+            # Rosa uses no apps: she gets SMS (in Spanish). Ana has the family app.
+            Person("Rosa Martínez", "patient", escalation_order=1, language="es", channel="sms"),
+            Person("Luis (neighbor)", "neighbor", escalation_order=2, channel="sms"),
+            Person("Ana Martínez (daughter)", "family", escalation_order=3, channel="push"),
+            Person("BrightPath Home Care", "agency", escalation_order=10, channel="agency_portal"),
+            Person("Maria (BrightPath)", "caregiver", escalation_order=20),  # never contacted
         ],
     )

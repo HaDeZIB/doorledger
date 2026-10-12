@@ -25,7 +25,7 @@ import numpy as np
 from . import presence
 from .domain import Observation, ObservationKind, Source, new_id
 from .engine import Engine
-from .porch import PorchTracker
+from .porch import PorchTracker, vision_detail
 from .presence_reader import PresenceReader
 from .vision import VisionClassifier
 
@@ -150,7 +150,8 @@ class Watcher:
 
     MAX_NUMERIC_ATTEMPTS_PER_HOUR = 10
 
-    def _numeric_presence(self, frame: Frame, digits: str) -> list[Observation]:
+    def _numeric_presence(self, frame: Frame, digits: str,
+                          vision: dict | None = None) -> list[Observation]:
         """6-digit fallback code read by the vision model from the aide's phone (works from
         further away than the QR). Rate-limited per door: a 6-digit space is small."""
         import re
@@ -175,7 +176,8 @@ class Watcher:
                                         visit_id=visit_id,
                                         detail={"method": "signed_code_numeric", "skew": res.skew,
                                                 "proves": "a device showing this visit's current "
-                                                          "6-digit code was at the door"})]
+                                                          "6-digit code was at the door",
+                                                **(vision or {})})]
         return []
 
     def _presence(self, frame: Frame, evidence: str | None) -> list[Observation]:
@@ -232,7 +234,9 @@ class Watcher:
                     and self._reused < self.max_reuse):
                 self._reused += 1
                 self.vision_skipped += 1
-                label = replace(self.last_label, at=frame.at, evidence_path=None)
+                # no model call for this frame: keep the label, flag it as reused
+                label = replace(self.last_label, at=frame.at, evidence_path=None,
+                                extra={**(self.last_label.extra or {}), "vision_reused": True})
             else:
                 if self.last_label is None:
                     self._changed(frame.image)  # prime the motion gate
@@ -243,7 +247,7 @@ class Watcher:
             self.last_label = label
             digits = (label.extra or {}).get("phone_code_digits")
             if digits and self._reused == 0:
-                obs += self._numeric_presence(frame, str(digits))
+                obs += self._numeric_presence(frame, str(digits), vision_detail(label.extra))
             obs += self.tracker(frame.source).push(label)
             if obs:
                 if jpeg is None:

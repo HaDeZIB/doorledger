@@ -18,7 +18,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from datetime import timedelta
+from collections import deque
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from ringpartner.webhooks import WebhookEvent
@@ -33,6 +34,21 @@ SCENE_FOR_SUBTYPE = {"package_delivery": "package", "vehicle": "vehicle", "human
 SESSION_SECONDS = 25.0
 SESSION_GAP_SECONDS = 20.0  # opening a new WHEP session sooner returns HTTP 500 (friction log F6)
 
+# Ring history rows the poller acts on (``event_types`` filter, OR-combined): a doorbell press
+# (burst mode for the aide's code), live views (the Playground's Package/Vehicle/Motion buttons
+# create ``on_demand`` rows, friction log F3), and Smart Alerts motion for people and vehicles.
+# Animals and unclassified motion never open a session. Devices without Smart Alerts report
+# plain ``motion``: set DOORLEDGER_RING_EVENT_TYPES=ding,on_demand,motion for those.
+HISTORY_EVENT_TYPES = ("ding", "on_demand", "motion.human", "motion.vehicle")
+# Our own WHEP sessions also show up as ``on_demand`` rows; never react to those.
+OWN_SESSION_SLACK = timedelta(seconds=10)
+
+
+def history_event_types() -> list[str]:
+    env = os.environ.get("DOORLEDGER_RING_EVENT_TYPES", "")
+    types = [t.strip() for t in env.split(",") if t.strip()]
+    return types or list(HISTORY_EVENT_TYPES)
+
 
 class LiveController:
     def __init__(self, engine: Engine, watcher: Watcher | None, replay_root: Path) -> None:
@@ -42,6 +58,7 @@ class LiveController:
         self.seen_requests: set[str] = set()
         self.seen_events: set[str] = set()
         self.ring_events: list[dict] = []
+        self.own_sessions: deque[tuple[datetime, datetime]] = deque(maxlen=50)  # wall clock, UTC
         self.last_snapshot: bytes | None = None
         self.busy = asyncio.Lock()
         self.watch_task: asyncio.Task | None = None
@@ -96,8 +113,12 @@ class LiveController:
                     src = RingLiveSource(ring, device_id, self.engine.clock.now,
                                          fps=4.0 if burst else 1.0,
                                          max_seconds=12.0 if burst else SESSION_SECONDS)
-                    found = await self.watcher.process(src.frames(),
-                                                       presence_every=1 if burst else None)
+                    opened = datetime.now(timezone.utc)
+                    try:
+                        found = await self.watcher.process(src.frames(),
+                                                           presence_every=1 if burst else None)
+                    finally:
+                        self.own_sessions.append((opened, datetime.now(timezone.utc)))
                 finally:
                     await ring.aclose()
             else:
@@ -124,6 +145,25 @@ class LiveController:
             self.engine.device["online"] = event.type == "device_online"
         return "recorded"
 
+    def _is_own_session(self, event) -> bool:
+        """An ``on_demand`` row that Ring logged for one of OUR live-view sessions."""
+        if event.event_type != "on_demand" or event.start is None:
+            return False
+        return any(a - OWN_SESSION_SLACK <= event.start <= b + OWN_SESSION_SLACK
+                   for a, b in self.own_sessions)
+
+    def record_ring_event(self, event, *, action: str) -> dict:
+        """Put a Ring history row on the ledger (kind ``ring_event``), so the dashboard timeline
+        and the ledger show what Ring itself recorded, labelled with that source."""
+        body = {"id": event.id, "event_type": event.event_type,
+                "at": event.start.isoformat() if event.start else None,
+                "end": event.end.isoformat() if event.end else None,
+                "device_id": event.device_id or self.engine.device.get("id"),
+                "source": "ring_history", "action": action}
+        self.ring_events.append({"id": event.id, "type": event.event_type, "at": body["at"]})
+        self.engine.ledger.add_ring_event(body, event.start or self.engine.clock.now())
+        return body
+
     def windows_open(self) -> bool:
         now = self.engine.clock.now()
         pad = timedelta(minutes=30)
@@ -144,32 +184,34 @@ class LiveController:
 
         Every new event also fetches a Ring snapshot at the event's start time
         (``POST /media/image/download`` with ``at_timestamp`` — the range form returns 403).
+        Only ``history_event_types()`` are requested, and each one acted on is written to the
+        ledger as a ``ring_event`` record.
         """
-        from datetime import datetime, timezone
-
         started = datetime.now(timezone.utc)
         ring = await self._ring()
         try:
             device_id = await self._prepare_device(ring)
             if device_id is None:
                 return
+            types = history_event_types()
             while self.windows_open():
                 try:
-                    page = await ring.history(device_id)
+                    page = await ring.history(device_id, event_types=types)
                     new = [e for e in page.events
                            if e.id not in self.seen_events and e.start and e.start >= started]
                     for e in sorted(new, key=lambda e: e.start):
                         self.seen_events.add(e.id)
-                        self.ring_events.append({"id": e.id, "type": e.event_type,
-                                                 "at": e.start.isoformat()})
+                        if self._is_own_session(e):
+                            continue
+                        burst = e.event_type == "ding"
+                        self.record_ring_event(e, action="burst watch" if burst else "watch")
                         try:
                             snap = await ring.snapshot(device_id, at=e.start)
                             self.last_snapshot = snap.content
                             await self._classify_snapshot(snap.content, e.start)
                         except Exception as exc:  # noqa: BLE001 — snapshots are best-effort
                             log.info("snapshot unavailable for %s: %s", e.id, exc)
-                        await self.watch_once(f"ring_history:{e.event_type}",
-                                              burst=e.event_type == "ding")
+                        await self.watch_once(f"ring_history:{e.event_type}", burst=burst)
                 except Exception as exc:  # noqa: BLE001
                     log.warning("history poll failed: %s", exc)
                 await asyncio.sleep(interval)

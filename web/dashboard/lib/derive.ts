@@ -3,12 +3,15 @@
 import type {
   Action,
   DeliveryState,
+  EventSource,
   Finding,
   Household,
+  LedgerRecord,
   Observation,
   ObservationKind,
   ObservationSource,
   Person,
+  RingEvent,
   State,
   VisitState,
 } from "./types";
@@ -177,10 +180,11 @@ export function modelLabel(id: string | null | undefined): string {
   return id;
 }
 
-export const SOURCE_LABEL: Record<ObservationSource, string> = {
+export const SOURCE_LABEL: Record<EventSource, string> = {
   ring_live_view: "Ring live view",
   ring_snapshot: "Ring snapshot",
   ring_webhook: "Ring event",
+  ring_history: "Ring history",
   own_footage: "Own footage",
   simulated: "Simulated",
 };
@@ -208,6 +212,25 @@ export const FINDING_LABEL: Record<Finding["kind"], string> = {
   unexpected_activity: "Unscheduled activity",
 };
 
+/** Ring history `event_type` → words ("ding" → "Doorbell pressed"). */
+export function ringEventLabel(type: string): string {
+  if (type === "ding") return "Doorbell pressed";
+  if (type === "on_demand") return "Live view started";
+  if (type.startsWith("motion")) {
+    const sub = type.split(".")[1];
+    return sub && sub !== "motion" ? `Motion (${sub.replaceAll("_", " ")})` : "Motion";
+  }
+  return type.replaceAll("_", " ");
+}
+
+/** Ring history rows from the ledger (kind `ring_event`), oldest first. */
+export function ringEvents(timeline: LedgerRecord[]): RingEvent[] {
+  return timeline
+    .filter((r) => r.kind === "ring_event")
+    .map((r) => ({ ...(r.body as unknown as RingEvent), at: (r.body.at as string | null) ?? r.at }))
+    .sort((a, b) => ms(a.at!) - ms(b.at!));
+}
+
 /** Label that reads right for both the "still late" warning and the "arrived late" info. */
 export function findingLabel(f: Pick<Finding, "kind" | "severity">): string {
   if (f.kind === "late_arrival") return f.severity === "info" ? "Arrived late" : "Running late";
@@ -218,6 +241,46 @@ export function findingLabel(f: Pick<Finding, "kind" | "severity">): string {
 export function visionNote(o: { detail?: Record<string, unknown> } | null | undefined): string | null {
   const n = o?.detail?.note;
   return typeof n === "string" && n.trim() ? n.trim() : null;
+}
+
+/** "us.amazon.nova-2-lite-v1:0" → "Nova 2 Lite". */
+export function modelDisplayName(id: string): string {
+  const base = id
+    .replace(/^(us|eu|apac|global)\./, "")
+    .replace(/^[a-z]+\./, "")
+    .replace(/-v\d+(:\d+)?$/, "")
+    .replace(/-\d{8}$/, "");
+  return base
+    .split("-")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+/**
+ * Which model labelled the frame and how long the call took (Observation.detail.vision_model /
+ * vision_ms), e.g. "Nova 2 Lite · 1.2 s". Only what the backend recorded: null when the label
+ * carries no model (mock fixtures, scripted labels), "recorded" when it was replayed from the
+ * vision cache instead of a live call.
+ */
+export function visionMeta(o: { detail?: Record<string, unknown> } | null | undefined): { text: string; title: string } | null {
+  const d = o?.detail;
+  const model = d?.vision_model;
+  if (typeof model !== "string" || !model) return null;
+  const msRaw = d?.vision_ms;
+  const parts = [modelDisplayName(model)];
+  if (typeof msRaw === "number" && Number.isFinite(msRaw)) parts.push(`${(msRaw / 1000).toFixed(1)} s`);
+  const cached = d?.vision_cached === true;
+  const reused = d?.vision_reused === true;
+  if (cached) parts.push("recorded");
+  const title = [
+    `Amazon Bedrock ${model}`,
+    typeof msRaw === "number" ? `${Math.round(msRaw)} ms for the vision call` : null,
+    cached ? "label replayed from the recorded vision cache, not a live call" : null,
+    reused ? "scene unchanged, so this frame reused the previous frame's label" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return { text: parts.join(" · "), title };
 }
 
 export function firstName(name: string): string {
@@ -260,8 +323,24 @@ export function actionDeliveryLabel(a: Action): { text: string; tone: "ok" | "wa
   const reply = a.data.reply ? String(a.data.reply) : "";
   if (reply) return { text: `Replied: “${reply}”`, tone: "ok" };
   if (status === "no_answer") return { text: "No answer", tone: "warn" };
+  // console notifier: the household's channel (e.g. SMS for Rosa) was not actually used
+  if (a.delivered && a.data.via === "app" && a.data.channel && a.data.channel !== "app") return { text: "Demo only", tone: "muted" };
   if (a.delivered) return { text: "Delivered", tone: "ok" };
   return { text: "Pending", tone: "muted" };
+}
+
+/**
+ * `data.channel` is how the household reaches this person (Rosa: SMS); `data.via` is what
+ * actually carried the message in this run. Explains the difference, or null when they match.
+ */
+export function actionViaNote(a: Action): string | null {
+  const via = typeof a.data.via === "string" ? a.data.via : null;
+  const channel = String(a.data.channel ?? "");
+  if (!via || via === channel) return null;
+  if (via === "app") return "Demo: shown on this dashboard only. No SMS or push gateway is configured, so nothing was sent.";
+  if (via === "sms") return "Demo: sent as an SMS to the demo phone (Amazon SNS).";
+  if (via === "telegram") return "Demo: sent to the demo phone over Telegram.";
+  return `Sent via ${via}.`;
 }
 
 /** Escalation chain for porch alerts: patient → neighbor → family, by escalation_order. */

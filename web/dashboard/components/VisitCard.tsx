@@ -181,8 +181,8 @@ export function VisitCard({
           <div className="flex items-start gap-3 rounded-2xl bg-canvas p-3.5 text-ink-2">
             <IconKey size={22} className="mt-0.5 shrink-0 text-brand" />
             <p className="text-[0.95rem] xl:text-[0.88rem]">
-              Aides check in by holding a <strong className="font-semibold text-ink">rotating signed code</strong> on their phone up to the Ring
-              doorbell. No face recognition, no app for {firstName(household.patient.name)}.
+              Aides check in by pressing the Ring doorbell, then holding a <strong className="font-semibold text-ink">rotating signed code</strong> on
+              their phone up to its camera. No face recognition, no app for {firstName(household.patient.name)}.
             </p>
           </div>
           {[visit.check_in, visit.check_out].some((o) => o?.source === "simulated") && (

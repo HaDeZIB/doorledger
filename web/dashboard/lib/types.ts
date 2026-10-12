@@ -6,10 +6,15 @@ export type PersonRole = "patient" | "family" | "neighbor" | "agency" | "caregiv
 export type DeviceSource = "ring_playground" | "ring_api" | "replay";
 export type AmbientSource = "open-meteo" | "override" | "fallback";
 
+/** How the household chose to reach a person (backend `Person.channel`). Rosa uses no app: SMS. */
+export type PersonChannel = "sms" | "push" | "voice" | "email" | "agency_portal";
+
 export interface Person {
   name: string;
   role: PersonRole;
   escalation_order: number;
+  language?: string;
+  channel?: PersonChannel | null;
 }
 
 export interface Household {
@@ -61,6 +66,9 @@ export type ObservationSource =
   | "ring_webhook"
   | "own_footage"
   | "simulated";
+
+/** Provenance badges also cover raw Ring history rows (ledger kind `ring_event`). */
+export type EventSource = ObservationSource | "ring_history";
 
 export interface Observation {
   id: string;
@@ -153,7 +161,22 @@ export interface State {
   actions: Action[];
 }
 
-export type LedgerKind = "expectation" | "observation" | "finding" | "action";
+export type LedgerKind = "expectation" | "observation" | "finding" | "action" | "ring_event";
+
+/**
+ * Body of a `ring_event` ledger record: a Ring history row (GET /v1/history/devices/{id}/events)
+ * that the live poller acted on. Only written with a live Ring token; never in mock/replay demos.
+ */
+export interface RingEvent {
+  id: string;
+  event_type: "ding" | "on_demand" | "motion" | string;
+  at: ISO | null;
+  end?: ISO | null;
+  device_id?: string | null;
+  source: "ring_history";
+  /** What DoorLedger did about it: "watch" or "burst watch" (doorbell press). */
+  action?: string;
+}
 
 export interface LedgerRecord {
   id: string;

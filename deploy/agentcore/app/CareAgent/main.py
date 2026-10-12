@@ -4,6 +4,7 @@ Contract (POST /invocations, JSON):
 
     {"mode": "ask", "question": "Did Maria come today?", "snapshot": {...}}
     {"mode": "summary", "snapshot": {...}}
+    {"mode": "ping"}            -> {"ok": true, ...}; warms the session's microVM, no model call
 
 ``snapshot`` is produced by ``doorledger.aws.snapshot.export_snapshot`` in the DoorLedger API.
 The runtime rebuilds a sealed, in-memory engine from it and runs the same Strands
@@ -44,6 +45,9 @@ def invoke(payload, context=None):
     if not isinstance(payload, dict):
         return _error("payload must be a JSON object")
     mode = payload.get("mode", "ask")
+    if mode == "ping":  # warm-up sent by the API when a demo scenario starts
+        return {"ok": True, "runtime": "agentcore",
+                "session_id": getattr(context, "session_id", None)}
     if mode not in ("ask", "summary"):
         return _error("mode must be 'ask' or 'summary' (this runtime cannot act)")
     question = payload.get("question", payload.get("prompt", ""))

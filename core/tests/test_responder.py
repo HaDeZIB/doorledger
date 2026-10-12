@@ -232,7 +232,8 @@ def test_language_propagates_to_action_data_and_spanish_template():
     to_rosa = r.handle(f, T0)[0]
     assert to_rosa.data["language"] == "es"
     assert to_rosa.data["role"] == "patient"
-    assert to_rosa.data["channel"] == "test"
+    assert to_rosa.data["channel"] == "sms"  # household config: Rosa uses no app
+    assert to_rosa.data["via"] == "test"  # what actually carried it
     assert to_rosa.data["writer"] == "template"
     assert to_rosa.message.startswith("Hola Rosa")
     assert "está helando" in to_rosa.message and "(-9°C)" in to_rosa.message
@@ -414,3 +415,21 @@ def test_engine_state_view():
     (d,) = s["deliveries"]
     assert d["estimate"]["minutes_on_porch"] == 10.0 and d["estimate"]["direction"] == "cold"
     assert {f["kind"] for f in s["findings"]} >= {"package_exposed"}
+
+
+def test_channel_follows_household_config_never_app_for_rosa():
+    """Review 03 §3.4: Rosa (no apps) was shown an "App alert" because the action recorded the
+    console notifier's channel. The household decides the channel; ``via`` records the carrier."""
+    from doorledger.notify import ConsoleNotifier
+
+    hh = demo_household()
+    r = Responder(hh, ConsoleNotifier(), TemplateWriter())
+    f = finding(FindingKind.PACKAGE_AT_RISK)
+    actions = [*r.handle(f, T0), *r.handle(f, T0 + LADDER_GAP), *r.handle(f, T0 + 2 * LADDER_GAP)]
+    by_role = {a.data["role"]: a.data for a in actions}
+    assert by_role["patient"]["channel"] == "sms"
+    assert by_role["neighbor"]["channel"] == "sms"
+    assert by_role["family"]["channel"] == "push"
+    assert all(a.data["via"] == "app" for a in actions)  # console: nothing left the machine
+    api_people = {p["role"]: p["channel"] for p in hh.to_api()["people"]}
+    assert api_people["patient"] == "sms"

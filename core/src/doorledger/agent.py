@@ -38,6 +38,7 @@ from strands.models import BedrockModel
 from . import evv
 from .domain import Action, Finding, FindingKind, Person
 from .engine import Engine
+from .notify import channel_fields
 from .reconcile import reconcile
 from .responder import LADDER_GAP, MAX_MESSAGES_PER_INCIDENT, Incident
 
@@ -346,7 +347,7 @@ class CareTools:
         a = Action(kind="notify", target=person.name, message=text, at=now,
                    finding_id=self.active_finding.id if self.active_finding else None,
                    delivered=delivered,
-                   data={"channel": getattr(self.engine.responder.notifier, "channel", "app"),
+                   data={**channel_fields(person, self.engine.responder.notifier),
                          "purpose": "agent", "role": person.role, "origin": "agent",
                          "reason": reason[:200]})
         self._record_action(a, inc.key)

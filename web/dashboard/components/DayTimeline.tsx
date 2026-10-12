@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { DeliveryState, Finding, Household, LedgerRecord, Observation, State, VisitState } from "@/lib/types";
-import { findingLabel, OBS_LABEL, firstName, latestFindings, presenceProof, visionNote, visitStatus } from "@/lib/derive";
+import type { DeliveryState, Finding, Household, LedgerRecord, Observation, RingEvent, State, VisitState } from "@/lib/types";
+import { findingLabel, OBS_LABEL, firstName, latestFindings, presenceProof, ringEventLabel, ringEvents, visionMeta, visionNote, visitStatus } from "@/lib/derive";
 import { exposureDirection } from "@/lib/thermal";
 import { useArrivals } from "@/lib/useArrivals";
 import { fmtDateLong, fmtDuration, fmtHourShort, fmtTime, minuteOfDay, ms, zonedISO, dateIn } from "@/lib/time";
@@ -11,7 +11,7 @@ import { EvidenceFrame } from "./EvidenceFrame";
 import { IconCar, IconDoor, IconPackage, IconUser } from "./icons";
 import { Card, SEVERITY_STYLE, SeverityChip, SourceBadge, StatusChip, VISIT_STATUS_STYLE, cx } from "./ui";
 
-type Sel = { type: "obs"; id: string } | { type: "finding"; id: string } | null;
+type Sel = { type: "obs"; id: string } | { type: "finding"; id: string } | { type: "ring"; id: string } | null;
 
 interface Lane {
   key: string;
@@ -47,7 +47,11 @@ export function DayTimeline({
   const tz = household.patient.timezone;
   const { fmt } = useUnits();
   const [userSel, setUserSel] = useState<Sel>(null);
-  const isNew = useArrivals([...[...observations.values()].filter((o) => ms(o.at) <= ms(state.now)).map((o) => o.id), ...state.findings.map((f) => f.id)]);
+  const isNew = useArrivals([
+    ...[...observations.values()].filter((o) => ms(o.at) <= ms(state.now)).map((o) => o.id),
+    ...state.findings.map((f) => f.id),
+    ...timeline.filter((r) => r.kind === "ring_event").map((r) => String(r.body.id ?? r.id)),
+  ]);
 
   // ----- axis ------------------------------------------------------------------------
   const { startMin, endMin } = useMemo(() => {
@@ -85,6 +89,10 @@ export function DayTimeline({
     .filter((o) => !linked.has(o.id) && ms(o.at) <= ms(state.now))
     .sort((a, b) => ms(a.at) - ms(b.at));
 
+  // Ring history rows the live poller acted on (only with a live Ring token)
+  const ringEvts = ringEvents(timeline).filter((e) => e.at && ms(e.at) <= ms(state.now));
+  const otherCount = other.length + ringEvts.length;
+
   const findingsByExp = (id: string) => state.findings.filter((f) => f.expectation_id === id);
 
   const items: { at: number; lane: "v" | "d"; v?: VisitState; d?: DeliveryState }[] = [
@@ -98,7 +106,7 @@ export function DayTimeline({
   lanes.push({
     key: "other",
     title: "Other activity",
-    subtitle: other.length ? `${other.length} event${other.length > 1 ? "s" : ""} at the door` : "Nothing unscheduled",
+    subtitle: otherCount ? `${otherCount} event${otherCount > 1 ? "s" : ""} at the door` : "Nothing unscheduled",
     icon: IconDoor,
     render: ({ pct, select, selected, isNew }) => (
       <>
@@ -116,6 +124,18 @@ export function DayTimeline({
             fresh={isNew(o.id)}
           />
         ))}
+        {ringEvts.map((e) => (
+          <Marker
+            key={e.id}
+            left={pct(e.at!)}
+            className="!rounded-[3px] border-surface bg-[#4f3a8a] text-white"
+            label={`Ring history: ${ringEventLabel(e.event_type).toLowerCase()} at ${fmtTime(e.at!, tz)}`}
+            active={selected?.type === "ring" && selected.id === e.id}
+            onClick={() => select({ type: "ring", id: e.id })}
+            small
+            fresh={isNew(e.id)}
+          />
+        ))}
         {state.findings
           .filter((f) => !f.expectation_id)
           .map((f) => (
@@ -129,7 +149,9 @@ export function DayTimeline({
   const latestObs = [...observations.values()].filter((o) => ms(o.at) <= ms(state.now)).sort((a, b) => ms(b.at) - ms(a.at))[0];
   const selValid =
     userSel &&
-    ((userSel.type === "obs" && observations.has(userSel.id)) || (userSel.type === "finding" && state.findings.some((f) => f.id === userSel.id)));
+    ((userSel.type === "obs" && observations.has(userSel.id)) ||
+      (userSel.type === "finding" && state.findings.some((f) => f.id === userSel.id)) ||
+      (userSel.type === "ring" && ringEvts.some((e) => e.id === userSel.id)));
   const selected: Sel = selValid ? userSel : latestObs ? { type: "obs", id: latestObs.id } : null;
   const ctx: RenderCtx = { pct, pctMin, nowIso: state.now, select: setUserSel, selected, isNew };
 
@@ -216,10 +238,10 @@ export function DayTimeline({
 
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 pb-3 sm:px-6 xl:pb-2.5">
         <p className="hidden text-[0.8rem] text-ink-3 sm:block">Tap any marker for details.</p>
-        <Legend />
+        <Legend ring={ringEvts.length > 0} />
       </div>
 
-      <SelectionDetail selected={selected} state={state} observations={observations} evidenceUrl={evidenceUrl} tz={tz} />
+      <SelectionDetail selected={selected} state={state} observations={observations} ringEvts={ringEvts} evidenceUrl={evidenceUrl} tz={tz} />
     </Card>
   );
 }
@@ -461,7 +483,7 @@ function Flag({ left, finding, onClick, active, fresh }: { left: number; finding
   );
 }
 
-function Legend() {
+function Legend({ ring = false }: { ring?: boolean }) {
   return (
     <ul className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[0.8rem] text-ink-2" aria-label="Legend">
       <li className="flex items-center gap-1.5">
@@ -473,6 +495,11 @@ function Legend() {
       <li className="flex items-center gap-1.5">
         <span className="inline-block h-3 w-3 rounded-full border-2 border-surface bg-cold shadow" /> Camera event
       </li>
+      {ring && (
+        <li className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 rounded-[3px] border-2 border-surface bg-[#4f3a8a] shadow" /> Ring history
+        </li>
+      )}
       <li className="flex items-center gap-1.5">
         <span className="inline-block h-2.5 w-2.5 rounded-full bg-ink-3 outline-2 outline-offset-2 outline-dashed outline-ink-3/70" /> Simulated
       </li>
@@ -493,12 +520,14 @@ function SelectionDetail({
   selected,
   state,
   observations,
+  ringEvts,
   evidenceUrl,
   tz,
 }: {
   selected: Sel;
   state: State;
   observations: Map<string, Observation>;
+  ringEvts: RingEvent[];
   evidenceUrl: (o: Observation | null | undefined) => string | null;
   tz: string;
 }) {
@@ -526,9 +555,27 @@ function SelectionDetail({
       </div>
     );
   }
+  if (selected.type === "ring") {
+    const e = ringEvts.find((x) => x.id === selected.id);
+    if (!e) return null;
+    return (
+      <div className="flex flex-col gap-2 border-t border-line bg-canvas/50 px-5 py-4 sm:flex-row sm:items-center sm:gap-3 sm:px-6" aria-live="polite">
+        <div className="flex items-center gap-2">
+          <SourceBadge source="ring_history" />
+          <span className="font-semibold">{ringEventLabel(e.event_type)}</span>
+          {e.at && <span className="text-ink-3 tabular">{fmtTime(e.at, tz)}</span>}
+        </div>
+        <p className="flex-1 text-ink-2">
+          Recorded in the doorbell&apos;s Ring event history.
+          {e.action && ` DoorLedger asked for the event snapshot and opened a ${e.action === "burst watch" ? "burst live view to read the aide's code" : "live view"}.`}
+        </p>
+      </div>
+    );
+  }
   const o = observations.get(selected.id);
   if (!o) return null;
   const note = visionNote(o);
+  const meta = o.source !== "simulated" ? visionMeta(o) : null;
   const presence = o.kind === "presence_check_in" || o.kind === "presence_check_out";
   const proof = presenceProof(o);
   const proofText =
@@ -563,6 +610,11 @@ function SelectionDetail({
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-2">
           <SourceBadge source={o.source} />
           {o.source !== "simulated" && <span className="tabular">{Math.round(o.confidence * 100)}% confidence</span>}
+          {meta && (
+            <span className="tabular text-ink-3" title={meta.title}>
+              {meta.text}
+            </span>
+          )}
           {o.kind === "vehicle_arrived" && <IconCar size={16} />}
         </div>
       </div>

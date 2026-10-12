@@ -25,7 +25,8 @@ POST /api/ask ─▶ export_snapshot(engine)  ── InvokeAgentRuntime ──�
                                                                       Claude Haiku 4.5 → Nova Pro
 ```
 
-* **Read-only by design.** The entrypoint accepts only `mode: ask | summary`. Both modes give the
+* **Read-only by design.** The entrypoint accepts only `mode: ask | summary` (plus `ping`, a
+  no-model warm-up the API sends when a scenario starts). Both modes give the
   Strands agent only the read-only tools (`get_today_status`, `get_timeline`, `export_evv`). The
   rebuilt engine's notifier raises on every send (`ReadOnlyNotifier`), the snapshot carries no
   phone numbers or chat ids, and the runtime has no notification credentials. Guardrailed actions
@@ -41,6 +42,7 @@ Payload contract (`POST /invocations`):
 ```json
 {"mode": "ask", "question": "Did Maria come today?", "snapshot": { "version": 1, "...": "..." }}
 {"mode": "summary", "snapshot": { "...": "..." }}
+{"mode": "ping"}
 ```
 
 Response: `{"answer"|"summary", "tool_calls", "model", "latency_ms", "usage", "runtime": "agentcore", "session_id", "handler_ms", "snapshot_now"}`.

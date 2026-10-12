@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Action, Expectation, Finding, Household, LedgerKind, LedgerRecord, Observation } from "@/lib/types";
-import { findingLabel, OBS_LABEL, actionHeadline, visionNote } from "@/lib/derive";
+import type { Action, Expectation, Finding, Household, LedgerKind, LedgerRecord, Observation, RingEvent } from "@/lib/types";
+import { findingLabel, OBS_LABEL, actionHeadline, ringEventLabel, visionMeta, visionNote } from "@/lib/derive";
 import { fmtTime, fmtTimeSec, ms } from "@/lib/time";
 import { Card, CardHeader, Empty, SeverityChip, SourceBadge, cx } from "./ui";
 
@@ -11,11 +11,14 @@ const KIND_STYLE: Record<LedgerKind, { label: string; cls: string }> = {
   observation: { label: "Observed", cls: "bg-info-soft text-info" },
   finding: { label: "Finding", cls: "bg-warn-soft text-warn" },
   action: { label: "Action", cls: "bg-brand-soft text-brand-strong" },
+  ring_event: { label: "Ring event", cls: "bg-[#efeaf8] text-[#4f3a8a]" },
 };
 
 export function LedgerView({ timeline, household }: { timeline: LedgerRecord[]; household: Household }) {
   const tz = household.patient.timezone;
   const [filter, setFilter] = useState<LedgerKind | "all">("all");
+  // the Ring filter only appears once the live poller has written Ring history rows
+  const kinds: LedgerKind[] = ["expectation", "observation", "finding", "action", ...(timeline.some((r) => r.kind === "ring_event") ? (["ring_event"] as const) : [])];
   const rows = [...timeline].filter((r) => filter === "all" || r.kind === filter).sort((a, b) => ms(b.at) - ms(a.at) || b.id.localeCompare(a.id));
   return (
     <div className="space-y-6">
@@ -32,7 +35,7 @@ export function LedgerView({ timeline, household }: { timeline: LedgerRecord[]; 
           title={`${rows.length} records`}
           right={
             <div role="radiogroup" aria-label="Filter records" className="flex flex-wrap gap-1.5">
-              {(["all", "expectation", "observation", "finding", "action"] as const).map((k) => (
+              {(["all", ...kinds] as const).map((k) => (
                 <button
                   key={k}
                   role="radio"
@@ -84,13 +87,34 @@ function RecordBody({ r, household, tz }: { r: LedgerRecord; household: Househol
   }
   if (r.kind === "observation") {
     const o = r.body as unknown as Observation;
+    const meta = o.source !== "simulated" ? visionMeta(o) : null;
     return (
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <p className="font-semibold">{OBS_LABEL[o.kind] ?? r.subtype}</p>
         <SourceBadge source={o.source} />
         <span className="text-sm text-ink-3 tabular">{Math.round((o.confidence ?? 0) * 100)}%</span>
+        {meta && (
+          <span className="text-sm text-ink-3 tabular" title={meta.title}>
+            {meta.text}
+          </span>
+        )}
         {typeof o.detail?.description === "string" && <p className="w-full text-sm text-ink-2">{o.detail.description}</p>}
         {visionNote(o) && <p className="w-full text-sm text-ink-2">Vision: {visionNote(o)}</p>}
+      </div>
+    );
+  }
+  if (r.kind === "ring_event") {
+    const e = r.body as unknown as RingEvent;
+    return (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <p className="font-semibold">{ringEventLabel(String(e.event_type ?? r.subtype))}</p>
+        <SourceBadge source="ring_history" />
+        {e.action && (
+          <p className="w-full text-sm text-ink-2">
+            From the doorbell&apos;s Ring event history. DoorLedger asked for the event snapshot and opened a{" "}
+            {e.action === "burst watch" ? "burst live view (code reader on every frame)" : "live view"}.
+          </p>
+        )}
       </div>
     );
   }

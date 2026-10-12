@@ -112,6 +112,17 @@ class FanOutNotifier:
         return any(results.values())
 
 
+def channel_fields(person: Person, notifier: Notifier) -> dict[str, str]:
+    """What an Action records about delivery.
+
+    ``channel`` is how the household chose to reach this person (Rosa: SMS, she uses no app);
+    ``via`` is the notifier that actually carried the message: "sms" (Amazon SNS), "telegram",
+    or "app" (console only: the dashboard shows it, nothing left this machine).
+    """
+    via = getattr(notifier, "channel", "app")
+    return {"channel": person.channel or via, "via": via}
+
+
 def default_notifier() -> Notifier:
     extra = [n for n in (SNSNotifier(), TelegramNotifier()) if n.enabled]
     if not extra:

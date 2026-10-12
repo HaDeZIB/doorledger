@@ -122,15 +122,20 @@ the legacy path.
    ledger exactly as recorded. Unit tests show the three read tools return byte-identical JSON
    on the live engine and on the sealed engine.
 3. **Entrypoint** (`deploy/agentcore/app/CareAgent/main.py`, `BedrockAgentCoreApp`):
-   `mode: ask | summary` only. Any other mode, such as `handle`, is rejected with
-   "this runtime cannot act".
+   `mode: ask | summary` only, plus `ping` (answers immediately, no model call; it warms the
+   session). Any other mode, such as `handle`, is rejected with "this runtime cannot act".
 4. **Packaging.** `deploy/agentcore/sync_core.py` walks the import graph from `agent.py` and
    `aws/snapshot.py` and vendors exactly 13 modules. API, watcher, vision and OpenCV are on a
    deny list. The runtime image therefore runs the same code as the local agent.
 5. **API wiring** (appended to `api.py`, behind flags):
    - `DOORLEDGER_AGENTCORE_ARN` swaps the `/api/ask` and `/api/summary` routes for versions that
      call `AgentCoreCareAgent` (session id `doorledger-<household>-<local date>`) and fall back
-     to the local Strands agent on any error.
+     to the local Strands agent on any error. The browser only ever gets a generic error code
+     (`agentcore_error: "AgentCore runtime unavailable (AccessDeniedException)"`); the raw
+     message, which can quote ARNs and the account id, stays in the server log.
+   - Warm-up: at API startup and whenever a demo scenario starts, a background `ping` on the
+     day's session id boots the runtime microVM (at most once per 5 min), so the first question
+     does not pay the session cold start. A failed ping is logged and ignored.
    - `DOORLEDGER_DYNAMO=1` attaches the DynamoDB mirror.
    - `GET /api/aws/status` reports mirror counters and whether AgentCore is configured.
 
