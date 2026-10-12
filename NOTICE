@@ -17,21 +17,26 @@ Third-party content included in this repository
 
 1. Ring Developer Playground footage
    Paths: fixtures/ring_playground/package/**, fixtures/ring_playground/vision_cache.json,
-          fixtures/evidence/package.jpg, fixtures/playground/** (recorded API responses)
+          fixtures/evidence/package.jpg, web/dashboard/public/ring/package.jpg,
+          fixtures/playground/** (recorded API responses)
 
    Frames and API responses captured on 2026-10-11 from the Ring Developer
    Playground (simulated live view over WHEP, snapshots and REST responses)
    using a developer account. They are included only to let the
    demo and tests run without a live Playground token. The recorded REST
    responses belong to a Playground demo account ("Demo Developer",
-   developer@example.com); bearer tokens and pre-signed media tokens were
+   an example.com placeholder address); bearer tokens and pre-signed media tokens were
    never written to disk.
 
    The Playground "Package" scene (fixtures/ring_playground/package/**,
-   fixtures/evidence/package.jpg) is derived from:
+   fixtures/evidence/package.jpg, and web/dashboard/public/ring/package.jpg,
+   a byte-identical copy of that evidence frame served by the hosted
+   dashboard) is derived from:
 
-     "Thief stealing our package", by a YouTube user,
-     licensed under Creative Commons Attribution 4.0 International
+     "Thief stealing our package"
+     Author: [pending — credit text shown under the clip in the Ring
+             Developer Playground]
+     Licensed under Creative Commons Attribution 4.0 International
      (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/).
      Clipped from the original, as credited by Ring in the Developer
      Playground. DoorLedger further changed it: frames were re-encoded

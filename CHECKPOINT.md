@@ -1,48 +1,49 @@
-# CHECKPOINT — pausa 11-oct-2026, 3:30 pm (Tampico)
+# CHECKPOINT — pause on 11 Oct 2026, 3:30 pm (UTC−6)
 
-> Leer esto + `STATUS.md` al retomar. Todo está commiteado en `main`.
+> Historical snapshot, kept for the build record. Numbers and open items below are as of that
+> afternoon; see [STATUS.md](STATUS.md) and the [README](README.md) for the current state.
 
-## 1. Qué está construido y funcionando
-| Pieza | Estado | Dónde |
+## 1. What is built and working
+| Piece | Status | Where |
 |---|---|---|
-| SDK open source `ringpartner` (REST sync/async, WHEP, webhooks HMAC, simulador firmado, record/replay, CLI) | ✅ 55 tests | `packages/ringpartner/` |
-| Presence codes (QR firmado rotativo + compacto + 6 dígitos) y lector OpenCV | ✅ 26 tests, eval sintético | `core/.../presence*.py`, `eval/presence/` |
-| Caregiver Pass (web móvil, paridad JS↔Python probada) | ✅ | `web/caregiver-pass/index.html`, servido en `/pass` |
-| Visión Bedrock (Nova 2 Lite + prompt v2) | ✅ 54/54 sintético, 10/10 Ring real | `core/.../vision.py`, `eval/vision/` |
-| Watcher: frames Ring → visión + códigos → PorchTracker k-de-n → Engine | ✅ | `core/.../watcher.py` |
-| Engine + reconciliación determinista + modelo térmico (calor **y congelación**) | ✅ | `engine.py`, `reconcile.py`, `exposure.py` |
-| Responder con guardrails + Writer Bedrock (Claude → Nova → plantillas) | ✅ | `responder.py` |
-| CareAgent Strands (Q&A familiar + resumen diario, Claude → Nova Pro) | ✅ 12 tests | `agent.py`, `docs/agent_spike.md` |
-| Live controller: webhooks firmados de Ring → sesión de vigilancia; vigilancia por ventanas de cuidado | ✅ | `live.py`, `POST /webhooks/ring` |
-| API FastAPI + SSE + EVV CSV + demo runner | ✅ | `api.py` |
-| Dashboard Next.js (Today / Agency / Ledger, Ask, resumen, evidencia real) | ✅ build OK | `web/dashboard/` |
-| Footage real del Ring Playground (paquete, vehículo, movimiento) | ✅ | `fixtures/ring_playground/` (CC BY 4.0 del clip de paquete → atribuir) |
-| Friction log | ✅ 8 entradas | `FRICTION_LOG.md` |
+| Open-source SDK `ringpartner` (sync/async REST, WHEP, HMAC webhooks, signed simulator, record/replay, CLI) | ✅ 55 tests | `packages/ringpartner/` |
+| Presence codes (signed rotating QR + compact + 6 digits) and OpenCV reader | ✅ 26 tests, synthetic eval | `core/.../presence*.py`, `eval/presence/` |
+| Caregiver Pass (mobile web, JS↔Python parity tested) | ✅ | `web/caregiver-pass/index.html`, served at `/pass` |
+| Bedrock vision (Nova 2 Lite + prompt v2) | ✅ 54/54 synthetic, 10/10 real Ring | `core/.../vision.py`, `eval/vision/` |
+| Watcher: Ring frames → vision + codes → k-of-n PorchTracker → Engine | ✅ | `core/.../watcher.py` |
+| Engine + deterministic reconciliation + thermal model (heat **and freezing**) | ✅ | `engine.py`, `reconcile.py`, `exposure.py` |
+| Responder with guardrails + Bedrock Writer (Claude → Nova → templates) | ✅ | `responder.py` |
+| Strands CareAgent (family Q&A + daily summary, Claude → Nova Pro) | ✅ 12 tests | `agent.py`, `docs/agent_spike.md` |
+| Live controller: signed Ring webhooks → watch session; watching during care windows | ✅ | `live.py`, `POST /webhooks/ring` |
+| FastAPI API + SSE + EVV CSV + demo runner | ✅ | `api.py` |
+| Next.js dashboard (Today / Agency / Ledger, Ask, summary, real evidence) | ✅ build OK | `web/dashboard/` |
+| Real Ring Playground footage (package, vehicle, motion) | ✅ | `fixtures/ring_playground/` (package clip is CC BY 4.0 → attribute) |
+| Friction log | ✅ 8 entries | `FRICTION_LOG.md` |
 
 **Tests:** 93 passed, 1 skipped (`uv run pytest -q`).
-**Gasto AWS aprox.:** ~US$2.5 (casi todo el spike de visión). Presupuesto US$30/mes con alertas.
 
-**Correr el demo:** preview servers `doorledger-api` (8787) y `doorledger-dashboard` (3000) en `~/.claude/launch.json` → dashboard → tecla **D** → escenario.
+**Running the demo:** API on port 8787 (`make api` or `make api-offline`) and dashboard on port
+3000 (`make dashboard`) → open the dashboard → press **D** → pick a scenario.
 
-## 2. Historia del demo (decisión 11-oct)
-Invierno en Chicago: la insulina se deja en un porche a −9 °C (el clip de paquete del Ring Playground es un escalón nevado). 14:07 Ring ve el paquete → aviso a Rosa; 14:27 en riesgo de congelarse → vecino Luis; 14:37 → Ana (hija); 14:40 recogido → aviso a Ana. Mañana: Maria (cuidadora) llega 22 min tarde y se queda 43/120 min → agencia y familia.
+## 2. Demo story (decided 11 Oct)
+Winter in Chicago: insulin is left on a porch at −9 °C (the Ring Playground package clip is a snowy doorstep). 14:07 Ring sees the package → alert to Rosa; 14:27 at risk of freezing → neighbor Luis; 14:37 → Ana (daughter); 14:40 picked up → update to Ana. Morning: Maria (the aide) arrives 22 min late and stays 43/120 min → agency and family.
 
-## 3. Qué falta (por prioridad)
-1. 👤 **Footage propio** (docs/SHOT_LIST.md): cuidadora con QR (check-in/out) + paquete recogido → reemplaza los pasos `SIMULATED`. Al grabar: fijar el secreto de la visita en `fixtures/own_footage/visit.json` y `recorded_start` para verificar códigos al reproducir.
-2. 👤 **Claude en Bedrock:** formulario de Anthropic enviado 11-oct 3:27 pm; Haiku 4.5 aún daba "use case not submitted" a las 3:30 (tarda ~15 min). Haiku 5.5 dice "not available for this account" → reintentar; si sigue, usar Haiku 4.5. Ojo: modelos 5.5 rechazan `temperature: 0` (vision.py la manda).
-3. 👤 **Telegram (S6):** bot de @BotFather → `TELEGRAM_BOT_TOKEN` + chat id en `.env`.
-4. **Dashboard:** el modo mock aún dice Tampa/calor → pasar a Chicago/invierno; nombre de escenario `porch_cold` (alias `porch_heat` existe); mostrar "límite: congelación 32 °F" cuando `estimate.direction == "cold"` (campos nuevos `direction`, `unsafe_c`).
-5. **README principal** + diagrama de arquitectura + atribución CC BY + guía de ejecución.
-6. **AWS Builder (multi-servicio):** desplegar el agente en Bedrock AgentCore Runtime (plan en `docs/aws_architecture.md`), espejo del ledger en DynamoDB, receptor de webhooks en Lambda/API Gateway.
-7. **Open Source:** repo público en GitHub (HaDeZIB/doorledger), publicar `ringpartner` en PyPI, CI con GitHub Actions.
-8. **Video (<3 min, inglés)** + texto de Devpost + feedback por herramienta.
+## 3. What was still missing (by priority)
+1. **Own footage** (docs/SHOT_LIST.md): aide with the QR (check-in/out) + package picked up → replaces the `SIMULATED` steps. When filming: fix the visit secret in `fixtures/own_footage/visit.json` and `recorded_start` so codes can be verified on replay.
+2. **Claude on Bedrock:** model access was pending Anthropic's use-case form. Note: the 5.5 models reject `temperature: 0` (vision.py sends it).
+3. **Telegram (S6):** a bot token and chat id in `.env` (`TELEGRAM_BOT_TOKEN`).
+4. **Dashboard:** mock mode still said Tampa/heat → switch to Chicago/winter; scenario name `porch_cold` (alias `porch_heat` exists); show "limit: freezing 32 °F" when `estimate.direction == "cold"` (new fields `direction`, `unsafe_c`).
+5. **Main README** + architecture diagram + CC BY attribution + run guide.
+6. **AWS Builder (multi-service):** deploy the agent on Bedrock AgentCore Runtime (plan in `docs/aws_architecture.md`), mirror the ledger to DynamoDB, webhook receiver on Lambda/API Gateway.
+7. **Open Source:** public GitHub repo, publish `ringpartner` to PyPI, CI with GitHub Actions.
+8. **Video (<3 min, English)** + Devpost text + per-tool feedback.
 
-## 4. Ideas de mejora detectadas en la revisión (para la siguiente carga)
-- **Mensajes bilingües:** Rosa recibe en español, Ana en inglés (familia hispana; muestra comprensión del usuario final). Campo `language` por persona → el Writer escribe en ese idioma.
-- **Privacidad por diseño:** difuminar caras en los cuadros de evidencia guardados (solo se conserva lo necesario para probar el evento). Muy valorado por un jurado de Ring.
-- **Paquete de evidencia para la farmacia:** PDF con línea de tiempo, temperatura estimada y cuadros del Ring → reclamo de reposición en un clic.
-- **Costo de visión:** clasificar solo cuando hay movimiento (diferencia entre cuadros) y bajar a 1 cuadro cada 3 s cuando el porche está estable; prefiltro barato con Nova Lite.
-- **Multi-cámara** (criterio creativo de Ring): segunda cámara (cochera) para "vehículo llegó" + puerta para "paquete" — el Playground solo tiene 1 dispositivo, pero el SDK ya soporta `component_id`.
-- **Threshold (v2):** "tiempo para abrir la puerta" / velocidad al caminar como indicador de fragilidad.
-- **Rate limit** de códigos de presencia por timbre (riesgo anotado en eval/presence).
-- **Reporte semanal** para la agencia: % visitas verificadas, minutos entregados vs. facturados.
+## 4. Improvement ideas from the review (for the next round)
+- **Bilingual messages:** Rosa gets Spanish, Ana gets English (a Hispanic family; shows we understand the end user). A per-person `language` field → the Writer writes in that language.
+- **Privacy by design:** blur faces in stored evidence frames (keep only what is needed to prove the event). Highly valued by a Ring panel.
+- **Evidence pack for the pharmacy:** a PDF with the timeline, estimated temperature and Ring frames → a one-click replacement claim.
+- **Vision cost:** classify only when there is motion (frame difference) and drop to 1 frame every 3 s when the porch is stable; cheap pre-filter with Nova Lite.
+- **Multi-camera** (Ring's creativity criterion): a second camera (garage) for "vehicle arrived" + the door for "package". The Playground has only 1 device, but the SDK already supports `component_id`.
+- **Threshold (v2):** "time to open the door" / walking speed as a frailty signal.
+- **Rate limit** on presence codes per doorbell press (risk noted in eval/presence).
+- **Weekly report** for the agency: % of visits verified, minutes delivered vs. billed.

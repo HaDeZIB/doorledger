@@ -3,7 +3,7 @@
 Frames captured by DoorLedger from the **Ring Developer Playground** simulated live view
 (WHEP, H.264 1280x720) on 2026-10-11, sampled at 1 frame/s:
 
-- `package/` — Playground "Package" event. Source clip credited by Ring as *"Thief stealing our package"* (YouTube user, **CC BY 4.0**, clipped from original).
+- `package/` — Playground "Package" event. Source clip credited by Ring as *"Thief stealing our package"* (author: [pending — credit text shown under the clip in the Ring Developer Playground], **CC BY 4.0**, clipped from original; see [NOTICE](../../NOTICE)).
 - `vehicle/` — Playground "Vehicle" event.
 - `default/` — Playground "Motion" event (bird feeder).
 
