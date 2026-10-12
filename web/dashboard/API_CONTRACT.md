@@ -22,6 +22,7 @@ must allow origin `http://localhost:3000` (GET, POST, `Content-Type: application
 | GET | `/api/evv.csv?date=YYYY-MM-DD` | `text/csv` download |
 | POST | `/api/demo/run` body `{ "scenario": "porch_cold" \| "late_short_visit" \| "full_day", "speed": number }` (`porch_heat` = legacy alias of `porch_cold`) | `{ "ok": boolean }` |
 | POST | `/api/demo/reset` | `{ "ok": boolean }` |
+| GET | `/api/live/trace` | Steps of the current or last live Ring run (`scripts/live_demo.py`) with measured latencies; `404` when none ran. Shown by `components/LiveRunPanel.tsx`. While a live run is active, `/api/demo/*` answers `409` |
 
 ## Types
 

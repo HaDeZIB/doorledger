@@ -92,7 +92,11 @@ function RecordBody({ r, household, tz }: { r: LedgerRecord; household: Househol
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <p className="font-semibold">{OBS_LABEL[o.kind] ?? r.subtype}</p>
         <SourceBadge source={o.source} />
-        <span className="text-sm text-ink-3 tabular">{Math.round((o.confidence ?? 0) * 100)}%</span>
+        {o.source !== "simulated" && (
+          <span className="text-sm text-ink-3 tabular" title="The vision model’s own estimate of its certainty, not a calibrated probability">
+            {Math.round((o.confidence ?? 0) * 100)}% (model-reported)
+          </span>
+        )}
         {meta && (
           <span className="text-sm text-ink-3 tabular" title={meta.title}>
             {meta.text}

@@ -116,7 +116,7 @@ flowchart TB
 
 | Type | Produced by | Examples |
 |---|---|---|
-| `Expectation` | the day plan (agency schedule, pharmacy shipment) | "Morning personal care 09:00–11:00, Maria, 120 min"; "Insulin refill 13:00–17:00, UPS" |
+| `Expectation` | the day plan (agency schedule, pharmacy shipment) | "Morning personal care 09:00–11:00, Maria, 120 min"; "Insulin refill 13:00–17:00, courier" |
 | `Observation` | Watcher (Ring frames) or scenario steps | `package_dropped`, `package_removed`, `vehicle_arrived`, `presence_check_in/out`, each with a `Source` (`ring_live_view`, `ring_snapshot`, `ring_webhook`, `own_footage`, `simulated`) and an evidence frame |
 | `Finding` | `reconcile()` (pure function) | `late_arrival`, `missed_visit`, `short_visit`, `package_exposed`, `package_at_risk`, `package_compromised`, `package_retrieved` |
 | `Action` | Responder or guarded agent tools | `notify`, `request_backup`, `pharmacy_claim` (draft only) |
@@ -205,6 +205,25 @@ flowchart LR
     H -- "no" --> J["recorded Playground scene<br/>chosen by sub_type → Watcher"]
 ```
 
+### Live end-to-end run (Playground click → phone call)
+
+The Playground sends no webhooks (friction log F3), so the live run reacts to **Ring history**.
+`scripts/live_demo.py` (`make live`) arms the engine on the wall clock with an insulin delivery
+expected now. The history poller then checks every 2 s. A new `on_demand` row (the Package
+button opens a live view) triggers three Ring snapshots at the row's start, 1 s apart. They go
+through the normal Watcher: privacy zones, then faces pixelated, then Nova 2 Lite. The porch
+tracker's 3-of-5 vote produces `package_dropped` (source `ring_snapshot`), reconcile produces
+`package_exposed` at −9 °C, and the responder places Rosa's Connect call and SNS SMS.
+
+`LiveTrace` (`live_session.py`) timestamps every step. The API serves it at `/api/live/trace`
+and the dashboard shows it as the "Live" card, with latencies measured from Ring's own event
+timestamp. A WHEP trigger (`--trigger whep`) covers the case where the Playground publishes
+no row.
+
+Safety caps wrap the real channels: one call to `DOORLEDGER_VOICE_TO`, one SMS to
+`DOORLEDGER_SMS_TO`, and no re-call, neighbor or family rungs without `--full-ladder`.
+Runbook: [`LIVE_DEMO.md`](LIVE_DEMO.md).
+
 ## Sequence: medication on a freezing porch
 
 Demo household: Rosa Martínez, 81, Chicago, −9 °C. Insulin refill expected 13:00–17:00. Times
@@ -225,7 +244,7 @@ sequenceDiagram
     actor Luis as Luis (neighbor)
     actor Ana as Ana (daughter)
 
-    Note over E: Expectation: insulin 13:00–17:00 (UPS)<br/>care window open → Ring history polled
+    Note over E: Expectation: insulin 13:00–17:00 (courier)<br/>care window open → Ring history polled
     Ring->>W: new Ring event → snapshot at event start, then live frames (~1 fps)
     W->>W: mask privacy zones, pixelate faces, skip unchanged frames
     W->>N2L: frame (Converse, image)
@@ -332,6 +351,8 @@ core/src/doorledger/
   watcher.py              Ring frames → vision + presence codes → tracker → engine
   live.py                 history poller + event snapshots, webhook trigger, burst mode,
                           privacy zones + E2EE check per device
+  live_session.py         live end-to-end run: trace + latencies, call/SMS safety caps
+  live_preflight.py       preflight checks, history probe, offline Playground replay
   vision.py               Bedrock Converse image classification (Nova 2 Lite) + recorded-label cache
   presence.py             signed rotating presence codes (QR, compact, 6-digit TOTP)
   presence_reader.py      OpenCV QR reader tuned for wide-angle doorbell frames

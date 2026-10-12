@@ -101,6 +101,19 @@ SCENARIOS: dict[str, dict] = {
         ],
     },
 }
+# The same porch, but Rosa brings the box in herself at 14:15, after her call and text (14:07)
+# and the second call (14:12), before the neighbor's turn (14:17). Ring seeing the pickup cancels
+# every pending step, and the ledger logs each one ("Text to Luis not needed: Ring saw the box
+# picked up at 2:15 PM. ..."). The doorbell is her reply: she never has to answer.
+SCENARIOS["porch_early_pickup"] = {
+    "start": (13, 55), "end": (14, 30), "ambient_c": -9.0,
+    "plan": {ExpectationKind.MEDICATION_DELIVERY},
+    "steps": [
+        SCENARIOS["porch_cold"]["steps"][0],
+        Step(14, 15, ObservationKind.PACKAGE_REMOVED, Source.SIMULATED, None,
+             None, {"note": "Rosa brought it inside"}, frames="own:pickup"),
+    ],
+}
 SCENARIOS["porch_heat"] = SCENARIOS["porch_cold"]  # legacy name used by older dashboard builds
 SCENARIOS["full_day"] = {
     "start": (8, 50), "end": (14, 55), "ambient_c": -9.0,

@@ -12,8 +12,8 @@
 // weather is a scripted scenario, never attributed to a live source.
 //
 // Provenance is honest: the package drop is a real Ring Developer Playground frame
-// (ring_live_view, served from public/ring/package.jpg, CC BY 4.0 clip credited as provided by
-// Ring). Scenes whose real footage hasn't been filmed yet (aide check-in/out, package pickup)
+// (ring_live_view, served from public/ring/package.jpg; "Thief stealing our package" by YouTube
+// user frollard, CC BY 4.0, clipped, as credited by Ring). Scenes whose real footage hasn't been filmed yet (aide check-in/out, package pickup)
 // are `simulated` and carry no evidence_path: no frame is ever faked for them. (The Playground
 // vehicle clip is a green spring parking lot, so it is not part of this winter day.)
 
@@ -45,12 +45,25 @@ export function mockAmbientAt(iso: string): number {
   return Math.round((AMBIENT_MORNING_C + ((m - a) / (b - a)) * (AMBIENT_AFTERNOON_C - AMBIENT_MORNING_C)) * 10) / 10;
 }
 
-export const SCENARIOS: Record<Scenario, { label: string; from: string; to: string; blurb: string }> = {
+/**
+ * Which version of the afternoon the mock day shows. "early_pickup": Rosa brings the box in at
+ * 14:15 herself (backend scenario `porch_early_pickup`), so Luis and Ana are never asked.
+ */
+export type DayVariant = "standard" | "early_pickup";
+
+export const SCENARIOS: Record<Scenario, { label: string; from: string; to: string; blurb: string; variant?: DayVariant }> = {
   porch_cold: {
     label: "Insulin on a freezing porch",
     from: "13:55",
     to: "14:55",
     blurb: "Ring sees the package at 2:07 PM, 16°F outside · Rosa: call + text, call again → neighbor Luis → Ana · inside at 2:40 PM",
+  },
+  porch_early_pickup: {
+    label: "Rosa brings it in",
+    from: "13:55",
+    to: "14:30",
+    blurb: "Ring sees the package at 2:07 PM · Rosa: call + text, call again at 2:12 · Ring sees it picked up at 2:15 PM → the text to Luis is cancelled",
+    variant: "early_pickup",
   },
   late_short_visit: {
     label: "Late & short visit",
@@ -118,7 +131,28 @@ export interface MockDay {
   records: LedgerRecord[];
 }
 
-export function buildMockDay(date: string): MockDay {
+/** The afternoon's pickup, per variant (times and wording match the backend replay). */
+const PICKUP: Record<DayVariant, { at: string; description: string; risk: boolean; summary: string; minutes: number; estC: number }> = {
+  standard: {
+    at: "14:40",
+    description: "Neighbor picked it up and took it inside",
+    risk: true,
+    summary: "Brought inside after 33 min, 13 min after we texted Ana. Estimated to have stayed above freezing (est. 33°F / 0.7°C in the box). Close call.",
+    minutes: 33,
+    estC: 0.7,
+  },
+  early_pickup: {
+    at: "14:15",
+    description: "Picked up and taken inside, after Rosa's call and text",
+    risk: false,
+    summary: "Brought inside after 8 min, 8 min after we called and texted Rosa. Estimated to have stayed above freezing (est. 39°F / 3.8°C in the box). Luis and Ana were never asked.",
+    minutes: 8,
+    estC: 3.8,
+  },
+};
+
+export function buildMockDay(date: string, variant: DayVariant = "standard"): MockDay {
+  const pickup = PICKUP[variant];
   const t = (hhmm: string) => zonedISO(date, hhmm, MOCK_TZ);
   const dev = "ring_dev_frontdoor_01";
   const compact = date.replaceAll("-", "");
@@ -159,19 +193,21 @@ export function buildMockDay(date: string): MockDay {
       kind: "package_dropped",
       at: t("14:07"),
       source: "ring_live_view",
-      confidence: 0.94,
+      // model-reported (self-assessed, not a calibrated probability): the value Nova 2 Lite returned
+      // for the Playground package frames in fixtures/ring_playground/vision_cache.json
+      confidence: 0.95,
       evidence_path: MOCK_RING_PACKAGE_FRAME,
       detail: {
         expectation_id: ins.id,
         description: "Package left on the snowy doorstep",
         note: "package on snowy doorstep",
-        caption: "Ring Developer Playground frame · package clip CC BY 4.0",
-        caption_short: "Ring Playground · CC BY 4.0",
+        caption: "Ring Developer Playground frame · “Thief stealing our package” by frollard, CC BY 4.0",
+        caption_short: "Ring Playground · frollard, CC BY 4.0",
         in_sun: false,
       },
     }),
     // Pickup footage not filmed yet → simulated, no frame.
-    O({ id: "obs_ins_removed", kind: "package_removed", at: t("14:40"), source: "simulated", confidence: 1, detail: { expectation_id: ins.id, description: "Neighbor picked it up and took it inside" } }),
+    O({ id: "obs_ins_removed", kind: "package_removed", at: t(pickup.at), source: "simulated", confidence: 1, detail: { expectation_id: ins.id, description: pickup.description } }),
   ];
 
   const findings: Finding[] = [
@@ -179,13 +215,21 @@ export function buildMockDay(date: string): MockDay {
     { id: "f_am_arrived", kind: "late_arrival", severity: "info", at: t("09:22"), summary: "Maria checked in at 9:22 AM, 22 min late.", expectation_id: am.id, observation_ids: ["obs_am_in"], data: { late_minutes: 22 } },
     { id: "f_am_short", kind: "short_visit", severity: "warning", at: t("10:05"), summary: "Maria stayed 43 of the 120 planned minutes (36%). It's 21°F (−6°C) outside.", expectation_id: am.id, observation_ids: ["obs_am_in", "obs_am_out"], data: { minutes_on_site: 43, planned_minutes: 120 } },
     { id: "f_ins_exposed", kind: "package_exposed", severity: "info", at: t("14:07"), summary: "Ring saw the insulin left on the porch at 2:07 PM. It's 16°F (−9°C) outside, so it could freeze.", expectation_id: ins.id, observation_ids: ["obs_ins_drop"], data: { ambient_c: -9, direction: "cold", unsafe_c: 0 } },
-    { id: "f_ins_risk", kind: "package_at_risk", severity: "warning", at: t("14:27"), summary: "Getting too cold: box est. 36°F (2.2°C), est. ~20 min from freezing at 32°F (0°C). Rosa hasn't brought it in.", expectation_id: ins.id, observation_ids: ["obs_ins_drop"], data: { estimated_internal_c: 2.2, minutes_until_excursion_max: 19.8, direction: "cold", unsafe_c: 0 } },
-    { id: "f_ins_retrieved", kind: "package_retrieved", severity: "info", at: t("14:40"), summary: "Brought inside after 33 min, 13 min after we texted Ana. Estimated to have stayed above freezing (est. 33°F / 0.7°C in the box). Close call.", expectation_id: ins.id, observation_ids: ["obs_ins_drop", "obs_ins_removed"], data: { minutes_on_porch: 33, estimated_internal_c: 0.7, direction: "cold", unsafe_c: 0 } },
+    ...(pickup.risk
+      ? [{ id: "f_ins_risk", kind: "package_at_risk", severity: "warning", at: t("14:27"), summary: "Getting too cold: box est. 36°F (2.2°C), est. ~20 min from freezing at 32°F (0°C). Rosa hasn't brought it in.", expectation_id: ins.id, observation_ids: ["obs_ins_drop"], data: { estimated_internal_c: 2.2, minutes_until_excursion_max: 19.8, direction: "cold", unsafe_c: 0 } } satisfies Finding]
+      : []),
+    { id: "f_ins_retrieved", kind: "package_retrieved", severity: "info", at: t(pickup.at), summary: pickup.summary, expectation_id: ins.id, observation_ids: ["obs_ins_drop", "obs_ins_removed"], data: { minutes_on_porch: pickup.minutes, estimated_internal_c: pickup.estC, direction: "cold", unsafe_c: 0 } },
   ];
 
   // Same words, same order and same minutes as the backend replay (messages.json); only the
   // people's display names and the finding ids are the mock's own.
-  const actions: Action[] = messages.actions.map((m, i) => {
+  // The early-pickup afternoon comes from its own backend replay (messages.json → variants).
+  type Row = (typeof messages.actions)[number];
+  const rows: Row[] =
+    variant === "early_pickup"
+      ? [...messages.actions.filter((m) => m.at < "13:00"), ...(messages.variants.porch_early_pickup as Row[])]
+      : messages.actions;
+  const actions: Action[] = rows.map((m, i) => {
     const data: Record<string, unknown> = {
       channel: m.channel,
       via: "app", // hosted demo: nothing is sent, so the UI says "Demo only"

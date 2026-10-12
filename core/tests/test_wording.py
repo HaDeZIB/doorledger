@@ -105,3 +105,36 @@ def test_hosted_demo_story_shape():
     assert porch[:4] == [("14:07", "patient", "voice"), ("14:07", "patient", "sms"),
                          ("14:12", "patient", "voice"), ("14:17", "neighbor", "sms")]
     assert all(not MEDICAL.search(r["message"]) for r in rows if r["role"] == "neighbor")
+
+
+def test_hosted_demo_early_pickup_variant():
+    """Rosa brings the box in at 14:15 (after her call, text and second call, before Luis's
+    turn at 14:17): Luis is never texted, and the ledger says why."""
+    import json
+
+    rows = json.loads(MOCK_MESSAGES.read_text())["variants"]["porch_early_pickup"]
+    assert [(r["at"], r["kind"], r["role"], r["channel"]) for r in rows] == [
+        ("14:07", "notify", "patient", "voice"), ("14:07", "notify", "patient", "sms"),
+        ("14:12", "notify", "patient", "voice"),
+        ("14:15", "notify", "family", "sms"), ("14:15", "notify", "patient", "sms"),
+        ("14:15", "cancelled", "neighbor", "sms")]
+    assert rows[-1]["message"] == ("Text to Luis not needed: Ring saw the box picked up at "
+                                   "2:15 PM. The doorbell is Rosa's reply.")
+    assert rows[3]["message"].startswith("Good news: Rosa's medication was brought inside after 8 min")
+
+
+def test_video_subtitles_match_the_call_and_sms():
+    """docs/VIDEO_SCRIPT.md burns these Spanish lines into the video: they must be exactly what
+    Amazon Connect speaks and SNS sends, one subtitle per pause in the SSML."""
+    from pathlib import Path
+
+    script = (Path(__file__).resolve().parents[2] / "docs" / "VIDEO_SCRIPT.md").read_text()
+    section = script.split("## Burned-in subtitles", 1)[1].split("\n## ", 1)[0]
+    rows = [line.split("|")[2].strip() for line in section.splitlines()
+            if re.match(r"\| \d+ \|", line)]
+    call = wording.patient_call("porch_patient", WHO, True, "es")
+    spoken = re.split(r'<break time="[^"]+"/>', call.ssml.split(">", 2)[2].rsplit("</prosody>")[0])
+    assert rows == [s.strip() for s in spoken]
+    assert " ".join(rows) == call.text
+    sms = wording.patient_sms("porch_patient", WHO, True, "es")
+    assert f"> [Demo · para Rosa] {sms}" in section

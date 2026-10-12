@@ -107,7 +107,7 @@ export function EvidenceFrame({
         <figcaption className={cx("bg-surface px-3 py-2 text-sm text-ink-2", wideOverlay && "xl:hidden")}>
           <span className="flex flex-wrap items-center gap-2">
             <SourceBadge source={o.source} />
-            {o.source !== "simulated" && <span className="tabular">{Math.round(o.confidence * 100)}% confidence</span>}
+            {o.source !== "simulated" && <span className="tabular" title="The vision model’s own estimate of its certainty, not a calibrated probability">{Math.round(o.confidence * 100)}% (model-reported)</span>}
             {meta && (
               <span className="tabular text-[0.8rem] text-ink-3" title={meta.title}>
                 {meta.text}

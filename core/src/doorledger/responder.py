@@ -302,8 +302,13 @@ class Responder:
             return []
         return self._open_rung(inc, ladder[inc.rung], finding, now)
 
-    def _stand_down(self, inc: Incident, finding: Finding) -> list[Action]:
-        """Ring saw the box picked up: log every step that will no longer happen."""
+    def _stand_down(self, inc: Incident, finding: Finding,
+                    told: list[Action] | None = None) -> list[Action]:
+        """Ring saw the box picked up: log every step that will no longer happen.
+
+        ``told`` are the messages just sent about the pickup itself (Ana's "Good news" text,
+        Rosa's "Listo"). A pending step on a channel that person was just reached on is not
+        logged as "not needed": they did get a text, just a different one."""
         tz = ZoneInfo(self.household.patient.timezone)
         local = finding.at.astimezone(tz)
         when = f"{local.hour % 12 or 12}:{local.minute:02d} {'AM' if local.hour < 12 else 'PM'}"
@@ -319,6 +324,8 @@ class Responder:
             ch = p.contact_channels()[0] or "sms"
             verb = {"voice": "Call", "sms": "Text"}.get(ch, "Message")
             pending.append((p, ch, f"{verb} to {p.name.split()[0]} not needed"))
+        reached = {(a.target, a.data.get("channel")) for a in told or []}
+        pending = [(p, ch, what) for p, ch, what in pending if (p.name, ch) not in reached]
         return [Action(kind="cancelled", target=p.name, message=f"{what}: {reason}",
                        at=finding.at, finding_id=finding.id, delivered=False,
                        data={"channel": ch, "via": "none", "role": p.role,
@@ -369,7 +376,7 @@ class Responder:
             out.append(Action(kind="pharmacy_claim", target="Pharmacy", at=now, finding_id=finding.id,
                               message="Replacement request drafted with exposure log and camera evidence.",
                               delivered=False, data={"draft": True, **finding.data}))
-            out += self._stand_down(inc, finding)
+            out += self._stand_down(inc, finding, told=out)
             inc.closed = True
         elif k == FindingKind.PACKAGE_RETRIEVED:
             inc = self.incidents.get(exp)
@@ -383,7 +390,7 @@ class Responder:
                     if texts:
                         out += self.contact("notify", person, finding, "porch_retrieved", None,
                                             now, channels=texts)
-                out += self._stand_down(inc, finding)
+                out += self._stand_down(inc, finding, told=out)
         elif k == FindingKind.MISSED_VISIT:
             inc = self.incidents.setdefault(exp, Incident(exp, "visit", now))
             for person in agency:

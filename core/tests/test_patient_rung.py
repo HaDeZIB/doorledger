@@ -176,10 +176,12 @@ def test_pickup_cancels_every_pending_step_and_logs_it():
                            "estimated_internal_c": 4.6, "status": "safe"})
     out = r.handle(picked, T0 + timedelta(minutes=3))
     cancelled = [a for a in out if a.kind == "cancelled"]
-    assert [(a.target, a.data["channel"]) for a in cancelled] == [
-        (ROSA, "voice"), (LUIS, "sms"), (ANA, "sms")]
+    assert [(a.target, a.data["channel"]) for a in cancelled] == [(ROSA, "voice"), (LUIS, "sms")]
     assert [a.message.split(":")[0] for a in cancelled] == [
-        "Second call to Rosa not needed", "Text to Luis not needed", "Text to Ana not needed"]
+        "Second call to Rosa not needed", "Text to Luis not needed"]
+    # Ana's pending alert is not logged as "not needed": she is texted the good news instead
+    assert [(a.target, a.data["purpose"]) for a in out if a.kind == "notify"] == [
+        (ANA, "porch_retrieved"), (ROSA, "porch_retrieved")]
     assert all("Ring saw the box picked up at 2:10 PM. The doorbell is Rosa's reply."
                in a.message for a in cancelled)
     assert all(a.delivered is False and a.data["reason"] == "ring_saw_pickup" for a in cancelled)

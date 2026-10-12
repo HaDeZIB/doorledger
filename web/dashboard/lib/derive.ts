@@ -315,7 +315,8 @@ export function actionHeadline(a: Action, h: Household | null): string {
       if (channel === "agency_portal") return `Alerted ${who}`;
       if (channel === "email") return `Emailed ${who}`;
       if (channel === "telegram" || channel === "whatsapp") return `Messaged ${who}`;
-      if (channel === "app" || channel === "push") return `Sent an app alert to ${who}`;
+      // there is no DoorLedger app: "app" means the alert was only shown on this dashboard
+      if (channel === "app" || channel === "push") return `Dashboard alert for ${who}`;
       return `Notified ${who}`;
   }
 }

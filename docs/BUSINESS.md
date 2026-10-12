@@ -1,7 +1,7 @@
 # DoorLedger business model (Ring Appstore)
 
 > **Status: hypotheses.** Prices, buyers and volumes below are reasoned assumptions. They have
-> **not** been validated with agencies or families yet (TODO: 5 agency calls and 5 family calls
+> **not** been validated with agencies or families yet (next step: 5 agency calls and 5 family calls
 > before the next revision). The *costs* are different: they come from our own measurements on
 > Amazon Bedrock, and each one says where it comes from.
 

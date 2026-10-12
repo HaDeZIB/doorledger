@@ -12,21 +12,23 @@ import {
   SCENARIOS,
   buildMockDay,
   mockAmbientAt,
+  type DayVariant,
   type MockDay,
 } from "./script";
 
 const cache = new Map<string, MockDay>();
-export function mockDay(date: string): MockDay {
-  let d = cache.get(date);
+export function mockDay(date: string, variant: DayVariant = "standard"): MockDay {
+  const key = `${date}|${variant}`;
+  let d = cache.get(key);
   if (!d) {
-    d = buildMockDay(date);
-    cache.set(date, d);
+    d = buildMockDay(date, variant);
+    cache.set(key, d);
   }
   return d;
 }
 
-export function mockStateAt(date: string, nowMs: number): State {
-  const day = mockDay(date);
+export function mockStateAt(date: string, nowMs: number, variant: DayVariant = "standard"): State {
+  const day = mockDay(date, variant);
   const seen = <T extends { at: string }>(x: T) => ms(x.at) <= nowMs;
   const obs = day.observations.filter(seen);
   const now = new Date(nowMs).toISOString();
@@ -69,8 +71,8 @@ export function mockStateAt(date: string, nowMs: number): State {
   };
 }
 
-export function mockTimelineAt(date: string, nowMs: number, sinceMs = 0): LedgerRecord[] {
-  return mockDay(date).records.filter((r) => ms(r.at) <= nowMs && ms(r.at) >= sinceMs);
+export function mockTimelineAt(date: string, nowMs: number, sinceMs = 0, variant: DayVariant = "standard"): LedgerRecord[] {
+  return mockDay(date, variant).records.filter((r) => ms(r.at) <= nowMs && ms(r.at) >= sinceMs);
 }
 
 export function mockEvvCsv(date: string, nowMs: number, patient: string, address: string): string {

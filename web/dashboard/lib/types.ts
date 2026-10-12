@@ -192,7 +192,7 @@ export interface LedgerRecord {
 }
 
 /** `porch_heat` is still accepted by the backend as an alias of `porch_cold`. */
-export type Scenario = "porch_cold" | "late_short_visit" | "full_day";
+export type Scenario = "porch_cold" | "porch_early_pickup" | "late_short_visit" | "full_day";
 
 export interface OkResponse {
   ok: boolean;

@@ -9,7 +9,7 @@ import { api, FORCE_MOCK, subscribeStream } from "./api";
 import { evvCsvFromState } from "./derive";
 import { DemoClock, defaultStart, mockStateAt, mockTimelineAt, resetTime, scenarioRange } from "./mock/engine";
 import { mockAsk, mockSummary } from "./mock/assistant";
-import { mockAmbientAt, mockHousehold } from "./mock/script";
+import { SCENARIOS, mockAmbientAt, mockHousehold, type DayVariant } from "./mock/script";
 import type { AskResponse, Finding, Household, LedgerRecord, Observation, Scenario, State, SummaryResponse } from "./types";
 import { dateIn } from "./time";
 
@@ -62,8 +62,10 @@ export function useDoorLedger(initial: InitialData) {
   );
 
   const date = initial.date;
-  const mockState = useMemo(() => (mode === "mock" ? mockStateAt(date, tick) : null), [mode, date, tick]);
-  const mockTimeline = useMemo(() => (mode === "mock" ? mockTimelineAt(date, tick) : null), [mode, date, tick]);
+  // which afternoon the mock day shows; set by the last scenario played, kept after it ends
+  const [variant, setVariant] = useState<DayVariant>("standard");
+  const mockState = useMemo(() => (mode === "mock" ? mockStateAt(date, tick, variant) : null), [mode, date, tick, variant]);
+  const mockTimeline = useMemo(() => (mode === "mock" ? mockTimelineAt(date, tick, 0, variant) : null), [mode, date, tick, variant]);
 
   // ----- live mode --------------------------------------------------------------------
   const refreshLive = useCallback(async () => {
@@ -166,6 +168,7 @@ export function useDoorLedger(initial: InitialData) {
       try {
         if (mode === "mock") {
           const r = scenarioRange(date, sc);
+          setVariant(SCENARIOS[sc].variant ?? "standard");
           clock.run(r.from, r.to, speed, sc);
           setTick(clock.now());
         } else {
@@ -189,6 +192,7 @@ export function useDoorLedger(initial: InitialData) {
     setBusy(true);
     try {
       if (mode === "mock") {
+        setVariant("standard");
         clock.jump(resetTime(date));
         setTick(clock.now());
       } else {
@@ -226,6 +230,7 @@ export function useDoorLedger(initial: InitialData) {
     setMode("mock");
     setMockReason("forced");
     setHousehold(mockHousehold());
+    setVariant("standard");
     clock.jump(defaultStart(date));
     setTick(clock.now());
   }, [clock, date]);

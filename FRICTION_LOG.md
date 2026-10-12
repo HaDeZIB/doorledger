@@ -18,10 +18,11 @@ workaround · actionable suggestion.
 
 | ID | Area | Issue | Severity | Time lost | Status |
 |---|---|---|---|---|---|
-| [F1](#f1--developer-registration-route-renders-404-blocks-the-playground) | Ring | Developer registration route renders 404, which blocks the Playground | Critical | ~45 min | Resolved (incognito) |
+| [A7](#a7--end-user-messaging-voice-cannot-call-a-mexican-number-amazon-connect-can) | AWS | End User Messaging voice cannot call a Mexican number (`INVALID_IDENTITY_FOR_DESTINATION_COUNTRY`); only Amazon Connect could | High | ~45 min (estimate) | Worked around (Connect) |
 | [A1](#a1--claude-on-bedrock-is-gated-by-the-anthropic-use-case-form-with-a-resourcenotfoundexception) | AWS | Claude on Bedrock is gated by the Anthropic use-case form and fails with `ResourceNotFoundException` | High | ~35 min | Resolved |
 | [A2](#a2--agentcore-cli-deploy-hits-an-iam-wall-cdk-bootstrap--bedrock-agentcore-not-in-amazonbedrockfullaccess) | AWS | AgentCore CLI deploy needs CDK bootstrap and `bedrock-agentcore:*`, which `AmazonBedrockFullAccess` lacks | High | ~1.5 h | Resolved (after IAM grants + CDK bootstrap) |
 | [F3](#f3--the-playground-does-not-deliver-webhooks) | Ring | The Playground does not deliver webhooks | High | ~30 min | Worked around |
+| [F1](#f1--developer-registration-route-fails-silently-with-a-404) | Ring | Developer registration route fails silently with a 404 (in our browser profile) | Medium | ~45 min | Resolved (incognito) |
 | [F2](#f2--no-hardware-promise-vs-ring-getting-started) | Ring | "No hardware needed" promise vs. Ring Getting Started | Medium | ~1 h | Resolved (forum) |
 | [R1](#r1--ring-appstore-and-the-test-phase-are-us-only) | Ring | Ring Appstore and the Test phase are US-only | Medium | ~20 min | Open |
 | [R2](#r2--privacy-zones-cannot-be-configured-in-the-playground) | Ring | Privacy zones cannot be configured in the Playground | Medium | ~15 min | Open |
@@ -37,42 +38,36 @@ workaround · actionable suggestion.
 | [R4](#r4--docs-inconsistencies-private-app-account-limit-and-a-broken-release-notes-anchor) | Ring | Docs inconsistencies: private-app account limit, broken release-notes anchor | Low | ~5 min | Open |
 | [F8](#f8--merged-into-f1) | Ring | Merged into F1 | n/a | n/a | Closed |
 
-**Total time lost to platform friction:** about **7.5 h** (estimate). The largest items are the
+**Total time lost to platform friction:** about **8 h** (estimate). The largest items are the
 AgentCore IAM wall (A2), the "is the Playground the simulator?" research (F2) and the
-registration 404 (F1).
+registration 404 (F1). The voice detour (A7) is the newest.
 
 ---
 
-## Critical
-
-### F1 — Developer registration route renders 404 (blocks the Playground)
-- **Status:** **Resolved.** The page works in an incognito window. The likely root cause is a
-  browser extension in the regular profile that broke a script on the registration page. We did
-  not isolate which extension.
-- **Task:** Get a Ring Developer Playground token, the hackathon's official Ring "simulator".
-- **Steps:**
-  1. Signed in at developer.amazon.com with a new developer account (Mexico).
-  2. Opened `https://developer.amazon.com/ring/console/playground`. It redirected to
-     `/settings/console/registration?return_to=/ring/console/playground`.
-  3. Started the registration form (Sole Proprietorship).
-  4. From then on, every console URL redirected to `/settings/console/registration?...`. That
-     includes `/ring/console`, `/alexa/console/ask`, `/settings/console/myaccount` and the LWA
-     console. The route rendered **"404 Page not found"**. The account menu's "Complete
-     Registration" link also landed on the 404.
-  5. Retried in an incognito window with no extensions. The registration form rendered, and the
-     Playground opened after we submitted it.
-- **Expected:** The registration form (or a "registration pending" message), then the Playground.
-- **Actual:** A hard 404 with no error message. There was no way to finish registration or to
-  learn what was missing.
-- **Severity:** Critical. It blocks the only documented Ring path for entrants without hardware.
-- **Time lost:** ~45 min.
-- **Workaround:** Incognito window or another browser.
-- **Suggestion:** Never return 404 on the registration route. If a required script fails to
-  load, show "Something blocked this page. Try disabling extensions or use a private window"
-  instead of a 404. Show the incomplete step and its validation errors. Link to support with
-  the account ID pre-filled.
-
 ## High
+
+### A7 — End User Messaging voice cannot call a Mexican number; Amazon Connect can
+- **Status:** Worked around with Amazon Connect.
+- **Task:** Call the patient (a Spanish speaker with no apps) with a short spoken alert. The demo's
+  one verified test phone is a Mexican (+52) mobile.
+- **Steps:**
+  1. Added `sms-voice:*` to the IAM user (the default policies we had returned `AccessDenied`).
+  2. Requested a US origination number with voice in AWS End User Messaging SMS and Voice v2 and
+     called `SendVoiceMessage` to the +52 test phone.
+- **Expected:** The call is placed, or the console says up front which destination countries an
+  origination number can call.
+- **Actual:** `INVALID_IDENTITY_FOR_DESTINATION_COUNTRY`. Calling Mexico needs a local identity,
+  which means a support case. Nothing in the number-request flow warned us. We released the
+  number and built the call on **Amazon Connect** instead (outbound calling to Mexico is allowed
+  by default): an instance, a claimed number, and a contact flow that speaks an SSML contact
+  attribute with a neural Spanish voice. The first test call was answered.
+- **Severity:** High. It blocks the voice feature for anyone outside the US who tests on their own
+  phone, and forces a different service.
+- **Time lost:** ~45 min (estimate), plus the cost of a number we could not use.
+- **Workaround:** Amazon Connect `StartOutboundVoiceContact` (`notify.ConnectVoiceNotifier`).
+- **Suggestion:** Show the callable destination countries when an origination number is
+  requested, and name the required registration or support case in the error. A short "voice
+  from End User Messaging vs. Amazon Connect" guide would have saved the detour.
 
 ### A1 — Claude on Bedrock is gated by the Anthropic use-case form, with a `ResourceNotFoundException`
 - **Status:** Resolved. Claude Haiku 4.5 now writes DoorLedger's messages and answers CareAgent
@@ -165,6 +160,35 @@ registration 404 (F1).
   configured URL, signed with a Playground HMAC key.
 
 ## Medium
+
+### F1 — Developer registration route fails silently with a 404
+- **Status:** **Resolved.** The page works in an incognito window. The likely root cause is a
+  browser extension in our regular profile that broke a script on the registration page, so this
+  is not a server bug as far as we can tell. The actionable part is the silent 404: it gives no
+  error message. We did not isolate which extension.
+- **Task:** Get a Ring Developer Playground token, the hackathon's official Ring "simulator".
+- **Steps:**
+  1. Signed in at developer.amazon.com with a new developer account (Mexico).
+  2. Opened `https://developer.amazon.com/ring/console/playground`. It redirected to
+     `/settings/console/registration?return_to=/ring/console/playground`.
+  3. Started the registration form (Sole Proprietorship).
+  4. From then on, every console URL redirected to `/settings/console/registration?...`. That
+     includes `/ring/console`, `/alexa/console/ask`, `/settings/console/myaccount` and the LWA
+     console. The route rendered **"404 Page not found"**. The account menu's "Complete
+     Registration" link also landed on the 404.
+  5. Retried in an incognito window with no extensions. The registration form rendered, and the
+     Playground opened after we submitted it.
+- **Expected:** The registration form (or a "registration pending" message), then the Playground.
+- **Actual:** A hard 404 with no error message. There was no way to finish registration or to
+  learn what was missing.
+- **Severity:** Medium (it was Critical for us while it lasted, because the Playground is the only
+  documented Ring path without hardware; downgraded because the cause was on our side).
+- **Time lost:** ~45 min.
+- **Workaround:** Incognito window or another browser.
+- **Suggestion:** Never return 404 on the registration route. If a required script fails to
+  load, show "Something blocked this page. Try disabling extensions or use a private window"
+  instead of a 404. Show the incomplete step and its validation errors. Link to support with
+  the account ID pre-filled.
 
 ### F2 — "No hardware needed" promise vs. Ring Getting Started
 - **Status:** Resolved through a Devpost forum reply.
@@ -369,4 +393,4 @@ registration 404 (F1).
 
 ### F8 — Merged into F1
 The follow-up finding (the 404 disappears in an incognito window, so a browser extension is the
-likely cause) is now part of [F1](#f1--developer-registration-route-renders-404-blocks-the-playground).
+likely cause) is now part of [F1](#f1--developer-registration-route-fails-silently-with-a-404).
