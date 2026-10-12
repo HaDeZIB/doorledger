@@ -14,10 +14,10 @@ Built for the Amazon Developer Hackathon **"Build, Ship, Shape"**: Ring track, p
 | | |
 |---|---|
 | **Demo video** | **TODO:** _YouTube/Vimeo link, under 3 min_ |
-| **Hosted demo** | **TODO:** _link to the hosted dashboard (mock mode, no login)_ |
+| **Hosted demo** | **[doorledger.vercel.app](https://doorledger.vercel.app)**: replays a recorded winter day for a fictional household (no backend, no login). Press **D** for demo controls |
 | **Ring** | Partner API REST (devices, status, capabilities, configurations, history, snapshots), server-side **WHEP live view**, **signed webhooks**. Developed against the Ring Developer Playground |
 | **AWS** | Amazon Bedrock: **Nova 2 Lite** (vision) and **Claude Haiku 4.5** (messages, agent; Nova fallback). **Strands Agents** CareAgent. **DynamoDB** ledger mirror (live). **Amazon SNS** SMS (sandbox). **AgentCore Runtime** (deployed; `/api/ask` and `/api/summary` run there) |
-| **Open source** | [`ringpartner`](packages/ringpartner): the Python SDK for the Ring Partner API that Ring doesn't ship. Apache-2.0, with [examples](packages/ringpartner/examples) |
+| **Open source** | [`ringpartner`](https://github.com/HaDeZIB/ringpartner) ([PyPI](https://pypi.org/project/ringpartner/): `pip install ringpartner`): the Python SDK for the Ring Partner API that Ring doesn't ship. Apache-2.0, with [examples](packages/ringpartner/examples) |
 | **Business model** | [docs/BUSINESS.md](docs/BUSINESS.md): Ring Appstore pricing, measured unit economics, agency EVV value |
 | **Tests** | `uv run pytest -q`: **244 passed**, 2 skipped (live AWS tests are opt-in). No AWS credentials or network needed |
 

@@ -41,3 +41,4 @@ fixtures/evidence/ring_snapshot.jpg
 # AgentCore CLI logs (contain account ids)
 **/.cli/logs/
 dist-ringpartner/
+.vercel
