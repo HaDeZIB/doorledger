@@ -16,7 +16,8 @@ from .responder import Responder
 
 log = logging.getLogger("doorledger.engine")
 
-PORCH_OPEN = {FindingKind.PACKAGE_AT_RISK}  # climb the ladder only once time is short
+# Still on the porch: the patient's second call and the next rungs are timed from these.
+PORCH_OPEN = {FindingKind.PACKAGE_EXPOSED, FindingKind.PACKAGE_AT_RISK}
 
 
 class Engine:
@@ -41,8 +42,12 @@ class Engine:
         self.observations: list[Observation] = []
         self.visit_secrets: dict[str, bytes] = {}  # visit_id -> presence-code secret
         self._seen: set[tuple[str | None, str, str]] = set()
+        self._ids: dict[tuple[str | None, str, str], str] = {}  # key -> recorded finding id
         self._lock = threading.RLock()
         self.last: Reconciliation | None = None
+        # A call's outcome (answered / no answer) arrives later, from a background poll.
+        if getattr(responder, "on_update", None) is None:
+            responder.on_update = ledger.update_action
 
     # -- inputs ---------------------------------------------------------------------
 
@@ -79,8 +84,12 @@ class Engine:
                 # "arrived 22 min late" (info) are both recorded on the timeline.
                 key = (f.expectation_id, str(f.kind), str(f.severity))
                 if key in self._seen:
+                    # Same finding re-derived with fresh numbers: keep the recorded id so
+                    # follow-up actions point at a finding that is in the ledger.
+                    f.id = self._ids.get(key, f.id)
                     continue
                 self._seen.add(key)
+                self._ids[key] = f.id
                 new.append(f)
                 self.ledger.add_finding(f)
             for f in new:
@@ -97,6 +106,7 @@ class Engine:
             self.expectations.clear()
             self.observations.clear()
             self._seen.clear()
+            self._ids.clear()
             self.responder.incidents.clear()
             self.ledger._db.execute("DELETE FROM records WHERE household = ?", (self.ledger.household,))
             self.ledger._db.commit()

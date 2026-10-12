@@ -22,8 +22,8 @@ import { IconCheck, IconClock, IconPackage, IconSnow, IconSun, IconThermo, IconU
 import { Card, CardHeader, LangTag, Pill, SourceBadge, cx } from "./ui";
 
 const CHANNEL_VERB: Record<string, string> = {
-  sms: "Texted",
-  voice: "Called",
+  sms: "Text",
+  voice: "Call",
   app: "App alert",
   push: "App alert",
   email: "Emailed",
@@ -426,8 +426,11 @@ function Escalation({ household, actions, tz, done }: { household: Household; ac
           const mine = actions.filter((a) => personFor(household, a.target)?.name === p.name);
           // reached = they answered/replied; contacted = message delivered; unanswered = only failed attempts
           const reached = mine.some((a) => Boolean(a.data.reply) || a.data.status === "answered");
-          const contacted = mine.some((a) => a.delivered);
-          const tried = mine.length > 0;
+          const sent = mine.filter((a) => a.kind !== "cancelled"); // cancelled = never sent (Ring saw the pickup)
+          const contacted = sent.some((a) => a.delivered || a.data.via === "app");
+          const tried = sent.length > 0;
+          // wide screens show only the latest message per channel (Rosa: her latest call AND her SMS)
+          const latest = new Set(Object.values(Object.fromEntries(mine.map((a) => [String(a.data.channel ?? ""), a.id]))));
           return (
             <li key={p.name} className="relative flex gap-3">
               {i < chain.length - 1 && <span className="absolute left-[calc(1rem-1px)] top-8 h-[calc(100%-12px)] w-0.5 bg-line xl:left-[calc(0.875rem-1px)] xl:top-7" aria-hidden />}
@@ -458,7 +461,7 @@ function Escalation({ household, actions, tz, done }: { household: Household; ac
                   <p className="text-sm text-ink-3 xl:hidden">{done ? "Not needed" : "Next if needed"}</p>
                 ) : (
                   <ul className="space-y-0.5">
-                    {mine.map((a, k) => {
+                    {mine.map((a) => {
                       const dl = actionDeliveryLabel(a);
                       const lang = actionLanguage(a);
                       return (
@@ -467,26 +470,26 @@ function Escalation({ household, actions, tz, done }: { household: Household; ac
                           title={actionViaNote(a) ?? undefined}
                           className={cx(
                             "flex flex-wrap items-center gap-x-1.5 text-sm text-ink-2 xl:text-[0.82rem]",
-                            k < mine.length - 1 && "xl:hidden", // wide screens: latest message only
+                            !latest.has(a.id) && "xl:hidden", // wide screens: latest message per channel
                             isNew(a.id) ? "animate-enter" : "",
                           )}
                         >
                           <span className="tabular text-ink-3">{fmtTime(a.at, tz)}</span>
                           <span>{CHANNEL_VERB[String(a.data.channel ?? "")] ?? actionHeadline(a, household).split(" ")[0]}</span>
                           {lang && <LangTag code={lang} title={LANGUAGE_NAME[lang] ? `Message in ${LANGUAGE_NAME[lang]}` : undefined} />}
-                          <span aria-hidden className={cx(dl.text === "Delivered" && "xl:hidden")}>
+                          <span aria-hidden className={cx(dl.text === "Sent" && "xl:hidden")}>
                             ·
                           </span>
                           <span
                             className={cx(
                               "font-semibold",
                               dl.tone === "ok" ? "text-ok" : dl.tone === "warn" ? "text-warn" : "text-ink-3",
-                              dl.text === "Delivered" && "xl:sr-only",
+                              dl.text === "Sent" && "xl:sr-only",
                             )}
                           >
                             {dl.text}
                           </span>
-                          {dl.text === "Delivered" && <IconCheck size={14} className="hidden text-ok xl:inline" aria-hidden />}
+                          {dl.text === "Sent" && <IconCheck size={14} className="hidden text-ok xl:inline" aria-hidden />}
                         </li>
                       );
                     })}

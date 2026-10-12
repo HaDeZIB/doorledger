@@ -28,6 +28,7 @@ const AMBIENT_SRC: Record<Household["ambient"]["source"], string> = {
   "open-meteo": "Open-Meteo",
   override: "manual",
   fallback: "estimate",
+  scenario: "scripted scenario",
 };
 
 export function Header({

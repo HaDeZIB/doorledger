@@ -24,7 +24,7 @@ from .domain import utcnow
 from .engine import Engine
 from .household import demo_household
 from .ledger import Ledger
-from .notify import default_notifier
+from .notify import default_notifier, default_voice
 from .reconcile import reconcile
 from .responder import BedrockWriter, Responder, TemplateWriter
 from .scenarios import ScenarioRunner
@@ -41,7 +41,8 @@ def build_engine() -> Engine:
     household = demo_household()
     ledger = Ledger(os.environ.get("DOORLEDGER_DB", ":memory:"), household=household.id)
     writer = TemplateWriter() if os.environ.get("DOORLEDGER_WRITER") == "template" else BedrockWriter()
-    responder = Responder(household, default_notifier(), writer)
+    # Amazon Connect calls only when DOORLEDGER_CONNECT_* and DOORLEDGER_VOICE_TO are set.
+    responder = Responder(household, default_notifier(), writer, voice=default_voice())
     ambient = AmbientTemperature(household.lat, household.lon)
     return Engine(household, ledger, responder, SimClock(utcnow(), speed=1.0), ambient,
                   device={"id": household.device_id, "name": household.device_name,

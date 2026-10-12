@@ -46,7 +46,9 @@ class Household:
             "id": self.id,
             "patient": asdict(self.patient),
             "people": [{"name": p.name, "role": p.role, "escalation_order": p.escalation_order,
-                        "language": p.language, "channel": p.channel} for p in self.people],
+                        "language": p.language, "channel": p.channel,
+                        "channels": [c for c in p.contact_channels() if c]}
+                       for p in self.people],
         }
 
     @classmethod
@@ -66,10 +68,12 @@ def demo_household() -> Household:
         id="hh_rosa",
         patient=Patient("Rosa Martínez", 81, "Chicago, IL", "America/Chicago"),
         people=[
-            # Rosa uses no apps: she gets SMS (in Spanish). Ana has the family app.
-            Person("Rosa Martínez", "patient", escalation_order=1, language="es", channel="sms"),
+            # Rosa uses no apps: a voice call in Spanish (primary) plus the same words by SMS, both
+            # with fixed wording. There is no DoorLedger app, so Ana is texted too.
+            Person("Rosa Martínez", "patient", escalation_order=1, language="es", channel="voice",
+                   channels=["voice", "sms"]),
             Person("Luis (neighbor)", "neighbor", escalation_order=2, channel="sms"),
-            Person("Ana Martínez (daughter)", "family", escalation_order=3, channel="push"),
+            Person("Ana Martínez (daughter)", "family", escalation_order=3, channel="sms"),
             Person("BrightPath Home Care", "agency", escalation_order=10, channel="agency_portal"),
             Person("Maria (BrightPath)", "caregiver", escalation_order=20),  # never contacted
         ],

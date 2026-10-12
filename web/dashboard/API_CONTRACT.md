@@ -30,9 +30,10 @@ Household {
   id: string
   patient: { name: string, age: number, address: string, timezone: string }
   people: { name: string, role: "patient"|"family"|"neighbor"|"agency"|"caregiver", escalation_order: number,
-            language?: "en"|"es", channel?: "sms"|"push"|"agency_portal"|null }[]
+            language?: "en"|"es", channel?: "voice"|"sms"|"push"|"agency_portal"|null,
+            channels?: ("voice"|"sms"|…)[] }[]   // every channel of one contact, primary first
   device: { id: string, name: string, online: boolean|null, source: "ring_playground"|"ring_api"|"replay" }
-  ambient: { celsius: number, source: "open-meteo"|"override"|"fallback" }
+  ambient: { celsius: number, source: "open-meteo"|"override"|"fallback"|"scenario" }  // "scenario" = scripted (mock)
 }
 
 State {
@@ -76,7 +77,7 @@ Finding {
 }
 
 Action {
-  id, kind: "notify"|"request_backup"|"export_evv"|"summary", target: string, message: string, at: ISO,
+  id, kind: "notify"|"request_backup"|"export_evv"|"summary"|"cancelled", target: string, message: string, at: ISO,
   finding_id?, delivered: boolean, data: object
 }
 ```
@@ -94,15 +95,22 @@ These are not required, but the UI renders them when present:
 - `Observation.detail.in_sun` (bool) on `package_dropped`.
 - `Action.target` should be a `people[].name` (e.g. `"Luis Ortega"`) so the UI can say "Called neighbor Luis".
 - `Action.data.channel`: `"sms" | "voice" | "push" | "email" | "agency_portal"` → verb ("Texted", "Called", …).
-  It is the household's channel for that person (`people[].channel`; Rosa uses no app, so `"sms"`).
-- `Action.data.via`: what actually carried the message in this run: `"sms"` (Amazon SNS), `"telegram"`,
-  or `"app"` (console only, nothing was sent). When it differs from `channel` the UI explains it, and
-  `via: "app"` shows "Demo only" instead of "Delivered".
+  It is the household's channel for that message. Rosa uses no app: one contact = a `"voice"` call
+  and an `"sms"` with the same words, two actions at the same minute; a second call has `data.attempt: 2`.
+- `Action.data.via`: what actually carried the message in this run: `"voice"` (Amazon Connect), `"sms"`
+  (Amazon SNS), `"telegram"`, or `"app"` (console only, nothing was sent). When it differs from
+  `channel` the UI explains it, and `via: "app"` shows "Demo only". A message a gateway accepted shows
+  "Sent" (never "Delivered": no handset receipt is tracked).
+- Calls: `data.status` is `"placed"` → later `"answered" | "no_answer"` (the record is re-sent on the
+  stream with the same id), `"failed"` (an SMS with `data.fallback_for: "voice"` follows), or
+  `"not_placed"` (no Amazon Connect configured); `data.ssml` is exactly what the voice said.
+- `kind: "cancelled"`: a pending call/text that no longer happens because Ring saw the box picked up
+  (`data.reason: "ring_saw_pickup"`, `delivered: false`).
 - `Observation.detail.vision_model` / `vision_ms`: Bedrock model id and latency of the vision call that
   labelled the frame → "Nova 2 Lite · 1.2 s" on the evidence card. `vision_cached: true` = replayed from
   the recorded vision cache ("recorded"); `vision_reused: true` = unchanged frame reused the last label.
   Absent fields are never filled in by the UI.
-- `Action.data.status`: `"no_answer" | "answered"`; `Action.data.reply`: string (e.g. `"On my way"`).
+- `Action.data.reply`: string (e.g. `"On my way"`).
 - `Action.data.language`: `"es" | "en"` → small language tag on the action (messages to Rosa are Spanish).
 - `Action.data.channel` may also be `"telegram"` → "Messaged …".
 - Observations with `source: "simulated"` should have no `evidence_path`; the UI shows a "No camera frame"

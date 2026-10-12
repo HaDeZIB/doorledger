@@ -22,6 +22,7 @@ from doorledger.ledger import Ledger
 from doorledger.responder import (
     LADDER_GAP,
     MAX_MESSAGES_PER_INCIDENT,
+    PATIENT_RECALL,
     Incident,
     Responder,
     TemplateWriter,
@@ -61,6 +62,10 @@ def targets(actions) -> list[str]:
     return [a.target for a in actions]
 
 
+def channels(actions) -> list[str]:
+    return [a.data["channel"] for a in actions]
+
+
 ROSA, LUIS, ANA = "Rosa Martínez", "Luis (neighbor)", "Ana Martínez (daughter)"
 AGENCY = "BrightPath Home Care"
 
@@ -71,19 +76,25 @@ AGENCY = "BrightPath Home Care"
 def test_at_risk_climbs_patient_neighbor_family():
     r, _ = make()
     f = finding(FindingKind.PACKAGE_AT_RISK)
-    # each rung waits LADDER_GAP after the previous message (rules path enforces the gap too)
+    # each rung waits LADDER_GAP after the previous one (rules path enforces the gap too)
     steps = [r.handle(f, T0 + LADDER_GAP * i) for i in range(4)]
-    assert [targets(s) for s in steps] == [[ROSA], [LUIS], [ANA], []]
+    assert [targets(s) for s in steps] == [[ROSA, ROSA], [LUIS], [ANA], []]
+    assert channels(steps[0]) == ["voice", "sms"]  # Rosa: a call and an SMS, together
     assert r.handle(f, T0 + LADDER_GAP * 1 + timedelta(minutes=1)) == []  # too soon: no skip
     assert [s[0].data["purpose"] for s in steps[:3]] == ["porch_patient", "porch_helper",
                                                          "porch_family"]
+    # one contact per rung: the call and its SMS count once against the cap
     assert r.incidents[EXP].rung == 3 and r.incidents[EXP].messages == 3
 
 
 def test_followup_respects_ladder_gap():
     r, _ = make()
     f = finding(FindingKind.PACKAGE_AT_RISK)
-    assert targets(r.handle(f, T0)) == [ROSA]
+    assert targets(r.handle(f, T0)) == [ROSA, ROSA]
+    assert r.followup({EXP: f}, T0 + PATIENT_RECALL - timedelta(seconds=1)) == []
+    recall = r.followup({EXP: f}, T0 + PATIENT_RECALL)  # second call, no second SMS
+    assert targets(recall) == [ROSA] and channels(recall) == ["voice"]
+    assert recall[0].data["attempt"] == 2
     assert r.followup({EXP: f}, T0 + LADDER_GAP - timedelta(seconds=1)) == []
     assert targets(r.followup({EXP: f}, T0 + LADDER_GAP)) == [LUIS]
     assert r.followup({EXP: f}, T0 + LADDER_GAP + timedelta(minutes=5)) == []
@@ -107,20 +118,21 @@ def test_family_gets_porch_family_wording():
     to_ana = dict(rec.sent)[ANA]
     assert "nobody nearby has brought it in yet" in to_ana
     assert "in the cold" in to_ana
-    assert "Could you bring it inside for her?" in dict(rec.sent)[LUIS]
+    assert "Could you take it inside for her?" in dict(rec.sent)[LUIS]
 
 
 def test_cap_per_incident():
     hh = demo_household()
     hh.people += [Person(f"Neighbor {i}", "neighbor", escalation_order=2) for i in range(6)]
-    r, rec = make(hh)
+    r, _ = make(hh)
     f = finding(FindingKind.PACKAGE_AT_RISK)
     sent = r.handle(f, T0)
     for i in range(1, 12):
         sent += r.followup({EXP: f}, T0 + i * LADDER_GAP)
-    assert len(sent) == MAX_MESSAGES_PER_INCIDENT
-    assert len(rec.sent) == MAX_MESSAGES_PER_INCIDENT
+    contacts = {(a.target, a.at) for a in sent}  # a call + its SMS = one contact
+    assert len(contacts) == MAX_MESSAGES_PER_INCIDENT
     assert r.incidents[EXP].messages == MAX_MESSAGES_PER_INCIDENT
+    assert len(sent) == MAX_MESSAGES_PER_INCIDENT + 1  # Rosa's first contact is 2 messages
 
 
 def test_closed_incident_stops_escalation():
@@ -129,10 +141,12 @@ def test_closed_incident_stops_escalation():
     r.handle(risk, T0)
     back = finding(FindingKind.PACKAGE_RETRIEVED, Severity.INFO,
                    {**COLD, "status": "safe", "minutes_on_porch": 33.0})
-    actions = r.handle(back, T0 + timedelta(minutes=5))
-    assert targets(actions) == [ANA]
-    assert actions[0].data["purpose"] == "porch_retrieved"
+    actions = [a for a in r.handle(back, T0 + timedelta(minutes=5)) if a.kind == "notify"]
+    assert targets(actions) == [ANA, ROSA]
+    assert [a.data["purpose"] for a in actions] == ["porch_retrieved"] * 2
     assert actions[0].message.startswith("Good news")
+    assert channels(actions) == ["sms", "sms"]  # closure for Rosa too, by text (no call)
+    assert actions[1].message.startswith("Listo, señora Rosa")
     assert r.incidents[EXP].closed
     n = len(rec.sent)
     assert r.followup({EXP: risk}, T0 + 3 * LADDER_GAP) == []
@@ -147,8 +161,8 @@ def test_retrieved_without_incident_sends_nothing():
 
 
 @pytest.mark.parametrize("data,expected", [
-    (COLD, [ROSA]),
-    (HOT, [ROSA]),
+    (COLD, [ROSA, ROSA]),
+    (HOT, [ROSA, ROSA]),
     ({**COLD, "ambient_c": 15.0, "direction": "hot"}, []),  # mild day: no nudge
 ])
 def test_package_exposed_nudges_patient_only_on_hot_or_cold_porch(data, expected):
@@ -173,14 +187,20 @@ def test_compromised_notifies_family_and_patient_and_drafts_pharmacy_claim():
     data = {**COLD, "status": "compromised", "minutes_on_porch": 46.0,
             "estimated_internal_c": -0.5}
     actions = r.handle(finding(FindingKind.PACKAGE_COMPROMISED, Severity.CRITICAL, data), T0)
-    assert targets(actions) == [ANA, ROSA, "Pharmacy"]
+    assert targets(actions) == [ANA, ROSA, ROSA, "Pharmacy"]
+    assert channels(actions[1:3]) == ["voice", "sms"]
     claim = actions[-1]
     assert claim.kind == "pharmacy_claim"
     assert claim.delivered is False
     assert claim.data["draft"] is True and claim.data["minutes_on_porch"] == 46.0
     msgs = dict(rec.sent)
+    assert "Please arrange a replacement" in msgs[ANA]
     assert "drafted a replacement request for the pharmacy" in msgs[ANA]
-    assert "puede que ya no sirva" in msgs[ROSA]  # patient's message is in Spanish
+    # improvements-04: never just "don't use it"; tell her what to do instead
+    for rosa in (msgs[ROSA], actions[1].message):
+        assert "llame a su farmacia o a Ana" in rosa and "No la tire" in rosa
+        assert "siga con esa" in rosa and "No la use" not in rosa
+    assert "Ana ya sabe" in msgs[ROSA]
 
 
 def test_missed_visit_requests_agency_backup_and_tells_family():
@@ -229,14 +249,17 @@ def test_informational_findings_do_nothing(kind):
 def test_language_propagates_to_action_data_and_spanish_template():
     r, _ = make()
     f = finding(FindingKind.PACKAGE_AT_RISK)
-    to_rosa = r.handle(f, T0)[0]
+    call, to_rosa = r.handle(f, T0)
+    assert call.data["channel"] == "voice" and call.data["via"] == "app"  # no Connect here
+    assert call.data["status"] == "not_placed" and call.delivered is False
     assert to_rosa.data["language"] == "es"
     assert to_rosa.data["role"] == "patient"
     assert to_rosa.data["channel"] == "sms"  # household config: Rosa uses no app
     assert to_rosa.data["via"] == "test"  # what actually carried it
     assert to_rosa.data["writer"] == "template"
-    assert to_rosa.message.startswith("Hola Rosa")
-    assert "está helando" in to_rosa.message and "(-9°C)" in to_rosa.message
+    assert to_rosa.message.startswith("Señora Rosa, de parte de su hija Ana:")
+    assert "Hace mucho frío" in to_rosa.message
+    assert not any(ch.isdigit() for ch in to_rosa.message)  # no temperatures for Rosa
     to_luis = r.handle(f, T0 + LADDER_GAP)[0]
     assert to_luis.data["language"] == "en"
     assert "Hola" not in to_luis.message
@@ -246,14 +269,17 @@ def test_spanish_hot_porch_template():
     hh = demo_household()
     msg = TemplateWriter().write(finding(FindingKind.PACKAGE_EXPOSED, data=HOT), hh.people[0], hh,
                                  "porch_patient")
-    assert "hace mucho calor" in msg and "(35°C)" in msg
+    assert "Hace mucho calor" in msg and "Si no puede salir, no se preocupe" in msg
+    assert "hielo" not in msg and not any(ch.isdigit() for ch in msg)
 
 
-def test_spanish_falls_back_to_english_for_untranslated_purpose():
+def test_spanish_speaking_neighbor_gets_spanish_wording():
     hh = demo_household()
-    msg = TemplateWriter().write(finding(FindingKind.PACKAGE_AT_RISK), hh.people[0], hh,
-                                 "porch_helper")
-    assert msg.startswith("Rosa's refrigerated medication")
+    luis = hh.people[1]
+    luis.language = "es"
+    msg = TemplateWriter().write(finding(FindingKind.PACKAGE_AT_RISK), luis, hh, "porch_helper")
+    assert msg.startswith("Hola, Luis. Le escribimos de parte de Ana")
+    assert "no debe quedarse afuera con el frío" in msg and "insulina" not in msg
 
 
 def test_english_patient_template():
@@ -261,7 +287,8 @@ def test_english_patient_template():
                    [Person("Tom Smith", "patient", escalation_order=1)])
     msg = TemplateWriter().write(finding(FindingKind.PACKAGE_AT_RISK, data=HOT), hh.people[0], hh,
                                  "porch_patient")
-    assert msg.startswith("Hi Tom") and "warm outside (35°C)" in msg
+    assert msg.startswith("Hi Tom") and "it's very hot" in msg
+    assert not any(ch.isdigit() for ch in msg)
 
 
 def test_allowed_rejects_people_outside_household():
@@ -352,21 +379,35 @@ def test_engine_records_late_warning_and_late_info():
     assert o["ref"] == v.id
 
 
+def run_minutes(engine, start: datetime, end: datetime) -> None:
+    now = start
+    while now <= end:
+        engine.clock.set(now, 0)
+        engine.evaluate(now)
+        now += timedelta(minutes=1)
+
+
+def sent_at(engine) -> list[tuple[str, str, str]]:
+    return [(r["at"][11:16], r["body"]["target"], r["body"]["data"].get("channel"))
+            for r in engine.ledger.records(kinds=["action"])]
+
+
 def test_engine_followup_climbs_ladder_over_time():
     engine, rec = make_engine(ambient_c=-9.0)
     exp = med_delivery()
     engine.add_expectation(exp)
     engine.ingest(Observation(ObservationKind.PACKAGE_DROPPED, t(14), Source.SIMULATED))
-    assert [n for n, _ in rec.sent] == [ROSA]           # exposed on a freezing porch
-    engine.evaluate(t(14, 25))                           # at_risk (14.8 min to freezing)
-    assert [n for n, _ in rec.sent] == [ROSA, LUIS]
-    engine.evaluate(t(14, 30))                           # only 5 min since Luis
-    assert [n for n, _ in rec.sent] == [ROSA, LUIS]
-    engine.evaluate(t(14, 35))                           # LADDER_GAP elapsed -> family
-    assert [n for n, _ in rec.sent] == [ROSA, LUIS, ANA]
-    engine.evaluate(t(14, 46))                           # frozen -> compromised
-    assert [n for n, _ in rec.sent] == [ROSA, LUIS, ANA, ANA, ROSA]
-    assert action_targets(engine)[-1] == "Pharmacy"
+    # freezing porch: about 40 min before the box is estimated to freeze
+    run_minutes(engine, t(14, 1), t(14, 50))
+    assert sent_at(engine) == [
+        ("14:00", ROSA, "voice"), ("14:00", ROSA, "sms"),   # minute 0: call + SMS together
+        ("14:05", ROSA, "voice"),                           # +5: call again
+        ("14:10", LUIS, "sms"),                             # neighbor while time is left
+        ("14:20", ANA, "sms"),                              # then family (~20 min left)
+        ("14:40", ANA, "sms"), ("14:40", ROSA, "voice"), ("14:40", ROSA, "sms"),  # frozen
+        ("14:40", "Pharmacy", None),
+    ]
+    assert [n for n, _ in rec.sent] == [ROSA, LUIS, ANA, ANA, ROSA]  # texts (calls: not placed)
     assert findings(engine) == [("package_exposed", "info"), ("package_at_risk", "warning"),
                                 ("package_compromised", "critical")]
     assert engine.responder.incidents[exp.id].messages == MAX_MESSAGES_PER_INCIDENT
@@ -376,14 +417,18 @@ def test_engine_retrieval_closes_incident():
     engine, rec = make_engine(ambient_c=-9.0)
     engine.add_expectation(med_delivery())
     engine.ingest(Observation(ObservationKind.PACKAGE_DROPPED, t(14), Source.SIMULATED))
-    engine.evaluate(t(14, 25))
+    run_minutes(engine, t(14, 1), t(14, 25))
     engine.clock.set(t(14, 33), 0)
     engine.ingest(Observation(ObservationKind.PACKAGE_REMOVED, t(14, 33), Source.SIMULATED))
-    assert [n for n, _ in rec.sent] == [ROSA, LUIS, ANA]
-    assert rec.sent[-1][1].startswith("Good news")
-    engine.evaluate(t(15, 30))
-    assert len(rec.sent) == 3
+    assert [n for n, _ in rec.sent] == [ROSA, LUIS, ANA, ANA, ROSA]
+    assert rec.sent[-2][1].startswith("Good news")
+    assert rec.sent[-1][1].startswith("Listo, señora Rosa")
+    run_minutes(engine, t(14, 34), t(15, 30))
+    assert len(rec.sent) == 5
     assert findings(engine)[-1] == ("package_retrieved", "info")
+    # every rung was used, so nothing was left to cancel
+    assert not [r for r in engine.ledger.records(kinds=["action"])
+                if r["body"]["kind"] == "cancelled"]
 
 
 def test_engine_reset_clears_state():
@@ -426,10 +471,12 @@ def test_channel_follows_household_config_never_app_for_rosa():
     r = Responder(hh, ConsoleNotifier(), TemplateWriter())
     f = finding(FindingKind.PACKAGE_AT_RISK)
     actions = [*r.handle(f, T0), *r.handle(f, T0 + LADDER_GAP), *r.handle(f, T0 + 2 * LADDER_GAP)]
+    rosa = [a.data["channel"] for a in actions if a.data["role"] == "patient"]
     by_role = {a.data["role"]: a.data for a in actions}
-    assert by_role["patient"]["channel"] == "sms"
+    assert rosa == ["voice", "sms"]  # never "app": Rosa uses no apps
     assert by_role["neighbor"]["channel"] == "sms"
-    assert by_role["family"]["channel"] == "push"
+    assert by_role["family"]["channel"] == "sms"  # there is no DoorLedger app for Ana either
     assert all(a.data["via"] == "app" for a in actions)  # console: nothing left the machine
-    api_people = {p["role"]: p["channel"] for p in hh.to_api()["people"]}
-    assert api_people["patient"] == "sms"
+    api_people = {p["role"]: p for p in hh.to_api()["people"]}
+    assert api_people["patient"]["channel"] == "voice"
+    assert api_people["patient"]["channels"] == ["voice", "sms"]

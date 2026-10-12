@@ -71,6 +71,17 @@ class Ledger:
     def add_action(self, a: Action, ref: str | None = None) -> None:
         self._put("action", a.kind, a.id, a.at, ref, a.to_dict())
 
+    def update_action(self, a: Action) -> None:
+        """Rewrite an action's body in place (a call's outcome arrives after it was placed).
+        Keeps its time and ref; listeners get the updated record. No-op if it isn't stored yet
+        (the caller mutated the Action, so the first write will carry the update)."""
+        with self._lock:
+            row = self._db.execute("SELECT at, ref FROM records WHERE id = ? AND household = ?",
+                                   (a.id, self.household)).fetchone()
+        if row is not None:
+            self._put("action", a.kind, a.id, datetime.fromisoformat(row["at"]), row["ref"],
+                      a.to_dict())
+
     def add_ring_event(self, body: dict[str, Any], at: datetime) -> None:
         """A Ring history row the live poller acted on (``ding``, ``on_demand``, ``motion``)."""
         self._put("ring_event", str(body.get("event_type", "unknown")), f"ring_{body['id']}", at,

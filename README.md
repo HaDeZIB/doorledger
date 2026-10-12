@@ -269,7 +269,7 @@ Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), and Node 20+ (CI u
 `make help` lists every target.
 
 ```bash
-git clone https://github.com/HaDeZIB/doorledger && cd doorledger   # TODO: repo goes public at submission
+git clone https://github.com/HaDeZIB/doorledger && cd doorledger
 uv sync --all-packages                 # core + ringpartner + dev tools
 cp .env.example .env                   # all values optional for the offline demo
 (cd web/dashboard && npm ci)
@@ -307,6 +307,12 @@ Optional AWS integrations:
 - `DOORLEDGER_DYNAMO=1` mirrors the ledger to DynamoDB (create the table with
   `deploy/create_dynamo.py`).
 - `DOORLEDGER_SMS_TO=+1…` sends SMS through SNS. The number must be verified in the SNS sandbox.
+- Rosa's voice call (Amazon Connect) is on only when all four are set:
+  `DOORLEDGER_CONNECT_INSTANCE_ID`, `DOORLEDGER_CONNECT_FLOW_ID` (a contact flow that speaks the
+  contact attribute `ssml` and hangs up), `DOORLEDGER_CONNECT_SOURCE_NUMBER` (the instance's claimed
+  number) and `DOORLEDGER_VOICE_TO`. In the demo every call goes only to `DOORLEDGER_VOICE_TO` (one
+  verified test phone), never to a household member's number. Without them the call script is shown
+  on the dashboard as "Demo only". Optional: `DOORLEDGER_CONNECT_REGION` (default `AWS_REGION`).
 - `DOORLEDGER_AGENTCORE_ARN=…` uses a deployed AgentCore runtime.
 
 **Live Ring (optional).**
@@ -481,8 +487,8 @@ FRICTION_LOG.md         Developer-experience feedback for Ring and AWS
 
 - **License:** [Apache License 2.0](LICENSE), Copyright 2026 Brandon Garcia. See [NOTICE](NOTICE)
   for third-party attributions.
-- **Ring Playground package clip:** *"Thief stealing our package"*, by **TODO: creator name and
-  source link, copied from the credit shown in the Ring Developer Playground**. Licensed
+- **Ring Playground package clip:** *"Thief stealing our package"*, by YouTube user **frollard**
+  (credit as shown by Ring in the Developer Playground). Licensed
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). It was clipped from the original,
   as credited by Ring in the Developer Playground. DoorLedger re-encoded and sampled frames from
   it (`fixtures/ring_playground/package/`). The Playground's Vehicle and Motion scenes are not

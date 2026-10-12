@@ -103,7 +103,8 @@ export function useDoorLedger(initial: InitialData) {
     let pending: ReturnType<typeof setTimeout> | null = null;
     const unsub = subscribeStream(
       (rec) => {
-        setLiveTimeline((tl) => (tl.some((r) => r.id === rec.id) ? tl : [...tl, rec]));
+        // a record can be re-sent with new data (a call's outcome: placed → answered)
+        setLiveTimeline((tl) => (tl.some((r) => r.id === rec.id) ? tl.map((r) => (r.id === rec.id ? rec : r)) : [...tl, rec]));
         if (!pending) {
           pending = setTimeout(() => {
             pending = null;

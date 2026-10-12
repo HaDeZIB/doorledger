@@ -74,9 +74,15 @@ class Person:
     telegram_chat_id: str | None = None
     escalation_order: int = 99
     language: str = "en"  # messages are written in the recipient's language ("en", "es")
-    # How the household chose to reach this person: "sms", "push" (family app), "agency_portal".
-    # Rosa (81) uses no apps, so she is texted. None = whatever the notifier is.
+    # How the household chose to reach this person: "voice", "sms", "push", "agency_portal".
+    # Rosa (81) uses no apps: she is called (primary) and texted. None = whatever the notifier is.
     channel: str | None = None
+    # Every channel used for one contact, primary first (Rosa: ["voice", "sms"], sent together).
+    # Empty = just ``channel``.
+    channels: list[str] = field(default_factory=list)
+
+    def contact_channels(self) -> list[str | None]:
+        return list(self.channels) or [self.channel]
 
 
 @dataclass

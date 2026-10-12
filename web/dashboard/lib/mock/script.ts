@@ -6,6 +6,11 @@
 // Every record is placed on today's date in the household timezone so the demo always looks
 // like "today". Scenarios are just windows of demo-clock time over this same day.
 //
+// Messages are NOT written here: they come from lib/mock/messages.json, which the backend
+// generates from its own templates (scripts/export_mock_messages.py; a backend test fails if it
+// is stale). Nothing is sent in the hosted demo, so every message is marked "Demo only", and the
+// weather is a scripted scenario, never attributed to a live source.
+//
 // Provenance is honest: the package drop is a real Ring Developer Playground frame
 // (ring_live_view, served from public/ring/package.jpg, CC BY 4.0 clip credited as provided by
 // Ring). Scenes whose real footage hasn't been filmed yet (aide check-in/out, package pickup)
@@ -22,6 +27,7 @@ import type {
   Scenario,
 } from "../types";
 import { DEFAULT_TZ, minuteOfDay, zonedISO } from "../time";
+import messages from "./messages.json";
 
 export const MOCK_TZ = DEFAULT_TZ; // America/Chicago
 /** Public asset (web/dashboard/public/ring/package.jpg), copied from fixtures/evidence/package.jpg. */
@@ -44,7 +50,7 @@ export const SCENARIOS: Record<Scenario, { label: string; from: string; to: stri
     label: "Insulin on a freezing porch",
     from: "13:55",
     to: "14:55",
-    blurb: "Ring sees the package at 2:07 PM, 16°F outside · Rosa → neighbor Luis → Ana · inside at 2:40 PM",
+    blurb: "Ring sees the package at 2:07 PM, 16°F outside · Rosa: call + text, call again → neighbor Luis → Ana · inside at 2:40 PM",
   },
   late_short_visit: {
     label: "Late & short visit",
@@ -73,17 +79,35 @@ export function mockHousehold(): Household {
       timezone: MOCK_TZ,
     },
     people: [
-      // channels mirror core/src/doorledger/household.py: Rosa uses no app, so she gets SMS
-      { name: "Rosa Martínez", role: "patient", escalation_order: 1, language: "es", channel: "sms" },
+      // channels mirror core/src/doorledger/household.py: Rosa uses no app, so she gets a voice
+      // call (primary) plus an SMS; there is no DoorLedger app, so Ana is texted too
+      { name: "Rosa Martínez", role: "patient", escalation_order: 1, language: "es", channel: "voice", channels: ["voice", "sms"] },
       { name: "Luis Ortega", role: "neighbor", escalation_order: 2, channel: "sms" },
-      { name: "Ana Martínez", role: "family", escalation_order: 3, channel: "push" },
+      { name: "Ana Martínez", role: "family", escalation_order: 3, channel: "sms" },
       { name: "BrightPath Home Care", role: "agency", escalation_order: 10, channel: "agency_portal" },
       { name: "Maria Gómez", role: "caregiver", escalation_order: 20 },
     ],
     device: { id: "ring_dev_frontdoor_01", name: "Front Door", online: true, source: "replay" },
-    ambient: { celsius: AMBIENT_AFTERNOON_C, source: "open-meteo" },
+    // scripted for the story (Chicago in winter), not a live reading: never labelled Open-Meteo
+    ambient: { celsius: AMBIENT_AFTERNOON_C, source: "scenario" },
   };
 }
+
+/** Backend role → this mock household's display name. */
+const MOCK_PERSON: Record<string, string> = {
+  patient: "Rosa Martínez",
+  neighbor: "Luis Ortega",
+  family: "Ana Martínez",
+  agency: "BrightPath Home Care",
+};
+/** Backend finding (kind/severity) → this mock day's finding id. */
+const MOCK_FINDING: Record<string, string> = {
+  "late_arrival/warning": "f_am_late",
+  "short_visit/warning": "f_am_short",
+  "package_exposed/info": "f_ins_exposed",
+  "package_at_risk/warning": "f_ins_risk",
+  "package_retrieved/info": "f_ins_retrieved",
+};
 
 export interface MockDay {
   date: string;
@@ -156,19 +180,31 @@ export function buildMockDay(date: string): MockDay {
     { id: "f_am_short", kind: "short_visit", severity: "warning", at: t("10:05"), summary: "Maria stayed 43 of the 120 planned minutes (36%). It's 21°F (−6°C) outside.", expectation_id: am.id, observation_ids: ["obs_am_in", "obs_am_out"], data: { minutes_on_site: 43, planned_minutes: 120 } },
     { id: "f_ins_exposed", kind: "package_exposed", severity: "info", at: t("14:07"), summary: "Ring saw the insulin left on the porch at 2:07 PM. It's 16°F (−9°C) outside, so it could freeze.", expectation_id: ins.id, observation_ids: ["obs_ins_drop"], data: { ambient_c: -9, direction: "cold", unsafe_c: 0 } },
     { id: "f_ins_risk", kind: "package_at_risk", severity: "warning", at: t("14:27"), summary: "Getting too cold: box est. 36°F (2.2°C), est. ~20 min from freezing at 32°F (0°C). Rosa hasn't brought it in.", expectation_id: ins.id, observation_ids: ["obs_ins_drop"], data: { estimated_internal_c: 2.2, minutes_until_excursion_max: 19.8, direction: "cold", unsafe_c: 0 } },
-    { id: "f_ins_retrieved", kind: "package_retrieved", severity: "info", at: t("14:40"), summary: "Brought inside after 33 min, 3 min after we messaged Ana. Estimated to have stayed above freezing (est. 33°F / 0.7°C in the box). Close call.", expectation_id: ins.id, observation_ids: ["obs_ins_drop", "obs_ins_removed"], data: { minutes_on_porch: 33, estimated_internal_c: 0.7, direction: "cold", unsafe_c: 0 } },
+    { id: "f_ins_retrieved", kind: "package_retrieved", severity: "info", at: t("14:40"), summary: "Brought inside after 33 min, 13 min after we texted Ana. Estimated to have stayed above freezing (est. 33°F / 0.7°C in the box). Close call.", expectation_id: ins.id, observation_ids: ["obs_ins_drop", "obs_ins_removed"], data: { minutes_on_porch: 33, estimated_internal_c: 0.7, direction: "cold", unsafe_c: 0 } },
   ];
 
-  const A = (a: Action): Action => a;
-  const actions: Action[] = [
-    A({ id: "a_am_agency", kind: "notify", target: "BrightPath Home Care", message: "Maria hasn't checked in for Rosa Martínez's 9:00 AM visit. Can you confirm an ETA?", at: t("09:16:30"), finding_id: "f_am_late", delivered: true, data: { channel: "agency_portal", language: "en" } }),
-    A({ id: "a_am_family", kind: "notify", target: "Ana Martínez", message: "Maria stayed 43 of 120 planned minutes at Mom's this morning. The visit record has been flagged for review.", at: t("10:05:30"), finding_id: "f_am_short", delivered: true, data: { channel: "push", language: "en" } }),
-    A({ id: "a_am_short", kind: "notify", target: "BrightPath Home Care", message: "Morning visit at Rosa Martínez's lasted 43 of 120 min. Flagged for coordinator review before EVV submission.", at: t("10:06"), finding_id: "f_am_short", delivered: true, data: { channel: "agency_portal", language: "en" } }),
-    A({ id: "a_ins_rosa", kind: "notify", target: "Rosa Martínez", message: "Hola Rosa, le dejaron su insulina en la puerta y afuera está helando (−9 °C). Por favor métala a la casa y guárdela en el refrigerador.", at: t("14:07:30"), finding_id: "f_ins_exposed", delivered: true, data: { channel: "sms", language: "es" } }),
-    A({ id: "a_ins_luis", kind: "notify", target: "Luis Ortega", message: "Hi Luis, Rosa's insulin has been on her porch for 20 min in the freezing cold and she hasn't picked it up. Could you bring it inside for her?", at: t("14:27:20"), finding_id: "f_ins_risk", delivered: true, data: { channel: "sms", language: "en" } }),
-    A({ id: "a_ins_ana", kind: "notify", target: "Ana Martínez", message: "Mom's insulin has been outside 30 min in the freezing cold and nobody nearby has brought it in yet. Could you call her or someone close by?", at: t("14:37"), finding_id: "f_ins_risk", delivered: true, data: { channel: "push", language: "en" } }),
-    A({ id: "a_ins_done", kind: "notify", target: "Ana Martínez", message: "Good news: Mom's insulin was brought inside after 33 min. Estimated to have stayed above freezing (est. 33°F / 0.7°C in the box). Ask her to put it in the fridge.", at: t("14:40:20"), finding_id: "f_ins_retrieved", delivered: true, data: { channel: "push", language: "en" } }),
-  ];
+  // Same words, same order and same minutes as the backend replay (messages.json); only the
+  // people's display names and the finding ids are the mock's own.
+  const actions: Action[] = messages.actions.map((m, i) => {
+    const data: Record<string, unknown> = {
+      channel: m.channel,
+      via: "app", // hosted demo: nothing is sent, so the UI says "Demo only"
+      language: m.language,
+      purpose: m.purpose,
+      role: m.role,
+    };
+    for (const k of ["status", "attempt", "ssml"] as const) if (k in m) data[k] = (m as Record<string, unknown>)[k];
+    return {
+      id: `a_${i}_${m.role}_${m.channel}`,
+      kind: m.kind as Action["kind"],
+      target: MOCK_PERSON[m.role ?? ""] ?? String(m.role),
+      message: m.message,
+      at: t(m.at),
+      finding_id: (m.finding && MOCK_FINDING[m.finding]) || undefined,
+      delivered: false,
+      data,
+    };
+  });
 
   const records: LedgerRecord[] = [
     ...expectations.map<LedgerRecord>((e) => ({ id: `rec_${e.id}`, kind: "expectation", subtype: e.kind, at: t("06:00"), ref: null, body: e as unknown as Record<string, unknown> })),

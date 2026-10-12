@@ -48,7 +48,7 @@ flowchart TB
         API["FastAPI: /api/state · /api/timeline ·<br/>/api/stream (SSE) · /api/evv.csv ·<br/>/api/ask · /api/summary · /webhooks/ring"]
         AGENT["CareAgent (Strands Agents)"]
         TOOLS["Tools: get_today_status · get_timeline ·<br/>export_evv (read) · notify · request_backup_aide ·<br/>draft_pharmacy_replacement (guarded)"]
-        NOTIFY["Notifier<br/>Amazon SNS SMS · Telegram · dashboard"]
+        NOTIFY["Notifier<br/>Amazon Connect voice (patient) ·<br/>Amazon SNS SMS · Telegram · dashboard"]
     end
 
     subgraph AWS["AWS"]
@@ -56,6 +56,7 @@ flowchart TB
         HAIKU["Bedrock · Claude Haiku 4.5<br/>(messages; fallback Nova Lite)"]
         AGM["Bedrock · Claude Haiku 4.5 → Nova Pro<br/>(agent, Converse tool use)"]
         SNS["Amazon SNS<br/>(SMS, sandbox)"]
+        CONNECT["Amazon Connect<br/>(outbound voice, Spanish neural voice, SSML)"]
         DDB[("DynamoDB doorledger-ledger<br/>(mirror, env-gated)")]
         ACR["Bedrock AgentCore Runtime<br/>(CareAgent, read-only; deployed)"]
     end
@@ -96,6 +97,7 @@ flowchart TB
     WRITER <--> HAIKU
     RESP --> NOTIFY
     NOTIFY --> SNS
+    NOTIFY --> CONNECT
     LEDGER -. "DOORLEDGER_DYNAMO=1" .-> DDB
     API -. "DOORLEDGER_AGENTCORE_ARN<br/>(read-only snapshot)" .-> ACR
     RESP -- "Actions" --> LEDGER
@@ -159,9 +161,14 @@ that one source.
    lumped body moving toward ambient temperature, using Newton's law with a sun or shade time
    constant. It estimates the temperature inside the box and the time left until the heat
    limit (30 °C) or freezing (0 °C) for insulin. The estimates are labelled as estimates.
-6. **Guardrailed actions.** The Responder climbs a ladder: patient → neighbor → family, with a
-   gap of at least 10 min between rungs (enforced both when a new `package_at_risk` finding
-   arrives and in the periodic follow-up) and at most 5 messages per incident. Visit problems go
+6. **Guardrailed actions.** The Responder climbs a ladder: patient → neighbor → family. The
+   patient's rung is a Spanish voice call (Amazon Connect) plus an SMS with the same fixed words
+   at minute 0, and a second call at +5 min if Ring hasn't seen the pickup. The next rungs wait up
+   to 10 min each, squeezed when the exposure model says little time is left
+   (`responder.rung_gap`), and there are at most 6 contacts per incident (a call and its SMS count
+   once). When Ring sees the box picked up, every pending step is cancelled and logged: the
+   doorbell is the patient's reply. The patient and the neighbor always get fixed wording
+   (`wording.py`); no LLM writes to them, and the neighbor is never told what is in the box. Visit problems go
    to the agency and the family, and a caregiver is never contacted directly. The CareAgent's
    act tools go through the same `Responder.allowed` checks plus extra rules (open incident
    only, no repeats within 10 min). A refusal goes back to the model as a tool result.
@@ -227,17 +234,19 @@ sequenceDiagram
     T->>E: 14:07 package_dropped + evidence frame (only this frame is stored)
     E->>E: reconcile: matches the insulin delivery<br/>exposure (estimate): −9 °C ambient → minutes to 0 °C
     E->>R: package_exposed
-    R->>LLM: facts only (minutes, °C, names, language=es)
-    LLM-->>R: SMS-length text (template if Bedrock fails)
-    R->>Rosa: "Rosa, su insulina está afuera…" (rung 1)
-    R->>L: Action notify Rosa
+    R->>Rosa: call (Amazon Connect, SSML) + SMS, fixed Spanish wording, no LLM (rung 1)
+    R->>L: Actions: call Rosa, text Rosa
     Note over E: Rosa does not bring it in
+    R->>Rosa: 14:12 second call
+    R->>Luis: 14:17 "a delivery that must not stay out in the cold" (rung 2)
     E->>R: 14:27 package_at_risk (estimate projects freezing soon)
-    R->>Luis: please bring it inside (rung 2, ≥10 min after rung 1)
-    R->>Ana: 14:37 heads-up (rung 3, ≥10 min after rung 2)
+    R->>LLM: facts only (minutes, °C, names)
+    LLM-->>R: SMS-length text for family (template if Bedrock fails)
+    R->>Ana: 14:27 heads-up (rung 3; gaps squeeze when time runs short)
     Ring->>E: 14:40 package_removed (SIMULATED until own footage is recorded)
     E->>R: package_retrieved (estimated min °C logged)
     R->>Ana: brought inside at 14:40, est. 0.7 °C in the box
+    R->>Rosa: "Listo… su insulina ya está adentro" (SMS)
     R->>L: incident closed
     Note over L: If the estimate had crossed 0 °C: package_compromised →<br/>family + patient told, pharmacy replacement drafted (never sent)
 ```

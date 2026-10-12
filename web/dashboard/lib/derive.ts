@@ -291,7 +291,7 @@ export function personFor(h: Household | null, target: string): Person | undefin
   return h?.people.find((p) => p.name === target || firstName(p.name) === target);
 }
 
-/** "Texted Rosa", "Called neighbor Luis", "Requested backup aide from BrightPath". */
+/** "Texted Rosa", "Called Rosa", "Requested backup aide from BrightPath". */
 export function actionHeadline(a: Action, h: Household | null): string {
   const p = personFor(h, a.target);
   const channel = String(a.data.channel ?? "");
@@ -306,10 +306,12 @@ export function actionHeadline(a: Action, h: Household | null): string {
       return `Exported EVV records to ${who}`;
     case "summary":
       return channel === "email" ? `Emailed daily summary to ${who}` : `Sent update to ${who}`;
+    case "cancelled":
+      return `${channel === "voice" ? "Call" : channel === "sms" ? "Text" : "Message"} to ${who} not needed`;
     case "notify":
     default:
       if (channel === "sms") return `Texted ${who}`;
-      if (channel === "voice") return `Called ${who}`;
+      if (channel === "voice") return `${a.data.attempt === 2 ? "Called again" : "Called"} ${who}`;
       if (channel === "agency_portal") return `Alerted ${who}`;
       if (channel === "email") return `Emailed ${who}`;
       if (channel === "telegram" || channel === "whatsapp") return `Messaged ${who}`;
@@ -318,26 +320,39 @@ export function actionHeadline(a: Action, h: Household | null): string {
   }
 }
 
+/**
+ * Honest delivery wording. "Sent" = a real gateway (Amazon SNS, Amazon Connect) accepted it;
+ * nothing claims the handset received it. "Demo only" = shown on this dashboard, nothing sent
+ * (hosted demo, or no gateway configured).
+ */
 export function actionDeliveryLabel(a: Action): { text: string; tone: "ok" | "warn" | "muted" } {
   const status = String(a.data.status ?? "");
   const reply = a.data.reply ? String(a.data.reply) : "";
+  if (a.kind === "cancelled") return { text: "Not needed: Ring saw the pickup", tone: "ok" };
   if (reply) return { text: `Replied: “${reply}”`, tone: "ok" };
+  if (status === "answered") return { text: "Answered", tone: "ok" };
   if (status === "no_answer") return { text: "No answer", tone: "warn" };
-  // console notifier: the household's channel (e.g. SMS for Rosa) was not actually used
-  if (a.delivered && a.data.via === "app" && a.data.channel && a.data.channel !== "app") return { text: "Demo only", tone: "muted" };
-  if (a.delivered) return { text: "Delivered", tone: "ok" };
+  if (status === "failed") return { text: "Call failed", tone: "warn" };
+  // console notifier / hosted demo: the household's channel (Rosa: call + SMS) was not actually used
+  if (a.data.via === "app" && a.data.channel && a.data.channel !== "app") return { text: "Demo only", tone: "muted" };
+  if (status === "placed") return { text: "Placed", tone: "ok" };
+  if (a.delivered) return { text: "Sent", tone: "ok" };
   return { text: "Pending", tone: "muted" };
 }
 
 /**
- * `data.channel` is how the household reaches this person (Rosa: SMS); `data.via` is what
- * actually carried the message in this run. Explains the difference, or null when they match.
+ * `data.channel` is how the household reaches this person (Rosa: a call + SMS); `data.via` is
+ * what actually carried the message in this run. Explains the difference, or null when they match.
  */
 export function actionViaNote(a: Action): string | null {
   const via = typeof a.data.via === "string" ? a.data.via : null;
   const channel = String(a.data.channel ?? "");
+  if (a.kind === "cancelled") return "The doorbell is the reply: once Ring sees the box picked up, every pending call and text is cancelled.";
+  if (a.data.fallback_for === "voice") return "The call could not be placed, so the same words went by SMS.";
+  if (channel === "voice" && via === "voice") return "Real call through Amazon Connect, to the one verified demo phone.";
+  if (channel === "voice" && via === "app") return "Demo: the call script is shown here. No call was placed.";
   if (!via || via === channel) return null;
-  if (via === "app") return "Demo: shown on this dashboard only. No SMS or push gateway is configured, so nothing was sent.";
+  if (via === "app") return "Demo: shown on this dashboard only. Nothing was sent.";
   if (via === "sms") return "Demo: sent as an SMS to the demo phone (Amazon SNS).";
   if (via === "telegram") return "Demo: sent to the demo phone over Telegram.";
   return `Sent via ${via}.`;

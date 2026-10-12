@@ -4,9 +4,10 @@ export type ISO = string;
 
 export type PersonRole = "patient" | "family" | "neighbor" | "agency" | "caregiver";
 export type DeviceSource = "ring_playground" | "ring_api" | "replay";
-export type AmbientSource = "open-meteo" | "override" | "fallback";
+/** "scenario" = the hosted demo's scripted weather (mock mode), never a live source. */
+export type AmbientSource = "open-meteo" | "override" | "fallback" | "scenario";
 
-/** How the household chose to reach a person (backend `Person.channel`). Rosa uses no app: SMS. */
+/** How the household chose to reach a person (backend `Person.channel`). Rosa uses no app: a voice call + SMS. */
 export type PersonChannel = "sms" | "push" | "voice" | "email" | "agency_portal";
 
 export interface Person {
@@ -15,6 +16,8 @@ export interface Person {
   escalation_order: number;
   language?: string;
   channel?: PersonChannel | null;
+  /** Every channel used for one contact, primary first (Rosa: ["voice", "sms"], sent together). */
+  channels?: PersonChannel[];
 }
 
 export interface Household {
@@ -108,7 +111,8 @@ export interface Finding {
   data: Record<string, unknown>;
 }
 
-export type ActionKind = "notify" | "request_backup" | "export_evv" | "summary";
+/** "cancelled": a pending step that no longer happens because Ring saw the box picked up. */
+export type ActionKind = "notify" | "request_backup" | "export_evv" | "summary" | "cancelled";
 
 export interface Action {
   id: string;

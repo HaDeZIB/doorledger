@@ -36,11 +36,17 @@ from strands import Agent, tool
 from strands.models import BedrockModel
 
 from . import evv
-from .domain import Action, Finding, FindingKind, Person
+from .domain import Action, Finding, FindingKind, Person, Severity
 from .engine import Engine
 from .notify import channel_fields
 from .reconcile import reconcile
-from .responder import LADDER_GAP, MAX_MESSAGES_PER_INCIDENT, Incident
+from .responder import (
+    FIXED_WORDING_ROLES,
+    LADDER_GAP,
+    MAX_MESSAGES_PER_INCIDENT,
+    Incident,
+    rung_gap,
+)
 
 log = logging.getLogger("doorledger.agent")
 
@@ -194,7 +200,8 @@ class CareTools:
             because = findings_by_id.get(a.get("finding_id"))
             actions.append({
                 "time": self._local(a["at"]), "kind": a["kind"], "to": a["target"],
-                "message": a["message"][:240], "delivered": a["delivered"],
+                "message": a["message"][:160], "delivered": a["delivered"],
+                "channel": a.get("data", {}).get("channel"),
                 "purpose": a.get("data", {}).get("purpose"),
                 "decided_by": a.get("data", {}).get("origin", "rules"),
                 "because": because["summary"] if because else a.get("data", {}).get("reason"),
@@ -310,9 +317,15 @@ class CareTools:
             nxt = ladder[inc.rung].name if inc.rung < len(ladder) else "nobody"
             return (f"the ladder must be climbed in order; the next person to contact is {nxt} "
                     f"({' -> '.join(p.name for p in ladder)})")
-        if idx == inc.rung and inc.rung > 0 and inc.last_at and now - inc.last_at < LADDER_GAP:
-            wait = (inc.last_at + LADDER_GAP).astimezone(self.tz).strftime("%H:%M")
-            return f"too soon to escalate to {person.name}; wait until {wait}"
+        since = inc.rung_at or inc.last_at
+        if idx == inc.rung and inc.rung > 0 and since:
+            # same deadline-squeezed gap as the rules (responder.rung_gap)
+            f = self._finding_for(inc)
+            gap = rung_gap(f.data.get("minutes_until_excursion_max") if f else None,
+                           len(ladder) - inc.rung)
+            if now - since < gap:
+                wait = (since + gap).astimezone(self.tz).strftime("%H:%M")
+                return f"too soon to escalate to {person.name}; wait until {wait}"
         return None
 
     # -- action tools (handle mode only) ---------------------------------------------
@@ -338,8 +351,12 @@ class CareTools:
             return json.dumps({"sent": False, "refused": refusal})
         assert inc is not None and person is not None
         ladder = self.engine.household.escalation_ladder()
-        if inc.theme == "porch" and person in ladder:
-            inc.rung = max(inc.rung, ladder.index(person) + 1)
+        if inc.theme == "porch" and person in ladder and ladder.index(person) + 1 > inc.rung:
+            inc.rung, inc.rung_at = ladder.index(person) + 1, now
+            if person.role == "patient":
+                inc.patient_at = now
+        if person.role in FIXED_WORDING_ROLES:
+            return self._notify_fixed(person, inc, now, reason)
         text = message.strip()[:300]
         delivered = self.engine.responder.notifier.send(person, text)
         inc.messages += 1
@@ -352,6 +369,40 @@ class CareTools:
                          "reason": reason[:200]})
         self._record_action(a, inc.key)
         return json.dumps({"sent": True, "to": person.name, "delivered": delivered,
+                           "messages_this_incident": inc.messages})
+
+    def _finding_for(self, inc: Incident) -> Finding | None:
+        """The finding the fixed wording is about: the one being handled, else the latest
+        recorded for this incident."""
+        if self.active_finding is not None:
+            return self.active_finding
+        recs = self.engine.ledger.records(kinds=["finding"], ref=inc.key)
+        if not recs:
+            return None
+        b = recs[-1]["body"]
+        return Finding(FindingKind(b["kind"]), Severity(b["severity"]),
+                       datetime.fromisoformat(b["at"]), b["summary"], b.get("expectation_id"),
+                       list(b.get("observation_ids", [])), dict(b.get("data", {})), b["id"])
+
+    def _notify_fixed(self, person: Person, inc: Incident, now: datetime, reason: str) -> str:
+        """The patient and the neighbor never get LLM text: the agent decides *whether* to
+        contact them; the words (and Rosa's call + SMS) come from wording.py, via the
+        responder."""
+        finding = self._finding_for(inc)
+        if finding is None:
+            return json.dumps({"sent": False, "refused": "no finding to describe"})
+        responder = self.engine.responder
+        compromised = self.engine.ledger.has_finding(inc.key, str(FindingKind.PACKAGE_COMPROMISED))
+        purpose = "porch_compromised" if compromised and person.role == "patient" \
+            else responder._purpose(person)
+        actions = responder.contact("notify", person, finding, purpose, inc, now,
+                                    origin="agent", reason=reason[:200], llm_text_discarded=True)
+        for a in actions:
+            self._record_action(a, inc.key)
+        return json.dumps({"sent": bool(actions), "to": person.name,
+                           "delivered": any(a.delivered for a in actions),
+                           "wording": "fixed template (the LLM's text is not sent to "
+                                      f"{person.role}s)",
                            "messages_this_incident": inc.messages})
 
     @tool
@@ -490,6 +541,8 @@ Rules:
 it names), or stop. Never try to work around a refusal.
 - Informational findings (on time, delivered, completed) usually need no action.
 - Messages: max 300 characters, warm, calm, specific, facts only, no emojis.
+- The patient and the neighbor always get DoorLedger's fixed wording (the patient: a call plus \
+an SMS in her language); your message text is only used for family and the agency.
 - Finish with one sentence describing what you did and why."""
 
 
