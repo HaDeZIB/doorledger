@@ -61,7 +61,9 @@ def build_watcher(eng: Engine):
     from .vision import BedrockVision, CachingVision
     from .watcher import Watcher
 
-    cache = ROOT / "fixtures" / "ring_playground" / "vision_cache.json"
+    # A live run records into a gitignored cache (DOORLEDGER_VISION_CACHE), never the fixture.
+    cache = Path(os.environ.get("DOORLEDGER_VISION_CACHE")
+                 or ROOT / "fixtures" / "ring_playground" / "vision_cache.json")
     vision = CachingVision(cache, None if mode == "cache" else BedrockVision())
     return Watcher(eng, vision, EVIDENCE_DIR)
 
@@ -171,6 +173,7 @@ class DemoRun(BaseModel):
 
 @app.post("/api/demo/run")
 async def demo_run(body: DemoRun) -> dict[str, Any]:
+    _refuse_during_live_run()
     try:
         await runner.start(body.scenario, body.speed)
     except KeyError:
@@ -181,6 +184,7 @@ async def demo_run(body: DemoRun) -> dict[str, Any]:
 
 @app.post("/api/demo/reset")
 def demo_reset() -> dict[str, Any]:
+    _refuse_during_live_run()
     runner.stop()
     engine.reset()
     return {"ok": True}
@@ -262,6 +266,7 @@ async def ring_webhook(request: Request) -> dict[str, Any]:
 
 @app.post("/api/live/watch")
 async def live_watch() -> dict[str, Any]:
+    _refuse_during_live_run()
     started = live.start_watching()
     return {"ok": True, "started": started, "token": bool(live.token),
             "windows_open": live.windows_open()}
@@ -271,6 +276,24 @@ async def live_watch() -> dict[str, Any]:
 def live_stop() -> dict[str, Any]:
     live.stop_watching()
     return {"ok": True}
+
+
+# A live end-to-end run (scripts/live_demo.py) sets this; it is never started over HTTP, so
+# nothing reachable from the browser can place a real call.
+live_run = None
+
+
+def _refuse_during_live_run() -> None:
+    if live_run is not None and live_run.active:
+        raise HTTPException(409, "a live Ring run is in progress (scripts/live_demo.py)")
+
+
+@app.get("/api/live/trace")
+def live_trace() -> dict[str, Any]:
+    """Steps of the current (or last) live run with measured latencies; 404 when none ran."""
+    if live_run is None:
+        raise HTTPException(404, "no live run")
+    return live_run.to_api()
 
 
 @app.get("/api/visits/{visit_id}/pass")

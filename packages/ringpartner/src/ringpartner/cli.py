@@ -93,15 +93,35 @@ def cmd_history(args: argparse.Namespace) -> int:
     return 0
 
 
+def latest_event_start_ms(ring: RingClient, device_id: str) -> int | None:
+    """Epoch ms of the newest history event's start, or None if the device has no history.
+
+    A snapshot ``at`` an event's start is the request the Developer Playground authorizes; a
+    range request (``latest_in_range``) returns 403 "time range not within authorized
+    boundaries" there.
+    """
+    starts = [e.start for e in ring.history(device_id).events if e.start is not None]
+    return int(max(starts).timestamp() * 1000) if starts else None
+
+
 def cmd_snapshot(args: argparse.Namespace) -> int:
     with _client(args) as ring:
         if args.at_ms is not None:
             media = ring.snapshot(args.device_id, at=args.at_ms, fmt=args.format)
-        else:
+        elif args.latest_in_range:
             now = int(time.time() * 1000)
             media = ring.snapshot(
                 args.device_id, between=(now - args.window * 60_000, now), fmt=args.format
             )
+        else:
+            at = latest_event_start_ms(ring, args.device_id)
+            if at is None:
+                raise CLIError(
+                    "this device has no history events to snapshot at: pass --at-ms, "
+                    "or --latest-in-range"
+                )
+            print(f"snapshot at the newest history event (start {at} ms)", file=sys.stderr)
+            media = ring.snapshot(args.device_id, at=at, fmt=args.format)
     media.save(args.out)
     ts = media.timestamp.isoformat() if media.timestamp else "?"
     print(f"saved {len(media.content)} bytes to {args.out} (frame {ts}, origin {media.origin})")
@@ -157,12 +177,12 @@ def cmd_capture_fixtures(args: argparse.Namespace) -> int:
             attempt(f"history {d.id}", lambda d=d: ring.history(d.id))
         cams = [d for d in devices if d.is_chime is not True]
         if cams:
-            now = int(time.time() * 1000)
             target = cams[0].id
-            attempt(
-                f"snapshot {target}",
-                lambda: ring.snapshot(target, between=(now - 10 * 60_000, now)),
-            )
+            at = attempt(f"newest event {target}", lambda: latest_event_start_ms(ring, target))
+            if at is not None:
+                attempt(f"snapshot {target}", lambda: ring.snapshot(target, at=at))
+            else:
+                failed.append((f"snapshot {target}", "no history event to snapshot at"))
     print(f"recorded {len(ok)} calls into {args.dir}")
     for label, err in failed:
         print(f"  FAILED {label}: {err}")
@@ -224,9 +244,14 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("device_id")
     s.add_argument("--out", required=True)
     s.add_argument(
-        "--at-ms", type=int, help="epoch ms (default: latest in the last --window minutes)"
+        "--at-ms", type=int, help="epoch ms (default: the newest history event's start)"
     )
-    s.add_argument("--window", type=int, default=10, help="minutes for latest_in_range")
+    s.add_argument(
+        "--latest-in-range",
+        action="store_true",
+        help="latest image in the last --window minutes (403 on the Developer Playground)",
+    )
+    s.add_argument("--window", type=int, default=10, help="minutes for --latest-in-range")
     s.add_argument("--format", choices=["jpeg", "png"], default="jpeg")
     s.set_defaults(func=cmd_snapshot)
 

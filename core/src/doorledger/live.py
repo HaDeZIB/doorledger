@@ -11,6 +11,15 @@ Two triggers open a Ring live view (WHEP) and run the watcher:
 Without a live token the same code paths run on recorded Ring Playground footage, chosen by
 the webhook's ``sub_type`` — so the event-driven flow is demonstrable end to end even though
 the Playground itself never sends webhooks.
+
+3. **Ring history** (``_poll_history_loop``): the Playground sends no webhooks, but its Package /
+   Vehicle / Motion buttons open a live view that Ring logs as an ``on_demand`` history row. The
+   poller notices new rows, fetches a short burst of snapshots at the row's start (privacy
+   masking and face pixelation run before Bedrock), and lets the porch tracker decide. This is
+   the trigger of the live end-to-end run (``live_session.py``, ``scripts/live_demo.py``).
+
+``trace`` (optional, set by a live run) receives a timestamped step for each stage so the
+dashboard can show measured latencies.
 """
 
 from __future__ import annotations
@@ -18,9 +27,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 from collections import deque
-from datetime import datetime, timedelta, timezone
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from ringpartner.webhooks import WebhookEvent
 
@@ -42,6 +54,10 @@ SESSION_GAP_SECONDS = 20.0  # opening a new WHEP session sooner returns HTTP 500
 HISTORY_EVENT_TYPES = ("ding", "on_demand", "motion.human", "motion.vehicle")
 # Our own WHEP sessions also show up as ``on_demand`` rows; never react to those.
 OWN_SESSION_SLACK = timedelta(seconds=10)
+# Snapshot burst after a history event: ``at`` = start, start + 1 s, ... (never in the future).
+SNAPSHOT_STEP = timedelta(seconds=1)
+SNAPSHOT_LAG = timedelta(seconds=1)
+MAX_SNAPSHOT_WAIT_S = 5.0
 
 
 def history_event_types() -> list[str]:
@@ -63,12 +79,21 @@ class LiveController:
         self.busy = asyncio.Lock()
         self.watch_task: asyncio.Task | None = None
         self.sessions = 0
+        self.trace: Any = None  # live_session.LiveTrace during a live run
+        # Injectable Ring client (an offline Playground replay in rehearsals and tests).
+        self.ring_factory: Callable[[], Awaitable[Any]] | None = None
 
     @property
     def token(self) -> str | None:
         return os.environ.get("RING_ACCESS_TOKEN") or None
 
+    def _mark(self, step: str, **detail: Any) -> None:
+        if self.trace is not None:
+            self.trace.mark(step, **detail)
+
     async def _ring(self):
+        if self.ring_factory is not None:
+            return await self.ring_factory()
         from ringpartner import AsyncRingClient
 
         return AsyncRingClient(self.token)
@@ -104,7 +129,7 @@ class LiveController:
             return 0
         async with self.busy:
             self.sessions += 1
-            if self.token:
+            if self.token or self.ring_factory is not None:
                 ring = await self._ring()
                 try:
                     device_id = await self._prepare_device(ring)
@@ -113,12 +138,12 @@ class LiveController:
                     src = RingLiveSource(ring, device_id, self.engine.clock.now,
                                          fps=4.0 if burst else 1.0,
                                          max_seconds=12.0 if burst else SESSION_SECONDS)
-                    opened = datetime.now(timezone.utc)
+                    opened = datetime.now(UTC)
                     try:
-                        found = await self.watcher.process(src.frames(),
+                        found = await self.watcher.process(self._traced_whep(src.frames()),
                                                            presence_every=1 if burst else None)
                     finally:
-                        self.own_sessions.append((opened, datetime.now(timezone.utc)))
+                        self.own_sessions.append((opened, datetime.now(UTC)))
                 finally:
                     await ring.aclose()
             else:
@@ -128,6 +153,18 @@ class LiveController:
                                                    presence_every=1 if burst else None)
             log.info("watch session (%s) produced %d observations", reason, len(found))
             return len(found)
+
+    async def _traced_whep(self, frames):
+        """Pass WHEP frames through, marking the first one (time to first frame) on the trace."""
+        t0 = time.perf_counter()
+        n = 0
+        async for frame in frames:
+            if n == 0:
+                h, w = frame.image.shape[:2]
+                self._mark("frame", source="ring_live_view", via="WHEP live view",
+                           ms=round((time.perf_counter() - t0) * 1000), width=w, height=h)
+            n += 1
+            yield frame
 
     async def on_webhook(self, event: WebhookEvent) -> str:
         if event.dedupe_key in self.seen_requests:
@@ -178,20 +215,26 @@ class LiveController:
                 log.warning("watch session failed: %s", exc)
             await asyncio.sleep(SESSION_GAP_SECONDS)
 
-    async def _poll_history_loop(self, interval: float = 15.0) -> None:
+    async def _poll_history_loop(self, interval: float = 15.0, *, act: bool = True,
+                                 snapshots: int = 1, whep_followup: bool = True) -> None:
         """Battery-friendly default: poll Ring event history and open live view only when Ring
         itself recorded something new (motion, ding, or a Playground live-view event).
 
-        Every new event also fetches a Ring snapshot at the event's start time
-        (``POST /media/image/download`` with ``at_timestamp`` — the range form returns 403).
-        Only ``history_event_types()`` are requested, and each one acted on is written to the
+        Every new event also fetches Ring snapshots at the event's start time
+        (``POST /media/image/download`` with ``at_timestamp`` — the range form returns 403):
+        ``snapshots`` of them, one second apart, so the porch tracker's k-of-n vote can decide
+        from snapshots alone. A live view (WHEP) follows when ``whep_followup`` is set, or when
+        no snapshot came back. ``act=False`` only records the rows (a live run whose trigger is
+        the WHEP stream still timestamps the Playground click this way).
+        Only ``history_event_types()`` are requested, and each new row is written to the
         ledger as a ``ring_event`` record.
         """
-        started = datetime.now(timezone.utc)
+        started = datetime.now(UTC)
         ring = await self._ring()
         try:
             device_id = await self._prepare_device(ring)
             if device_id is None:
+                self._mark("error", what="Ring device unavailable (none, or end-to-end encrypted)")
                 return
             types = history_event_types()
             while self.windows_open():
@@ -204,38 +247,103 @@ class LiveController:
                         if self._is_own_session(e):
                             continue
                         burst = e.event_type == "ding"
-                        self.record_ring_event(e, action="burst watch" if burst else "watch")
-                        try:
-                            snap = await ring.snapshot(device_id, at=e.start)
-                            self.last_snapshot = snap.content
-                            await self._classify_snapshot(snap.content, e.start)
-                        except Exception as exc:  # noqa: BLE001 — snapshots are best-effort
-                            log.info("snapshot unavailable for %s: %s", e.id, exc)
-                        await self.watch_once(f"ring_history:{e.event_type}", burst=burst)
+                        action = ("recorded" if not act
+                                  else "burst watch" if burst else "watch")
+                        self.record_ring_event(e, action=action)
+                        if not act:
+                            continue
+                        frames = await self._event_snapshots(ring, device_id, e, snapshots)
+                        if frames:
+                            await self._classify_snapshots(frames)
+                        if whep_followup or not frames:
+                            await self.watch_once(f"ring_history:{e.event_type}", burst=burst)
                 except Exception as exc:  # noqa: BLE001
                     log.warning("history poll failed: %s", exc)
+                    self._mark("error", what=f"history poll failed: {str(exc)[:160]}")
                 await asyncio.sleep(interval)
         finally:
             await ring.aclose()
 
-    async def _classify_snapshot(self, jpeg: bytes, at) -> None:
-        """Run the Ring snapshot taken at the event's start through the same perception path."""
+    async def _event_snapshots(self, ring, device_id: str, event,
+                               count: int) -> list[tuple[bytes, datetime]]:
+        """Up to ``count`` Ring snapshots at the event's start, ``SNAPSHOT_STEP`` apart, fetched
+        in parallel. Timestamps never pass "now" (or the event's end). Best-effort: a failed
+        snapshot is logged and skipped."""
+        start = event.start
+        waited_ms = 0
+        if count > 1:
+            # Ring publishes a Playground row while its live view is still open: wait (at most
+            # a few seconds) until every requested timestamp is in the past, so each vote of
+            # the porch tracker is a distinct frame rather than the same one fetched twice.
+            need = start + (count - 1) * SNAPSHOT_STEP + SNAPSHOT_LAG
+            if event.end is not None:
+                need = min(need, event.end + SNAPSHOT_LAG)
+            wait = (need - datetime.now(UTC)).total_seconds()
+            if 0 < wait <= MAX_SNAPSHOT_WAIT_S:
+                await asyncio.sleep(wait)
+                waited_ms = round(wait * 1000)
+        limit = datetime.now(UTC) - SNAPSHOT_LAG
+        if event.end is not None:
+            limit = min(limit, event.end)
+        stamps: list[datetime] = []
+        for i in range(max(count, 1)):
+            at = max(start, min(start + i * SNAPSHOT_STEP, limit))
+            if at not in stamps:
+                stamps.append(at)
+        t0 = time.perf_counter()
+
+        async def one(at: datetime):
+            try:
+                return (await ring.snapshot(device_id, at=at)).content, at
+            except Exception as exc:  # noqa: BLE001 — snapshots are best-effort
+                log.info("snapshot unavailable for %s at %s: %s", event.id, at, exc)
+                return None, at
+
+        results = await asyncio.gather(*(one(at) for at in stamps))
+        frames = [(jpeg, at) for jpeg, at in results if jpeg]
+        ms = round((time.perf_counter() - t0) * 1000)
+        if frames:
+            self.last_snapshot = frames[-1][0]
+            self._mark("frame", source="ring_snapshot", via="Ring snapshot at the event's start",
+                       ms=ms, waited_ms=waited_ms or None, count=len(frames),
+                       requested=len(stamps),
+                       bytes=sum(len(j) for j, _ in frames))
+        else:
+            self._mark("error", what=f"no snapshot for the Ring event ({len(stamps)} tried, "
+                                     f"{ms} ms); falling back to the live view")
+        return frames
+
+    async def _classify_snapshots(self, frames: list[tuple[bytes, datetime]]) -> None:
+        """Run Ring snapshots (oldest first) through the perception path as one stream, so the
+        porch tracker votes on them together. Shares the session lock with live views: one
+        stream at a time through the watcher's motion gate."""
         import cv2
         import numpy as np
 
         from .domain import Source
         from .watcher import Frame
 
-        if self.watcher is None or not jpeg:
+        if self.watcher is None:
             return
-        image = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
-        if image is None:
+        decoded = []
+        for jpeg, at in frames:
+            image = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+            if image is not None:
+                decoded.append((image, at))
+        if not decoded:
             return
 
-        async def one():
-            yield Frame(self.engine.clock.now(), image, Source.RING_SNAPSHOT, at.timestamp())
+        async def stream():
+            for image, at in decoded:
+                yield Frame(self.engine.clock.now(), image, Source.RING_SNAPSHOT, at.timestamp())
 
-        await self.watcher.process(one())
+        async with self.busy:
+            await self.watcher.process(stream())
+
+    async def _classify_snapshot(self, jpeg: bytes, at) -> None:
+        """Run one Ring snapshot through the same perception path."""
+        if jpeg:
+            await self._classify_snapshots([(jpeg, at)])
 
     def start_watching(self) -> bool:
         """With a live token: poll Ring history (event-driven). Without: periodic replay sessions."""

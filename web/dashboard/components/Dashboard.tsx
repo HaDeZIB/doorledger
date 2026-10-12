@@ -15,6 +15,7 @@ import { ActionsFeed, FindingsFeed } from "./Feeds";
 import { Header, panelId, tabId, type Tab } from "./Header";
 import { IconX } from "./icons";
 import { LedgerView } from "./LedgerView";
+import { LiveRunPanel } from "./LiveRunPanel";
 import { MedicationCard } from "./MedicationCard";
 import { StatusBanner } from "./StatusBanner";
 import { SEVERITY_STYLE, cx } from "./ui";
@@ -115,6 +116,7 @@ function DashboardInner({ initial }: { initial: InitialData }) {
       <main className="mx-auto max-w-7xl space-y-6 px-4 pt-5 sm:px-6 xl:space-y-4 xl:pt-3">
         {tab === "today" && (
           <div role="tabpanel" id={panelId("today")} aria-labelledby={tabId("today")} className="space-y-6 xl:space-y-4">
+            <LiveRunPanel mode={dl.mode} tz={tz} />
             <StatusBanner banner={banner} />
             {/* hero: the story in one screen (fits 1280×720 without scrolling) */}
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.38fr)_minmax(0,1fr)] xl:items-start xl:gap-5">
@@ -157,7 +159,11 @@ function DashboardInner({ initial }: { initial: InitialData }) {
           thermal model, not a thermometer.
         </p>
         <p className="mt-3 text-[0.8rem] text-ink-3">
-          Ring Developer Playground footage: &lsquo;Thief stealing our package&rsquo; (CC BY 4.0), clipped — credited as provided by Ring
+          Ring Developer Playground footage: &lsquo;Thief stealing our package&rsquo; by YouTube user frollard,{" "}
+          <a className="underline" href="https://creativecommons.org/licenses/by/4.0/" rel="noreferrer" target="_blank">
+            CC BY 4.0
+          </a>
+          , clipped (as credited by Ring); frames re-encoded by DoorLedger
         </p>
       </footer>
 

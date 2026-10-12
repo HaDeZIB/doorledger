@@ -1,6 +1,7 @@
 # DoorLedger developer targets. Run `make help` for the list.
 #
 # Variables you can override:  make api PORT=9000   make demo SCENARIO=porch_cold SPEED=120
+#                               make live ARGS="--trigger whep"   (options: scripts/live_demo.py)
 
 UV        ?= uv
 NPM       ?= npm
@@ -8,13 +9,16 @@ PORT      ?= 8787
 API       ?= http://localhost:$(PORT)
 SCENARIO  ?= full_day
 SPEED     ?= 60
+ARGS      ?=
+LIVE       = $(UV) run $(ENV_FILE) python scripts/live_demo.py --port $(PORT)
 DASHBOARD := web/dashboard
 # Load .env into the API process when it exists (the API itself does not read .env).
 ENV_FILE  := $(if $(wildcard .env),--env-file .env,)
 
 .DEFAULT_GOAL := help
 .PHONY: help install env api api-offline dashboard dashboard-mock demo demo-reset \
-        webhook test lint sdk-build sdk-check dashboard-build ci
+        webhook test lint sdk-build sdk-check dashboard-build ci \
+        live-preflight live-probe live-rehearse live-dry live
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -51,6 +55,21 @@ webhook: ## POST a signed simulated Ring motion webhook to the API (uses RING_HM
 	$(UV) run $(ENV_FILE) sh -c 'test -n "$$RING_HMAC_KEY" || { echo "set RING_HMAC_KEY (same value as the API)"; exit 1; }; \
 	  ringpartner simulate motion_detected --device demo-device --sub-type package_delivery \
 	  --url $(API)/webhooks/ring --key "$$RING_HMAC_KEY"'
+
+live-preflight: ## Live run: check Ring token/device, Bedrock, Connect + SNS config (sends nothing)
+	$(LIVE) --preflight $(ARGS)
+
+live-probe: ## Live run: read-only; click Package in the Playground and see what Ring records
+	$(LIVE) --probe $(ARGS)
+
+live-rehearse: ## Live run rehearsal: offline, recorded Playground data, never calls or texts
+	$(LIVE) --rehearse $(ARGS)
+
+live-dry: ## Live Ring + Bedrock, no call and no SMS (rehearse the take)
+	$(LIVE) --dry-run $(ARGS)
+
+live: ## THE TAKE: Playground "Package" click -> Rosa's call + SMS (max 1 each; asks first)
+	$(LIVE) $(ARGS)
 
 test: ## Run the Python test suite (no AWS, no network)
 	$(UV) run pytest -q

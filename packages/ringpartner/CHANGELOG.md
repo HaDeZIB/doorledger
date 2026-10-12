@@ -7,6 +7,17 @@ contain breaking changes.
 
 ## [Unreleased]
 
+Planned as 0.1.1.
+
+### Fixed
+
+- `ringpartner snapshot` no longer defaults to a range request (`latest_in_range`), which the
+  Ring Developer Playground answers with `403 time range not within authorized boundaries`. The
+  default is now a snapshot **at the newest history event's start**; the range form is opt-in
+  with `--latest-in-range` (`--window` still sets its minutes). With no history events the CLI
+  explains what to pass instead of returning a 403.
+- `ringpartner capture-fixtures` records its snapshot the same way (at the newest event).
+
 ## [0.1.0] - 2026-10-11
 
 First public release, written during the Amazon "Build, Ship, Shape" hackathon as the SDK

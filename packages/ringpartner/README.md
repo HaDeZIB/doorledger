@@ -46,7 +46,7 @@ with RingClient("ACCESS_TOKEN") as ring:
     for ev in ring.iter_history(d.id, event_types=["motion.human", "ding"]):
         print(ev.start, ev.event_type, ev.is_third_party_reviewed)
 
-    img = ring.snapshot(d.id, between=(start_ms, end_ms))   # or at=<epoch ms>
+    img = ring.snapshot(d.id, at=ev.start)   # at a history event's start (works on the Playground)
     img.save("front.jpg")
 ```
 
@@ -162,8 +162,9 @@ export RING_ACCESS_TOKEN=...                      # e.g. from the Developer Play
 
 ringpartner devices                               # id, name, online, encrypted
 ringpartner history DEVICE_ID --types motion.human,ding
-ringpartner snapshot DEVICE_ID --out front.jpg    # latest image in the last 10 min
+ringpartner snapshot DEVICE_ID --out front.jpg    # at the newest history event's start
 ringpartner snapshot DEVICE_ID --out at.jpg --at-ms 1699457230000
+ringpartner snapshot DEVICE_ID --out r.jpg --latest-in-range --window 10   # range form (403 on the Playground)
 ringpartner record DEVICE_ID --out live.mp4 --seconds 25 --audio     # needs [whep]
 ringpartner capture-fixtures --dir fixtures/playground
 
@@ -173,7 +174,8 @@ ringpartner verify --key "$RING_HMAC_KEY" --signature "sha256=..." < body.json
 ```
 
 `capture-fixtures` calls devices, `users/me`, and for each device its detail, status,
-capabilities, configurations, location and history, plus one snapshot. If an individual call
+capabilities, configurations, location and history, plus one snapshot at the newest history
+event. If an individual call
 fails it reports the failure and moves on.
 
 ## Gotchas from the docs (handled for you)
@@ -201,9 +203,9 @@ fails it reports the failure and moves on.
 - **There is no device type field.** A chime is a device whose `audio.supported_actions`
   contains `chime.play` (`Device.is_chime`). Do not parse `image_url`.
 - Multi-camera devices (Ring Elite): pass exactly one `component_id` for snapshots and clips.
-- **Snapshots in the Developer Playground:** a range request (`between=`, or the CLI default of
-  "latest in the last 10 min") returned `403 time range not within authorized boundaries` for us.
-  `at=<history event start>` works.
+- **Snapshots in the Developer Playground:** a range request (`between=`, or the CLI's opt-in
+  `--latest-in-range`) returned `403 time range not within authorized boundaries` for us.
+  `at=<history event start>` works, so that is what the CLI does by default.
 
 ## Development
 
