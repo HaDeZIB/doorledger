@@ -27,8 +27,8 @@
 
 ## Credits (end card and video description)
 
-- **Ring Developer Playground package clip:** *"Thief stealing our package"* by **TODO: creator
-  name and link, copied from the Playground credit**, licensed CC BY 4.0
+- **Ring Developer Playground package clip:** *"Thief stealing our package"* by YouTube user
+  **frollard**, licensed CC BY 4.0
   (https://creativecommons.org/licenses/by/4.0/). Clipped and re-timed. Shown through the Ring
   Developer Playground live view.
 - Fictional household and agency. Temperatures are model estimates. Scenes marked "Simulated"
