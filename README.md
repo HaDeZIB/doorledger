@@ -256,7 +256,7 @@ tests):
   - a stdlib webhook receiver tested with the simulator (`python webhook_receiver.py --self-test`).
 
 ```bash
-pip install ringpartner            # once published; for now: pip install ./packages/ringpartner
+pip install ringpartner            # on PyPI: https://pypi.org/project/ringpartner/
 pip install 'ringpartner[whep]'    # adds live video
 ```
 
